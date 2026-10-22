@@ -14,6 +14,8 @@ PostgreSQL 17.11 uses separate service databases/roles. A separate one-shot migr
 
 ## C. Files and modules
 
+The [exact path manifest](phase-1-files.txt) lists the cumulative Phase 1 changes relative to the approved architecture commit.
+
 - `pom.xml`, `mvnw`, `mvnw.cmd`, `.mvn/wrapper/maven-wrapper.properties`: reproducible Java reactor.
 - `services/api-gateway/`: application, JWT/CORS authorization, correlation/rate/size filter, route config, security tests and Dockerfile.
 - `services/customer-service/`: application and migration command, validated-subject controller, independent authorization/correlation, foundation SQL, security/DB isolation tests and Dockerfile.
@@ -26,6 +28,8 @@ PostgreSQL 17.11 uses separate service databases/roles. A separate one-shot migr
 - `.github/workflows/{backend,frontend,foundation}.yml`: CI, no external deployment.
 - `.gitignore`, `.dockerignore`, `.env.example`, `.gitattributes`: secret/artifact exclusion and portable script newlines.
 - `contracts/openapi/customer-v1.yaml`, `README.md`, `docs/deployment/local-setup.md`, `docs/testing.md`, this report and ADR statuses: implementation and operating documentation.
+- `docs/evidence/foundation-desktop.png`, `docs/evidence/foundation-mobile.png`: actual anonymous workspace captures, visually reviewed after disabling animation during capture.
+- `scripts/diagnostics.py`: bounded startup diagnostics with generated-secret redaction.
 
 ## D. Risks and limits
 
@@ -39,15 +43,39 @@ Signed-JWT service tests; real PostgreSQL/bootstrap/Flyway privilege tests; UI t
 
 ## F. Implementation status
 
-Source is implemented for Phase 1 only. Final verification results and CI links are recorded after execution; an implemented test is not evidence that it passed.
+Phase 1 acceptance gates are verified in Linux CI. The tested application commit is `0835a88e84806a6face02baf073901199fded55d`; subsequent evidence/documentation updates do not change application behavior. The public Gateway uses port 8280 because host port 8080 was already occupied; all portal calls, CORS/CSP connectivity, tests, setup and API contracts use the same public endpoint.
 
 ## G. Verification
 
-Local Java security tests: 8 passed in the initial run. Local UI checks: typecheck, lint, 7 component tests and both production builds passed after fixing duplicate React versions. npm audit reported zero vulnerabilities after updating Vite/Vitest to patched versions. `docker compose config --quiet` passed with generated local configuration. Full final results are pending the remaining validation pass.
+Final CI results for the exact application commit above:
 
-Docker Engine calls on the Windows host timed out during initial readiness checks, so local Compose startup and Testcontainers have not yet been established. GitHub Actions is configured to run both with a real Linux Docker engine. This limitation must remain explicit unless a later successful run supplies evidence.
+| Workflow | Result |
+| --- | --- |
+| [Backend quality](https://github.com/ABDOUUisHERE/task-app-management/actions/runs/39818097900) | PASS: build, 9 signed-JWT/service tests and 1 real PostgreSQL/Flyway/isolation test; no skipped tests |
+| [Frontend quality](https://github.com/ABDOUUisHERE/task-app-management/actions/runs/39818097639) | PASS: typecheck, lint, 7 component tests, both production builds and npm audit |
+| [Foundation integration](https://github.com/ABDOUUisHERE/task-app-management/actions/runs/39818097669) | PASS: all image builds, full Compose startup/readiness, migration/realm init, private Customer rejection, all 4 real browser journeys, public captures and clean shutdown |
+
+The [machine-readable evidence](../evidence/phase-1-checks.json) records run IDs, URLs, application SHA, environment distinctions and test counts. No failed or skipped tests remain in these final CI runs. Earlier failures and superseded/cancelled runs are distinguished below. Documentation-only delivery changes are excluded from the workflows to avoid repeating unchanged application tests.
+
+| Executed command/check | Observed result |
+| --- | --- |
+| `mvnw.cmd -B -ntp verify -DskipITs` | Java reactor and both executable JARs built; initial 8 security tests passed; DB integration explicitly skipped locally |
+| `mvnw.cmd -B -ntp -pl services/api-gateway -am test` after adding dependency-error handling | 5 Gateway security/error tests passed; combined with unchanged 4 Customer tests, 9 service tests are covered |
+| `npm run typecheck`, `npm run lint`, `npm test`, `npm run build` | Passed; 7 component tests and both production bundles; checks rerun when relevant source/dependencies changed |
+| `npm audit --audit-level=high` | Passed; zero reported vulnerabilities at execution time |
+| `docker compose config --quiet` | Passed with generated configuration, including the realm-init service and public Gateway port change |
+| Bootstrap rerun with before/after byte comparison | All three existing generated config files preserved; credentials and realm/env files are Git-ignored |
+| Native real-browser run, `FINCORE_API_URL=http://localhost:8280 npm run test:e2e` | All 4 journeys passed after identity readiness: real PKCE, Customer API, staff/customer isolation, logout and responsive widths |
+| Native screenshot-only responsive rerun after capture stabilization | 1 responsive journey passed; desktop/mobile captures visually inspected |
+| Documentation links, tracked JSON syntax, `git diff --check` | Passed in the working checkout |
+
+Native environment: Windows, Java 21.0.2, Maven 3.9.9, Node 24.13.0, Keycloak 26.8.1 and an isolated PostgreSQL **16.9** cluster on port 5548 using installed binaries. The existing PostgreSQL Windows service was left running and unchanged. The native check used Vite's static preview and Gateway port 8280; it does not establish the Nginx/Compose environment. All temporary native servers and the isolated cluster were stopped after verification, releasing their ports. Ignored local configuration/data remains available.
+
+Docker Engine calls on the Windows host timed out; local Compose/Testcontainers execution was not established. The successful Linux GitHub Actions run supplies the real PostgreSQL **17.11**, Nginx, migration-container and complete Compose verification. Running the reference stack on this Windows host still requires a responsive Docker Desktop engine.
 
 Initial corrected failures: PowerShell split an unquoted Maven wrapper property; the quoted rerun succeeded. Component tests found duplicate React copies; aligning/pinning React and deduplicating fixed all seven. The initial npm audit found vulnerable Vite/Vitest versions; the updated pinned versions passed audit. These results are separate from future integration outcomes.
+
+The first Compose attempts failed because Keycloak could not read a host-owned mode-0600 realm import; CI diagnostics confirmed `Permission denied`. The network-isolated realm-init volume/ownership step fixed startup. The next Compose run passed all service health and authentication checks, with 3 browser journeys passing and the responsive journey detecting mobile header overflow. The small-screen header fix passed all four native browser journeys. An initial native browser attempt started before Keycloak readiness and timed out twice; rerunning after the discovery endpoint returned 200 passed all four. No test assertion was removed to hide these failures.
 
 ## H. Next milestone
 

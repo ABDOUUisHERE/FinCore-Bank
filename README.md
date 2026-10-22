@@ -2,7 +2,7 @@
 
 Distributed digital banking and payment processing **simulation**, using synthetic customers and simulated money exclusively.
 
-**Status: Phase 1 — identity and application foundation.** Two React workspaces, Keycloak, independently protected Java services, isolated databases and CI are implemented. Accounts, balances, payments and the ledger arrive in later milestones. This repository retains its existing GitHub name, `task-app-management`.
+**Status: Phase 1 — foundation implemented and verified in CI.** Two React workspaces, Keycloak, independently protected Java services, isolated databases and CI are implemented. Accounts, balances, payments and the ledger arrive in later milestones. This repository retains its existing GitHub name, `task-app-management`.
 
 ## Quick start
 
@@ -21,6 +21,10 @@ Open **http://localhost:5173** for the customer workspace or **http://localhost:
 Stop with `docker compose down`. The named PostgreSQL volume survives normal shutdown. This loopback-only environment uses simulated identities and development HTTP; external deployment is outside this milestone.
 
 ## Foundation architecture
+
+![FinCore public workspace captured during the real native foundation verification](docs/evidence/foundation-desktop.png)
+
+[Mobile capture](docs/evidence/foundation-mobile.png). These show the anonymous foundation UI; banking features are explicitly marked as upcoming. See the [verification report](docs/verification/phase-1.md) for capture environment and container test evidence.
 
 ```mermaid
 flowchart LR

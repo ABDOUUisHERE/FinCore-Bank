@@ -1,0 +1,49 @@
+{
+  "date": "2026-10-22",
+  "timezone": "UTC",
+  "branch": "feature/fincore-foundation",
+  "applicationCommit": "0835a88e84806a6face02baf073901199fded55d",
+  "checks": [
+    {
+      "name": "Backend quality",
+      "runId": 39818097900,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ABDOUUisHERE/task-app-management/actions/runs/39818097900"
+    },
+    {
+      "name": "Frontend quality",
+      "runId": 39818097639,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ABDOUUisHERE/task-app-management/actions/runs/39818097639"
+    },
+    {
+      "name": "Foundation integration",
+      "runId": 39818097669,
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/ABDOUUisHERE/task-app-management/actions/runs/39818097669"
+    }
+  ],
+  "tests": {
+    "javaSecurity": 9,
+    "postgresqlIntegration": 1,
+    "frontendComponents": 7,
+    "browserJourneys": 4
+  },
+  "localCompose": "Not executed: Windows Docker Engine unresponsive. Full Compose verified in Linux CI.",
+  "nativeBrowserVerification": {
+    "status": "passed",
+    "journeys": 4,
+    "postgresql": "16.9 isolated cluster on port 5548",
+    "keycloak": "26.8.1",
+    "gatewayPort": 8280,
+    "temporaryProcessesStopped": true
+  },
+  "screenshots": {
+    "origin": "Anonymous native verification workspace",
+    "desktop": "foundation-desktop.png",
+    "mobile": "foundation-mobile.png"
+  }
+}
