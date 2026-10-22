@@ -22,7 +22,7 @@ On Linux/macOS, use `python3` if `python` is not available. Equivalent bootstrap
 | --- | --- | --- |
 | Customer workspace | http://localhost:5173 | Sign in as generated `customer.demo` |
 | Operations workspace | http://localhost:5174 | Sign in as generated `admin.demo`; customer identities are denied |
-| Gateway readiness | http://localhost:8080/actuator/health/readiness | Redacted process readiness |
+| Gateway readiness | http://localhost:8280/actuator/health/readiness | Redacted process readiness |
 | Identity provider | http://localhost:8180 | Hosted login; `platform-admin` is local infrastructure administration only |
 
 Use **localhost**, not `127.0.0.1`, in browser URLs: OIDC redirect URIs, origins and issuer are exact. Container JWKS requests use the internal Keycloak DNS name while validating the same public issuer. No issuer verification is disabled. PostgreSQL and Customer Service are not published to the host.

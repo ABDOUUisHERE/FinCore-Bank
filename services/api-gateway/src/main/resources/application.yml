@@ -21,7 +21,7 @@ spring:
                   args:
                     maxSize: 16KB
 server:
-  port: ${SERVER_PORT:8080}
+  port: ${SERVER_PORT:8280}
   max-http-request-header-size: 16KB
 fincore:
   security:

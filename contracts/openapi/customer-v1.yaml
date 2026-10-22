@@ -4,7 +4,7 @@ info:
   version: 0.1.0
   description: Authenticated subject only. Customer profiles and banking features are not implemented.
 servers:
-  - url: http://localhost:8080
+  - url: http://localhost:8280
 paths:
   /api/v1/customers/me:
     get:

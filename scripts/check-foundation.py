@@ -6,11 +6,11 @@ import urllib.request
 
 
 def main() -> None:
-    for port, path in [(8080, "/actuator/health/readiness"), (5173, "/health"), (5174, "/health")]:
+    for port, path in [(8280, "/actuator/health/readiness"), (5173, "/health"), (5174, "/health")]:
         with urllib.request.urlopen(f"http://localhost:{port}{path}", timeout=10) as response:
             assert response.status == 200
     try:
-        urllib.request.urlopen("http://localhost:8080/api/v1/customers/me", timeout=10)
+        urllib.request.urlopen("http://localhost:8280/api/v1/customers/me", timeout=10)
         raise AssertionError("Unauthenticated gateway request unexpectedly succeeded")
     except urllib.error.HTTPError as error:
         assert error.code == 401

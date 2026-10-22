@@ -75,7 +75,7 @@ describe("customer workspace", () => {
     open();
     expect(await screen.findByText("verified-subject")).toBeVisible();
     expect(fetch).toHaveBeenCalledWith(
-      "http://localhost:8080/api/v1/customers/me",
+      "http://localhost:8280/api/v1/customers/me",
       expect.objectContaining({
         headers: { Authorization: "Bearer synthetic-test-token" },
       }),

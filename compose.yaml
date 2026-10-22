@@ -93,7 +93,7 @@ services:
       CUSTOMER_SERVICE_URL: http://customer-service:8080
       OIDC_ISSUER: http://localhost:8180/realms/fincore
       OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
-    ports: ["127.0.0.1:8080:8080"]
+    ports: ["127.0.0.1:8280:8080"]
     depends_on:
       customer-service: { condition: service_healthy }
     networks: [backend]

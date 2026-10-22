@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
-const apiUrl = process.env.FINCORE_API_URL ?? "http://localhost:8080";
+const apiUrl = process.env.FINCORE_API_URL ?? "http://localhost:8280";
 const credentials = JSON.parse(
   readFileSync(".local/credentials.json", "utf8"),
 ) as Record<"customer" | "admin", { username: string; password: string }>;

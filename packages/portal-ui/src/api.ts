@@ -5,7 +5,7 @@ export async function getCurrentSubject(
   signal?: AbortSignal,
 ): Promise<CurrentSubject> {
   const response = await fetch(
-    `${import.meta.env.VITE_API_URL ?? "http://localhost:8080"}/api/v1/customers/me`,
+    `${import.meta.env.VITE_API_URL ?? "http://localhost:8280"}/api/v1/customers/me`,
     {
       headers: { Authorization: `Bearer ${await token()}` },
       signal,
