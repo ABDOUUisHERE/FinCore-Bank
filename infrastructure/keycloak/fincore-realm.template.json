@@ -1,0 +1,31 @@
+{
+  "realm": "fincore",
+  "enabled": true,
+  "displayName": "FinCore — simulation workspace",
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": false,
+  "bruteForceProtected": true,
+  "accessTokenLifespan": 180,
+  "ssoSessionIdleTimeout": 1800,
+  "passwordPolicy": "length(16)",
+  "roles": {"realm": [{"name":"CUSTOMER"},{"name":"SUPPORT_AGENT"},{"name":"FRAUD_ANALYST"},{"name":"FINANCE_OPERATOR"},{"name":"ADMIN"}]},
+  "clients": [
+    {
+      "clientId":"fincore-customer", "name":"FinCore Customer", "enabled":true,
+      "protocol":"openid-connect", "publicClient":true, "standardFlowEnabled":true,
+      "implicitFlowEnabled":false, "directAccessGrantsEnabled":false,
+      "redirectUris":["http://localhost:5173/"], "webOrigins":["http://localhost:5173"],
+      "attributes":{"pkce.code.challenge.method":"S256","post.logout.redirect.uris":"http://localhost:5173/"},
+      "protocolMappers":[{"name":"fincore-api-audience","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"fincore-api","access.token.claim":"true","id.token.claim":"false"}}]
+    },
+    {
+      "clientId":"fincore-admin", "name":"FinCore Operations", "enabled":true,
+      "protocol":"openid-connect", "publicClient":true, "standardFlowEnabled":true,
+      "implicitFlowEnabled":false, "directAccessGrantsEnabled":false,
+      "redirectUris":["http://localhost:5174/"], "webOrigins":["http://localhost:5174"],
+      "attributes":{"pkce.code.challenge.method":"S256","post.logout.redirect.uris":"http://localhost:5174/"},
+      "protocolMappers":[{"name":"fincore-api-audience","protocol":"openid-connect","protocolMapper":"oidc-audience-mapper","config":{"included.custom.audience":"fincore-api","access.token.claim":"true","id.token.claim":"false"}}]
+    }
+  ]
+}

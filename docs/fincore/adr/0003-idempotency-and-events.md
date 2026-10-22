@@ -1,6 +1,6 @@
 # ADR 0003 — Durable intent, idempotent financial identity and outbox delivery
 
-Status: proposed, awaiting user approval.
+Status: accepted on 2026-10-22, following approval to start Phase 1.
 
 ## Context
 

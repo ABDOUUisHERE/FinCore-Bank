@@ -1,0 +1,103 @@
+name: fincore
+services:
+  postgres:
+    image: postgres:17.11-alpine
+    environment:
+      POSTGRES_USER: fincore_bootstrap
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run local bootstrap first}
+      CUSTOMER_DB_PASSWORD: ${CUSTOMER_DB_PASSWORD:?Run local bootstrap first}
+      CUSTOMER_MIGRATION_PASSWORD: ${CUSTOMER_MIGRATION_PASSWORD:?Run local bootstrap first}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Run local bootstrap first}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infrastructure/docker/postgres/init-databases.sh:/docker-entrypoint-initdb.d/10-databases.sh:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U fincore_bootstrap -d postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [backend]
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.1
+    command: [start-dev, --import-realm]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak_owner
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Run local bootstrap first}
+      KC_BOOTSTRAP_ADMIN_USERNAME: platform-admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Run local bootstrap first}
+      KC_HOSTNAME: http://localhost:8180
+      KC_HTTP_PORT: "8180"
+      KC_HEALTH_ENABLED: "true"
+    ports: ["127.0.0.1:8180:8180"]
+    volumes: ["./.local/realm:/opt/keycloak/data/import:ro"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test:
+        [
+          CMD-SHELL,
+          "bash -c 'exec 3<>/dev/tcp/127.0.0.1/9000; printf \"GET /health/ready HTTP/1.0\\r\\n\\r\\n\" >&3; grep -q UP <&3'",
+        ]
+      interval: 10s
+      timeout: 5s
+      start_period: 45s
+      retries: 30
+    networks: [backend]
+  customer-migrations:
+    image: fincore/customer-service:local
+    build: { context: ., dockerfile: services/customer-service/Dockerfile }
+    command: [--migrate-only]
+    environment:
+      CUSTOMER_DATABASE_URL: jdbc:postgresql://postgres:5432/customer
+      CUSTOMER_MIGRATION_PASSWORD: ${CUSTOMER_MIGRATION_PASSWORD:?Run local bootstrap first}
+    healthcheck:
+      disable: true
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]
+  customer-service:
+    image: fincore/customer-service:local
+    build: { context: ., dockerfile: services/customer-service/Dockerfile }
+    environment:
+      SERVER_PORT: "8080"
+      CUSTOMER_DATABASE_URL: jdbc:postgresql://postgres:5432/customer
+      CUSTOMER_DB_PASSWORD: ${CUSTOMER_DB_PASSWORD:?Run local bootstrap first}
+      OIDC_ISSUER: http://localhost:8180/realms/fincore
+      OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
+    depends_on:
+      postgres: { condition: service_healthy }
+      keycloak: { condition: service_healthy }
+      customer-migrations: { condition: service_completed_successfully }
+    networks: [backend]
+  api-gateway:
+    image: fincore/api-gateway:local
+    build: { context: ., dockerfile: services/api-gateway/Dockerfile }
+    environment:
+      SERVER_PORT: "8080"
+      CUSTOMER_SERVICE_URL: http://customer-service:8080
+      OIDC_ISSUER: http://localhost:8180/realms/fincore
+      OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
+    ports: ["127.0.0.1:8080:8080"]
+    depends_on:
+      customer-service: { condition: service_healthy }
+    networks: [backend]
+  customer-portal:
+    image: fincore/customer-portal:local
+    build: { context: ., dockerfile: apps/customer-portal/Dockerfile }
+    ports: ["127.0.0.1:5173:8080"]
+    depends_on:
+      api-gateway: { condition: service_healthy }
+    networks: [backend]
+  admin-portal:
+    image: fincore/admin-portal:local
+    build: { context: ., dockerfile: apps/admin-portal/Dockerfile }
+    ports: ["127.0.0.1:5174:8080"]
+    depends_on:
+      api-gateway: { condition: service_healthy }
+    networks: [backend]
+networks:
+  backend:
+volumes:
+  postgres-data:

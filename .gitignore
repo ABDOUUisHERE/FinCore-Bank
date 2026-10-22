@@ -1,0 +1,14 @@
+.env
+.local/
+.local-*
+**/target/
+node_modules/
+**/dist/
+playwright-report/
+test-results/
+coverage/
+*.log
+.idea/
+.vscode/
+.DS_Store
+__pycache__/

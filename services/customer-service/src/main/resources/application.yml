@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: customer-service
+  datasource:
+    url: ${CUSTOMER_DATABASE_URL:jdbc:postgresql://localhost:5432/customer}
+    username: customer_runtime
+    password: ${CUSTOMER_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 5
+  flyway:
+    enabled: false
+server:
+  port: ${SERVER_PORT:8081}
+  max-http-request-header-size: 16KB
+fincore:
+  security:
+    issuer: ${OIDC_ISSUER:http://localhost:8180/realms/fincore}
+    jwk-set-uri: ${OIDC_JWKS:http://localhost:8180/realms/fincore/protocol/openid-connect/certs}
+    audience: fincore-api
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
+logging:
+  structured:
+    format:
+      console: ecs

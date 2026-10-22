@@ -1,0 +1,9 @@
+.git
+.env
+.local
+**/node_modules
+**/target
+**/dist
+test-results
+playwright-report
+docs

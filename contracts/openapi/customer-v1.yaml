@@ -1,0 +1,68 @@
+openapi: 3.0.3
+info:
+  title: FinCore foundation customer API
+  version: 0.1.0
+  description: Authenticated subject only. Customer profiles and banking features are not implemented.
+servers:
+  - url: http://localhost:8080
+paths:
+  /api/v1/customers/me:
+    get:
+      operationId: currentSubject
+      summary: Read the validated identity of the current CUSTOMER
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Authenticated subject and recognized realm roles
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [subject, roles]
+                properties:
+                  subject: { type: string }
+                  roles:
+                    type: array
+                    items:
+                      {
+                        type: string,
+                        enum:
+                          [
+                            CUSTOMER,
+                            SUPPORT_AGENT,
+                            FRAUD_ANALYST,
+                            FINANCE_OPERATOR,
+                            ADMIN,
+                          ],
+                      }
+        "401":
+          description: Invalid or missing token; RFC 9457 problem response
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "403":
+          description: Required CUSTOMER role absent
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "429":
+          description: Gateway local request budget exceeded
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+components:
+  securitySchemes:
+    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    Problem:
+      type: object
+      required: [type, title, status, detail, code, correlationId]
+      properties:
+        type: { type: string }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        code: { type: string }
+        correlationId: { type: string }

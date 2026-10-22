@@ -1,6 +1,6 @@
 # ADR 0004 — Keycloak identity with independent service authorization
 
-Status: proposed, awaiting user approval.
+Status: accepted on 2026-10-22, following approval to start Phase 1.
 
 ## Context
 

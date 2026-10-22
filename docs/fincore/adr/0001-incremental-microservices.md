@@ -1,6 +1,6 @@
 # ADR 0001 — Independent services introduced incrementally
 
-Status: proposed, awaiting user approval.
+Status: accepted on 2026-10-22, following approval to start Phase 1.
 
 ## Context
 

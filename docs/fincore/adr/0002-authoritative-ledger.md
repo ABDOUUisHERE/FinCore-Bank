@@ -1,6 +1,6 @@
 # ADR 0002 — One authoritative, immutable double-entry ledger
 
-Status: proposed, awaiting user approval.
+Status: accepted on 2026-10-22, following approval to start Phase 1.
 
 ## Context
 
