@@ -1027,3 +1027,9 @@ footer .text-button {
     scroll-behavior: auto !important;
   }
 }
+@media (max-width: 380px) {
+  .breadcrumb > span,
+  .breadcrumb > svg {
+    display: none;
+  }
+}

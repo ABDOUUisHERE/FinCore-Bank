@@ -2,6 +2,7 @@ name: Foundation integration
 on:
   push:
     branches: [main, "feature/**"]
+    paths-ignore: ["docs/**", "**/*.md"]
   pull_request:
 permissions:
   contents: read
@@ -27,7 +28,7 @@ jobs:
       - if: failure()
         run: python3 scripts/diagnostics.py
       - uses: actions/upload-artifact@v4
-        if: success()
+        if: always()
         with:
           name: public-workspace-captures
           path: test-results/foundation-*.png

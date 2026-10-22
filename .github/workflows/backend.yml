@@ -2,6 +2,7 @@ name: Backend quality
 on:
   push:
     branches: [main, "feature/**"]
+    paths-ignore: ["docs/**", "**/*.md"]
   pull_request:
 permissions:
   contents: read

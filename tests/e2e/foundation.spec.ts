@@ -1,5 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 import { readFileSync } from "node:fs";
+const apiUrl = process.env.FINCORE_API_URL ?? "http://localhost:8080";
 const credentials = JSON.parse(
   readFileSync(".local/credentials.json", "utf8"),
 ) as Record<"customer" | "admin", { username: string; password: string }>;
@@ -31,9 +32,7 @@ test("hosted PKCE login connects the customer API and logout clears access", asy
   page,
   request,
 }) => {
-  const unauthenticated = await request.get(
-    "http://localhost:8080/api/v1/customers/me",
-  );
+  const unauthenticated = await request.get(`${apiUrl}/api/v1/customers/me`);
   expect(unauthenticated.status()).toBe(401);
   await page.goto("/");
   const capturedToken = await login(page, "customer");
@@ -41,10 +40,9 @@ test("hosted PKCE login connects the customer API and logout clears access", asy
     page.getByText("Identity verified by the customer service"),
   ).toBeVisible();
   expect(capturedToken).not.toBe("");
-  const response = await request.get(
-    "http://localhost:8080/api/v1/customers/me",
-    { headers: { Authorization: `Bearer ${capturedToken}` } },
-  );
+  const response = await request.get(`${apiUrl}/api/v1/customers/me`, {
+    headers: { Authorization: `Bearer ${capturedToken}` },
+  });
   expect(response.status()).toBe(200);
   const subject = await response.json();
   expect(subject.roles).toContain("CUSTOMER");
@@ -79,17 +77,16 @@ test("staff role opens its shell but does not inherit customer API privileges", 
   await page.goto("http://localhost:5174/");
   const token = await login(page, "admin");
   await expect(page.getByText("Authorized staff session")).toBeVisible();
-  const forbidden = await request.get(
-    "http://localhost:8080/api/v1/customers/me",
-    { headers: { Authorization: `Bearer ${token}` } },
-  );
+  const forbidden = await request.get(`${apiUrl}/api/v1/customers/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
   expect(forbidden.status()).toBe(403);
   const result = await page.evaluate(async () => {
     const keys = Object.keys(localStorage);
     return keys.some((key) => /token/i.test(key));
   });
   expect(result).toBe(false);
-  const missing = await request.get("http://localhost:8080/actuator/env");
+  const missing = await request.get(`${apiUrl}/actuator/env`);
   expect(missing.status()).toBe(401);
 });
 
@@ -104,9 +101,13 @@ test("workspace remains usable on mobile and desktop", async ({ page }) => {
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
+      `No horizontal overflow at ${width}px`,
     ).toBe(true);
     if (width === 1440 || width === 390) {
-      await page.screenshot({ path: `test-results/foundation-${width}.png`, fullPage: true });
+      await page.screenshot({
+        path: `test-results/foundation-${width}.png`,
+        fullPage: true,
+      });
     }
   }
   await page.getByRole("button", { name: "Open navigation" }).click();
