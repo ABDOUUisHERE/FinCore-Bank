@@ -10,8 +10,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: "24"
           cache: npm
@@ -22,6 +22,11 @@ jobs:
       - run: python3 scripts/check-foundation.py
       - run: npm run test:e2e
       - if: failure()
-        run: docker compose ps
+        run: python3 scripts/diagnostics.py
+      - uses: actions/upload-artifact@v4
+        if: success()
+        with:
+          name: public-workspace-captures
+          path: test-results/foundation-*.png
       - if: always()
         run: docker compose down

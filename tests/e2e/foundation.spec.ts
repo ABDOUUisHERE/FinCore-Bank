@@ -105,6 +105,9 @@ test("workspace remains usable on mobile and desktop", async ({ page }) => {
         () => document.documentElement.scrollWidth <= window.innerWidth,
       ),
     ).toBe(true);
+    if (width === 1440 || width === 390) {
+      await page.screenshot({ path: `test-results/foundation-${width}.png`, fullPage: true });
+    }
   }
   await page.getByRole("button", { name: "Open navigation" }).click();
   await page.getByRole("button", { name: "Security", exact: true }).click();
