@@ -107,6 +107,7 @@ test("workspace remains usable on mobile and desktop", async ({ page }) => {
       await page.screenshot({
         path: `test-results/foundation-${width}.png`,
         fullPage: true,
+        animations: "disabled",
       });
     }
   }
