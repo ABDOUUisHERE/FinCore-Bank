@@ -5,6 +5,7 @@ from pathlib import Path
 import secrets
 
 ROOT = Path(__file__).resolve().parents[1]
+LEDGER_KEYS = ("LEDGER_DB_PASSWORD", "LEDGER_MIGRATION_PASSWORD", "LEDGER_CLIENT_SECRET")
 
 
 def write_private(path: Path, text: str) -> None:
@@ -20,12 +21,18 @@ def main() -> None:
     realm_path = ROOT / ".local/realm/fincore-realm.json"
     if any(p.exists() for p in (env_path, credentials_path, realm_path)):
         if all(p.exists() for p in (env_path, credentials_path, realm_path)):
+            content = env_path.read_text(encoding="utf-8")
+            existing = {line.split("=", 1)[0] for line in content.splitlines() if "=" in line}
+            missing = [key for key in LEDGER_KEYS if key not in existing]
+            if missing:
+                write_private(env_path, content.rstrip() + "\n" + "".join(f"{key}={secrets.token_hex(24)}\n" for key in missing))
+                print("Added ledger configuration; existing secrets and realm retained.")
             print("Existing local configuration retained. Credentials: .local/credentials.json")
             return
         raise SystemExit("Incomplete local configuration. Restore its matching files; do not rotate secrets against an existing database volume.")
     values = {key: secrets.token_hex(24) for key in (
         "POSTGRES_PASSWORD", "CUSTOMER_DB_PASSWORD", "CUSTOMER_MIGRATION_PASSWORD",
-        "KEYCLOAK_DB_PASSWORD", "KEYCLOAK_ADMIN_PASSWORD",
+        "KEYCLOAK_DB_PASSWORD", "KEYCLOAK_ADMIN_PASSWORD", *LEDGER_KEYS,
     )}
     credentials = {name: {"username": f"{name}.demo", "password": secrets.token_hex(16)} for name in ("customer", "admin")}
     template = json.loads((ROOT / "infrastructure/keycloak/fincore-realm.template.json").read_text(encoding="utf-8"))

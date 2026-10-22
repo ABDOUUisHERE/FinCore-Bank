@@ -1,0 +1,155 @@
+openapi: 3.0.3
+info:
+  title: FinCore internal ledger
+  version: 0.2.0
+  description: >-
+    Private technical API; never routed through the public Gateway. Signed tokens
+    require the ledger-service audience, sub, azp and resource_access.ledger-service.roles.
+    JSON amounts are positive decimal strings (MAD/EUR/USD, at most two fractional
+    digits). Available equals booked until reservations are introduced.
+servers:
+  - url: http://ledger-service:8080/internal/v1/ledger
+security:
+  - bearer: []
+paths:
+  /accounts:
+    post:
+      summary: Provision a zero-balance account (ledger.provision)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [externalReference, currency, type]
+              properties:
+                externalReference: {type: string, minLength: 1, maxLength: 120}
+                currency: {$ref: '#/components/schemas/Currency'}
+                type: {type: string, enum: [CUSTOMER_LIABILITY, SETTLEMENT_ASSET, MERCHANT_LIABILITY]}
+                ownerSubject: {type: string, maxLength: 200, description: Defaults to the signed subject; only technical provisioners can set another owner.}
+      responses:
+        '200': {description: "Existing identical or newly provisioned account, including id and guard_revision."}
+        '409': {description: Reference reused with different account attributes.}
+  /accounts/{id}/guard:
+    parameters:
+      - {$ref: '#/components/parameters/Id'}
+    put:
+      summary: Serialize a restriction change with posting (ledger.guard)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [status, expectedRevision]
+              properties:
+                status: {type: string, enum: [ACTIVE, FROZEN, CLOSED]}
+                expectedRevision: {type: integer, format: int64, minimum: 0}
+      responses:
+        '200': {description: Guard updated and revision incremented.}
+        '409': {description: "Stale revision, reopening a closed account, or closing a nonempty account."}
+  /operations:
+    post:
+      summary: Post two balanced entries (ledger.post; DEPOSIT also requires ledger.fund)
+      parameters:
+        - {$ref: '#/components/parameters/Key'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [kind, businessReference, currency, entries]
+              properties:
+                kind: {type: string, enum: [DEPOSIT, TRANSFER, WITHDRAWAL, MERCHANT_PAYMENT]}
+                businessReference: {type: string, minLength: 1, maxLength: 120}
+                currency: {$ref: '#/components/schemas/Currency'}
+                entries:
+                  type: array
+                  minItems: 2
+                  maxItems: 2
+                  items: {$ref: '#/components/schemas/Entry'}
+      responses:
+        '200': {description: "Durable POSTED outcome, including exact replay.", content: {application/json: {schema: {$ref: '#/components/schemas/Outcome'}}}}
+        '400': {description: "Invalid precision, syntax, chart, balance or currency; no outcome stored."}
+        '403': {description: Missing technical scope; no financial command accepted.}
+        '409': {description: Idempotency or business-reference payload conflict.}
+        '422': {description: Durable REJECTED outcome; same identity always replays this rejection., content: {application/json: {schema: {$ref: '#/components/schemas/Outcome'}}}}
+        '503': {description: Retry or lookup using the same identity after lock timeout.}
+  /operations/{reference}:
+    get:
+      summary: Look up a durable outcome for the signed issuer and actor (ledger.read)
+      parameters:
+        - {name: reference, in: path, required: true, schema: {type: string}}
+      responses:
+        '200': {description: Original outcome., content: {application/json: {schema: {$ref: '#/components/schemas/Outcome'}}}}
+        '404': {description: No visible definitive outcome; retry the original command with its original identity.}
+  /accounts/{id}/balance:
+    parameters:
+      - {$ref: '#/components/parameters/Id'}
+    get:
+      summary: Read exact booked/available strings and monotonic account version (ledger.read)
+      responses:
+        '200': {description: Ledger aggregate; privileged technical inspection.}
+        '404': {description: Account not found.}
+  /journals/{id}:
+    parameters:
+      - {$ref: '#/components/parameters/Id'}
+    get:
+      summary: Read an immutable journal and its entries (ledger.read)
+      responses:
+        '200': {description: "Journal with currency, total string, reversal link and entries."}
+        '404': {description: Journal not found.}
+  /journals/{id}/reversal:
+    parameters:
+      - {$ref: '#/components/parameters/Id'}
+    post:
+      summary: Fully compensate an original journal (ledger.post and ledger.reverse)
+      parameters:
+        - {$ref: '#/components/parameters/Key'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [businessReference]
+              properties:
+                businessReference: {type: string, minLength: 1, maxLength: 120}
+      responses:
+        '200': {description: Full inverse journal or original replay.}
+        '422': {description: "Immutable rejection; already reversed, restricted account or insufficient funds."}
+        '409': {description: Identity payload conflict.}
+  /reconciliation:
+    get:
+      summary: Report aggregate differences and invalid journals in one snapshot (ledger.read)
+      responses:
+        '200': {description: balanceDiscrepancies and invalidJournals arrays; both empty indicates this check found no discrepancy.}
+components:
+  securitySchemes:
+    bearer: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    Id: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    Key: {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 1, maxLength: 120}, description: Scoped by signed issuer and operation kind; retained for the dataset lifetime.}
+  schemas:
+    Currency: {type: string, enum: [MAD, EUR, USD]}
+    Entry:
+      type: object
+      additionalProperties: false
+      required: [accountId, side, amount]
+      properties:
+        accountId: {type: string, format: uuid}
+        side: {type: string, enum: [DEBIT, CREDIT]}
+        amount: {type: string, pattern: '^(0|[1-9][0-9]{0,17})(\.[0-9]{1,2})?$', description: "Must be greater than zero; no numeric JSON values, exponents or rounding."}
+    Outcome:
+      type: object
+      required: [operationId, journalId, status, code]
+      properties:
+        operationId: {type: string, format: uuid}
+        journalId: {type: string, format: uuid, nullable: true}
+        status: {type: string, enum: [POSTED, REJECTED]}
+        code: {type: string}

@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: ledger-service
+  datasource:
+    url: ${LEDGER_DATABASE_URL:jdbc:postgresql://localhost:5432/ledger}
+    username: ledger_runtime
+    password: ${LEDGER_DB_PASSWORD}
+    hikari:
+      maximum-pool-size: 10
+      connection-timeout: 5000
+  flyway:
+    enabled: false
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+server:
+  port: ${SERVER_PORT:8082}
+  max-http-request-header-size: 16KB
+fincore:
+  security:
+    issuer: ${OIDC_ISSUER:http://localhost:8180/realms/fincore}
+    jwk-set-uri: ${OIDC_JWKS:http://localhost:8180/realms/fincore/protocol/openid-connect/certs}
+    audience: ledger-service
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
+logging:
+  structured:
+    format:
+      console: ecs

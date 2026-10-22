@@ -1,6 +1,6 @@
-# Local foundation setup
+# Local foundation and ledger setup
 
-Phase 1 provides authentication, protected service communication and two portal shells. Accounts, balances and transfers are not available yet. All identities are synthetic.
+The foundation provides authentication, protected service communication and two portal shells. Phase 2 adds a private technical ledger; browser account and transfer workflows are still upcoming. All identities and money are synthetic.
 
 ## Prerequisites
 
@@ -11,9 +11,10 @@ Git, Python 3.10+ and a running Docker Engine with Docker Compose v2. Allow seve
 ```sh
 git clone https://github.com/ABDOUUisHERE/task-app-management.git
 cd task-app-management
-git switch feature/fincore-foundation
+git switch feature/fincore-ledger
 python scripts/bootstrap-local.py
 docker compose up --build -d --wait --wait-timeout 300
+docker compose run --rm ledger-check
 ```
 
 On Linux/macOS, use `python3` if `python` is not available. Equivalent bootstrap entry points are `sh scripts/bootstrap-local.sh` and `powershell -ExecutionPolicy Bypass -File scripts/bootstrap-local.ps1`.
@@ -31,11 +32,15 @@ The bootstrap writes random secrets to ignored `.env`, synthetic user credential
 
 On Unix, generated files are mode 0600. A network-isolated one-shot `realm-config` container copies the realm into a dedicated named volume, assigning it to Keycloak's non-root UID with mode 0640. This keeps the host credential file private while allowing the container to read it. The init container briefly runs as root for that ownership change; Keycloak and application runtimes remain non-root. A successful exited init container is expected.
 
-Keycloak imports the realm only when it does not already exist. Database initialization scripts run on a fresh volume. To change roles/configuration in an existing environment, apply a deliberate identity/database migration; editing the template alone does not update persisted data.
+Keycloak imports the realm only when it does not already exist. The Phase 2 `ledger-identity` one-shot deliberately configures the private technical client on both fresh and existing realms. It neither rewrites public clients nor reimports users. The local bootstrap appends only missing ledger secrets to `.env`; existing foundation secrets remain stable. `ledger-bootstrap` creates the separate database/roles if absent, and Flyway migrates it. No volume reset is needed to upgrade Phase 1.
 
 ## Service ownership
 
 One local PostgreSQL container hosts separate `customer` and `keycloak` databases. PUBLIC cannot connect to either. Customer runtime can connect only to its own database and SELECT foundation metadata; it cannot create tables, modify metadata or access Keycloak. A one-shot `customer-migrations` container runs Flyway with `customer_migrator`; its successful exit is required before Customer starts. The runtime container has no migration password. An exited migration container with status 0 is expected.
+
+The same container now also hosts an isolated `ledger` database. `ledger_runtime` has SELECT and controlled function execution; `ledger_migrator` owns schema changes. The ledger runtime has no bootstrap or migration password. `ledger-bootstrap`, `ledger-migrations` and `ledger-identity` must exit 0 before it becomes ready. Neither PostgreSQL nor Ledger publishes a host port in Compose. The Gateway has no Ledger route. Run the synthetic HTTP journey from the private network with `docker compose run --rm ledger-check`; it obtains a token in memory and never prints credentials.
+
+The privileged local `fincore-ledger-operator` client is for this isolated technical journey. Do not distribute its secret to portals. Its tokens require the `ledger-service` audience and explicit client roles. The `KEYCLOAK_ADMIN_PASSWORD` is confined to identity configuration; it is never passed to the ledger runtime/check. See [ADR 0005](../fincore/adr/0005-ledger-write-boundary.md) for limitations and future narrower Payment/Account identities.
 
 All published ports bind to loopback. Keycloak uses development HTTP mode for this local environment. This Compose configuration is not an internet-facing production deployment. Gateway's 300-request/minute budget is shared by all requests in that one process and resets on restart; distributed Redis-based limits belong to a later milestone. Declared API bodies above 16 KiB and chunked API requests are rejected. Only the documented GET API is authorized.
 

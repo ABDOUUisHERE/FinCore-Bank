@@ -1,6 +1,6 @@
-# Foundation test guide
+# Foundation and ledger test guide
 
-Run from the repository root. Java 21 and Node 24 are the reference toolchains. Test outcomes are reported separately in [Phase 1 verification](verification/phase-1.md).
+Run from the repository root. Java 21 and Node 24 are the reference toolchains. Actual outcomes are reported in [Phase 1](verification/phase-1.md) and [Phase 2](verification/phase-2.md) verification.
 
 ## Backend
 
@@ -12,7 +12,7 @@ Windows: `mvnw.cmd -B -ntp verify`. The committed Maven Wrapper downloads Maven 
 
 `DatabaseIsolationIT` requires a real Docker engine. It runs PostgreSQL 17, executes the actual container bootstrap script, migrates with Flyway and verifies runtime read permissions, denied writes/DDL and denied Keycloak database access. It fails rather than silently skipping when Docker is unavailable.
 
-For Java compilation, packaging and the 8 security tests without Docker:
+For Java compilation, packaging and unit/security tests without Docker:
 
 ```sh
 ./mvnw -B -ntp verify -DskipITs
@@ -47,8 +47,21 @@ The browser tests use generated synthetic credentials read from the ignored loca
 
 Authentication traces and screenshots remain disabled. The responsive-layout test explicitly captures only a fresh anonymous public workspace at desktop/mobile sizes for the PNG CI artifact; it never captures sign-in forms or authenticated sessions.
 
-No financial correctness, payment, Kafka, load or resilience result can be claimed in Phase 1. Those tests follow the ledger/payments roadmap.
+Phase 1 evidence makes no financial correctness claim. The Phase 2 ledger tests below establish only the kernel's tested behavior, not a complete payment workflow, Kafka delivery or production resilience.
+
+## Ledger kernel
+
+```sh
+./mvnw -B -ntp -pl services/ledger-service -am verify
+docker compose run --rm ledger-check
+```
+
+The Maven module runs Money precision/normalization/overflow tests, signed-RSA HTTP authorization tests and `LedgerDatabaseIT` on a real PostgreSQL 17.11 Testcontainer. The integration suite creates its own randomly named database, migrates with the owner and invokes financial commands with the restricted runtime role. It covers opposing/concurrent debits, duplicate keys and changed transport keys, definitive rejection replay after funding, restriction races, competing full reversals, forbidden SQL mutations, empty/unbalanced/late postings, reconciliation corruption detection, explicit rollback and an injected database failure after balances change. It fails if PostgreSQL cannot start; no automatic Docker-unavailable skip is configured.
+
+The HTTP smoke uses real Keycloak client credentials and the private service. It funds 1,000.00 synthetic MAD, transfers 100.00, checks balances and identity replay/conflict, refuses insufficient funds, compensates exactly once without changing the original journal, applies/reopens a versioned freeze and checks reconciliation. It creates a new synthetic dataset on each run. No public funding or customer payment endpoint exists yet.
+
+For a deliberately isolated native PostgreSQL test lab, `LedgerDatabaseIT` also accepts `LEDGER_TEST_ADMIN_URL`, `LEDGER_TEST_ADMIN_USER`, `LEDGER_TEST_ADMIN_PASSWORD`, `LEDGER_TEST_RUNTIME_PASSWORD` and `LEDGER_TEST_MIGRATION_PASSWORD` via the environment. Use a dedicated lab cluster, never an unrelated application database. The suite creates/drops only its own `ledger_test_<random UUID>` database and preserves existing role passwords. Native PostgreSQL 16.9 results are labeled separately from PostgreSQL 17.11 container evidence. This alternative does not bypass Customer's separate Docker-based isolation test; a full default reactor verify still requires Docker.
 
 ## CI
 
-Backend quality runs Maven `verify` including Testcontainers. Frontend quality runs type checks, ESLint, components, production builds and npm vulnerability checks. Foundation integration builds all application images, generates disposable local configuration, starts the real Compose stack, tests private service rejection and runs real browser PKCE journeys. No workflow merges branches or deploys externally. Backend artifacts contain test reports only; generated env/realm files and browser traces must never be uploaded.
+Backend quality runs Maven `verify` including both PostgreSQL integration suites. Frontend quality runs type checks, ESLint, components, production builds and npm vulnerability checks. Foundation integration builds all application images, generates disposable configuration, starts Compose, runs the signed technical ledger smoke, checks private Customer rejection and runs browser PKCE journeys. No workflow merges branches or deploys externally. Backend artifacts contain test reports only; generated env/realm files and browser traces must never be uploaded.

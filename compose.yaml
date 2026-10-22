@@ -85,6 +85,75 @@ services:
       keycloak: { condition: service_healthy }
       customer-migrations: { condition: service_completed_successfully }
     networks: [backend]
+  ledger-bootstrap:
+    image: postgres:17.11-alpine
+    entrypoint: [/bin/sh, /bootstrap/init-ledger.sh]
+    environment:
+      PGHOST: postgres
+      PGUSER: fincore_bootstrap
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Run local bootstrap first}
+      LEDGER_DB_PASSWORD: ${LEDGER_DB_PASSWORD:?Run local bootstrap first}
+      LEDGER_MIGRATION_PASSWORD: ${LEDGER_MIGRATION_PASSWORD:?Run local bootstrap first}
+    volumes: ["./infrastructure/docker/postgres/init-ledger.sh:/bootstrap/init-ledger.sh:ro"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]
+  ledger-migrations:
+    image: fincore/ledger-service:local
+    build: { context: ., dockerfile: services/ledger-service/Dockerfile }
+    command: [--migrate-only]
+    environment:
+      LEDGER_DATABASE_URL: jdbc:postgresql://postgres:5432/ledger
+      LEDGER_MIGRATION_PASSWORD: ${LEDGER_MIGRATION_PASSWORD:?Run local bootstrap first}
+    healthcheck:
+      disable: true
+    depends_on:
+      ledger-bootstrap: { condition: service_completed_successfully }
+    networks: [backend]
+  ledger-identity:
+    image: python:3.14.2-alpine
+    user: '65534:65534'
+    command: [python, /scripts/configure-ledger-client.py]
+    environment:
+      KEYCLOAK_URL: http://keycloak:8180
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Run local bootstrap first}
+      LEDGER_CLIENT_SECRET: ${LEDGER_CLIENT_SECRET:?Run local bootstrap first}
+    volumes: ["./scripts/configure-ledger-client.py:/scripts/configure-ledger-client.py:ro"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on:
+      keycloak: { condition: service_healthy }
+    networks: [backend]
+  ledger-service:
+    image: fincore/ledger-service:local
+    build: { context: ., dockerfile: services/ledger-service/Dockerfile }
+    environment:
+      SERVER_PORT: '8080'
+      LEDGER_DATABASE_URL: jdbc:postgresql://postgres:5432/ledger
+      LEDGER_DB_PASSWORD: ${LEDGER_DB_PASSWORD:?Run local bootstrap first}
+      OIDC_ISSUER: http://localhost:8180/realms/fincore
+      OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
+    depends_on:
+      ledger-migrations: { condition: service_completed_successfully }
+      ledger-identity: { condition: service_completed_successfully }
+    networks: [backend]
+  ledger-check:
+    image: python:3.14.2-alpine
+    profiles: [tools]
+    user: '65534:65534'
+    command: [python, /scripts/check-ledger.py]
+    environment:
+      KEYCLOAK_URL: http://keycloak:8180
+      LEDGER_URL: http://ledger-service:8080
+      LEDGER_CLIENT_SECRET: ${LEDGER_CLIENT_SECRET:?Run local bootstrap first}
+    volumes: ["./scripts/check-ledger.py:/scripts/check-ledger.py:ro"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on:
+      ledger-service: { condition: service_healthy }
+    networks: [backend]
   api-gateway:
     image: fincore/api-gateway:local
     build: { context: ., dockerfile: services/api-gateway/Dockerfile }

@@ -24,6 +24,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: python3 scripts/check-foundation.py
+      - run: docker compose run --rm ledger-check
       - run: npm run test:e2e
       - if: failure()
         run: python3 scripts/diagnostics.py
