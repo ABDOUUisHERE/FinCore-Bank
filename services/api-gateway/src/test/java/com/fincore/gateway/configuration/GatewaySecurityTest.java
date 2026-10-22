@@ -33,7 +33,10 @@ class GatewaySecurityTest {
     @RestController
     static class Endpoint {
         @GetMapping("/api/v1/customers/me")
-        Map<String, String> me() { return Map.of("subject", "synthetic-customer-id"); }
+        Map<String, String> me(@org.springframework.web.bind.annotation.RequestParam(defaultValue = "false") boolean unavailable) {
+            if (unavailable) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "sensitive internal detail");
+            return Map.of("subject", "synthetic-customer-id");
+        }
     }
 
     @Test void missingAndMalformedTokensAreRejected() {
@@ -69,6 +72,14 @@ class GatewaySecurityTest {
             .header("Access-Control-Request-Method", "GET").exchange().expectStatus().isForbidden();
         http.get().uri("/api/v1/customers/me").header("X-Correlation-ID", "unsafe value")
             .exchange().expectStatus().isUnauthorized().expectHeader().valueMatches("X-Correlation-ID", "[a-f0-9-]{36}");
+    }
+
+    @Test void dependencyErrorsUseRedactedProblemDetails() {
+        http.get().uri("/api/v1/customers/me?unavailable=true")
+            .headers(headers -> headers.setBearerAuth(TestTokens.customer())).exchange()
+            .expectStatus().isEqualTo(503).expectHeader().contentType("application/problem+json")
+            .expectBody().jsonPath("$.status").isEqualTo(503)
+            .jsonPath("$.detail").isEqualTo("The request could not be accepted.");
     }
 
     private WebTestClient.ResponseSpec get(String token) {

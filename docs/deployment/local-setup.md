@@ -29,6 +29,8 @@ Use **localhost**, not `127.0.0.1`, in browser URLs: OIDC redirect URIs, origins
 
 The bootstrap writes random secrets to ignored `.env`, synthetic user credentials to ignored `.local/credentials.json`, and an ignored realm import containing those synthetic users. View the credential file locally to sign in. The infrastructure-admin password is the generated `KEYCLOAK_ADMIN_PASSWORD` in `.env`. Never commit, share, paste into issues or retain these files in CI artifacts. The bootstrap is idempotent: subsequent calls preserve matching files. It refuses an incomplete configuration instead of rotating credentials against an existing volume.
 
+On Unix, generated files are mode 0600. A network-isolated one-shot `realm-config` container copies the realm into a dedicated named volume, assigning it to Keycloak's non-root UID with mode 0640. This keeps the host credential file private while allowing the container to read it. The init container briefly runs as root for that ownership change; Keycloak and application runtimes remain non-root. A successful exited init container is expected.
+
 Keycloak imports the realm only when it does not already exist. Database initialization scripts run on a fresh volume. To change roles/configuration in an existing environment, apply a deliberate identity/database migration; editing the template alone does not update persisted data.
 
 ## Service ownership

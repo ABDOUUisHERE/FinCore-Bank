@@ -12,7 +12,7 @@ credentials_path = root / ".local/credentials.json"
 if credentials_path.exists():
     secret_values.extend(user["password"] for user in json.loads(credentials_path.read_text()).values())
 
-for arguments in [["ps", "-a"], ["logs", "--no-color", "--tail", "100", "keycloak", "postgres", "customer-migrations", "customer-service", "api-gateway"]]:
+for arguments in [["ps", "-a"], ["logs", "--no-color", "--tail", "100", "realm-config", "keycloak", "postgres", "customer-migrations", "customer-service", "api-gateway"]]:
     result = subprocess.run(["docker", "compose", *arguments], cwd=root, capture_output=True, text=True, timeout=30)
     output = result.stdout + result.stderr
     for secret in secret_values:

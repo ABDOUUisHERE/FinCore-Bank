@@ -17,6 +17,19 @@ services:
       timeout: 3s
       retries: 30
     networks: [backend]
+  realm-config:
+    image: quay.io/keycloak/keycloak:26.8.1
+    user: '0:0'
+    entrypoint: [/bin/bash, -ec]
+    command:
+      - >-
+        cp /source/fincore-realm.json /output/fincore-realm.json
+        && chown 1000:0 /output/fincore-realm.json
+        && chmod 0640 /output/fincore-realm.json
+    volumes:
+      - ./.local/realm:/source:ro
+      - realm-data:/output
+    network_mode: none
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.1
     command: [start-dev, --import-realm]
@@ -31,9 +44,10 @@ services:
       KC_HTTP_PORT: "8180"
       KC_HEALTH_ENABLED: "true"
     ports: ["127.0.0.1:8180:8180"]
-    volumes: ["./.local/realm:/opt/keycloak/data/import:ro"]
+    volumes: ["realm-data:/opt/keycloak/data/import:ro"]
     depends_on:
       postgres: { condition: service_healthy }
+      realm-config: { condition: service_completed_successfully }
     healthcheck:
       test:
         [
@@ -101,3 +115,4 @@ networks:
   backend:
 volumes:
   postgres-data:
+  realm-data:
