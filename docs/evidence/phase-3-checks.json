@@ -1,0 +1,178 @@
+{
+  "milestone": "Phase 3 ? owned accounts and recoverable simulated payments",
+  "recorded_at_utc": "2026-10-23",
+  "repository": {
+    "id": 1138747020,
+    "name": "ABDOUUisHERE/FinCore"
+  },
+  "branch": "feature/fincore-accounts-payments",
+  "base_commit": "fc77af44434a546070d970a945342ceb6e94a1d4",
+  "source_commit": "13eae765d971f1fd21e3fe05554117d1ed608d7b",
+  "workflows": [
+    {
+      "id": 39947423388,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "13eae765d971f1fd21e3fe05554117d1ed608d7b",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore/actions/runs/39947423388",
+      "created_at": "2026-10-23T11:37:52Z",
+      "updated_at": "2026-10-23T11:40:13Z"
+    },
+    {
+      "id": 39947423450,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "13eae765d971f1fd21e3fe05554117d1ed608d7b",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore/actions/runs/39947423450",
+      "created_at": "2026-10-23T11:37:52Z",
+      "updated_at": "2026-10-23T11:38:26Z"
+    },
+    {
+      "id": 39947423414,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "13eae765d971f1fd21e3fe05554117d1ed608d7b",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore/actions/runs/39947423414",
+      "created_at": "2026-10-23T11:37:52Z",
+      "updated_at": "2026-10-23T11:43:44Z"
+    }
+  ],
+  "backend": {
+    "tests": 74,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "suite": "com.fincore.gateway.configuration.GatewaySecurityTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.customer.configuration.CurrentSubjectSecurityTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.customer.configuration.DatabaseIsolationIT",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.ledger.InstructionSecurityTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.ledger.LedgerSecurityTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.ledger.MoneyTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.ledger.LedgerDatabaseIT",
+        "tests": 19,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.account.AccountSecurityTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.account.AccountRecoveryIT",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.payment.RiskPolicyTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.payment.PaymentSecurityTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.payment.PaymentIdempotencyTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.payment.PaymentRecoveryIT",
+        "tests": 8,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "database_image": "postgres:17.11-alpine"
+  },
+  "frontend": {
+    "component_tests": 7,
+    "typecheck": "pass",
+    "lint": "pass",
+    "builds": "pass",
+    "dependency_audit": "pass"
+  },
+  "integration": {
+    "compose_images_and_startup": "pass",
+    "customer_independent_authentication": "pass",
+    "legacy_ledger_http_journey": "pass",
+    "browser_pkce_journeys": 5,
+    "two_customer_authorized_payment_journey": "pass",
+    "shutdown": "pass"
+  },
+  "native": {
+    "environment": "Windows, Java 21.0.2, dedicated PostgreSQL 16.9 cluster on port 5548",
+    "unit_security_tests": 43,
+    "ledger_database_tests": 19,
+    "account_database_tests": 3,
+    "payment_database_tests": 8,
+    "final_packages_migrations_readiness": "pass",
+    "final_browser_journeys": 5,
+    "final_browser_suite_seconds": 26.4,
+    "repeated_persisted_configuration_upgrade": "pass",
+    "python_yaml_typescript_lint_and_secret_scan": "pass",
+    "docker_engine": "unresponsive during bounded probes; native execution is not Compose evidence",
+    "cleanup": "Nine verified temporary processes and only the dedicated port-5548 cluster stopped; data and credentials preserved; unrelated Windows PostgreSQL service untouched."
+  },
+  "limitations": [
+    "Synthetic onboarding is not real KYC; risk thresholds are a local demo port.",
+    "Transport/crash windows are injected around real independent PostgreSQL transactions; no full operating-system crash, load or production disaster-recovery claim.",
+    "Customer banking screens remain Phase 4; Kafka delivery/notifications remain Phase 5.",
+    "No production deployment."
+  ]
+}

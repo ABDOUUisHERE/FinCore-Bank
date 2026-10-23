@@ -39,7 +39,7 @@ Signed-RSA direct-service authorization, actor/header spoofing and strict decima
 
 ## F. Implementation status
 
-Implementation complete locally; final source SHA and Linux CI metadata will be recorded after push. Integration into main follows passing checks, matching the requested GitHub workflow.
+Implementation and acceptance checks complete. All three final workflows passed for source commit `13eae765d971f1fd21e3fe05554117d1ed608d7b`. Documentation-only follow-up changes record these results without changing application behavior. The validated branch is integrated into main as requested; no external deployment is performed.
 
 ## G. Verification
 
@@ -53,9 +53,14 @@ Implementation complete locally; final source SHA and Linux CI metadata will be 
 | Final complete browser suite | PASS: all 5 journeys in 26.4s; no retries |
 | TypeScript typecheck and ESLint | PASS |
 | Python compilation, Compose configuration, OpenAPI YAML and generated-secret scan | PASS |
-| Linux PostgreSQL 17.11, full Compose and browser CI | Pending push; no pass claimed yet |
+| [Backend quality](https://github.com/ABDOUUisHERE/FinCore/actions/runs/39947423388) | PASS: 74 cases, no failures/errors/skips; all five application modules and their PostgreSQL 17.11 checks |
+| [Frontend quality](https://github.com/ABDOUUisHERE/FinCore/actions/runs/39947423450) | PASS: typecheck, lint, 7 components, both builds and dependency audit |
+| [Foundation integration](https://github.com/ABDOUUisHERE/FinCore/actions/runs/39947423414) | PASS: all images/one-shots/readiness, private Customer rejection, legacy ledger smoke, 5 browser journeys including the real two-customer financial API journey, captures and clean shutdown |
+| Repeated existing-dataset bootstrap/identity upgrade | PASS: generated env/user/realm files remain byte-identical; business client configuration reruns successfully |
 
-Native verification uses the dedicated repository-local PostgreSQL 16.9 cluster on port 5548. Docker Engine on the workstation remained unresponsive during initial checks; native results are not Compose evidence. Secrets, credentials, bearer tokens and authenticated traces are excluded from committed evidence. A native browser attempt initially timed out waiting for the anonymous sign-in control after application refresh. The test now explicitly waits for visibility and bounds action timeouts; the complete final rerun passed all five journeys with retries disabled. The transient initialization cause was not conclusively reproduced. Exact CI counts and workflow links will supersede the pending entry.
+Native verification uses the dedicated repository-local PostgreSQL 16.9 cluster on port 5548. Docker Engine on the workstation remained unresponsive during initial checks; native results are not Compose evidence. Secrets, credentials, bearer tokens and authenticated traces are excluded from committed evidence. A native browser attempt initially timed out waiting for the anonymous sign-in control after application refresh. The test now explicitly waits for visibility and bounds action timeouts; the complete final rerun passed all five journeys with retries disabled. The transient initialization cause was not conclusively reproduced. The final CI results above supersede that earlier attempt.
+
+The [machine-readable evidence](../evidence/phase-3-checks.json) records the exact source SHA, workflow metadata and suite counts. Image package stages explicitly skip tests; Backend quality independently executes the complete suite. After verification, only the nine verified native lab processes and its dedicated 5548 cluster were stopped; synthetic data and credentials were preserved, and the unrelated Windows PostgreSQL service was untouched.
 
 ## H. Next milestone
 

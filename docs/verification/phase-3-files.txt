@@ -5,6 +5,7 @@ contracts/openapi/business-v1.yaml
 contracts/openapi/customer-v1.yaml
 contracts/openapi/ledger-v1.yaml
 docs/deployment/local-setup.md
+docs/evidence/phase-3-checks.json
 docs/fincore/adr/0006-authorized-payment-instructions.md
 docs/testing.md
 docs/verification/phase-3-files.txt
