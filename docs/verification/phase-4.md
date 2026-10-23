@@ -37,7 +37,15 @@ Preserve the complete financial kernel/security/recovery suite. Add actual Postg
 
 ## F. Status
 
-Local implementation and acceptance checks passed. GitHub verification and integration metadata will be recorded after the source commit is checked remotely.
+Local acceptance and all three GitHub workflows passed for source commit `59a50908d405cca31a8917c0017a705c26abf641`. Integration into main uses a fast-forward of this validated source and the verification documentation.
+
+- [Backend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/39982701238): SUCCESS.
+- [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/39982701270): SUCCESS.
+- [Frontend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/39982701440): SUCCESS.
+
+Remote job logs independently confirm 89 backend tests, 17 frontend cases, zero dependency vulnerabilities and six browser journeys (1.1m).
+
+Machine-readable results: [phase-4-checks.json](../evidence/phase-4-checks.json). Exact changed-file list: [phase-4-files.txt](phase-4-files.txt).
 
 ## G. Observed local verification
 

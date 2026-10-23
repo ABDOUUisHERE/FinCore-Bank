@@ -1,0 +1,346 @@
+{
+  "milestone": "Phase 4: customer banking experience",
+  "recorded_at_utc": "2026-10-23T16:02:38.410651+00:00",
+  "repository": {
+    "id": 1138747020,
+    "name": "ABDOUUisHERE/FinCore-Bank"
+  },
+  "branch": "feature/fincore-customer-experience",
+  "base_commit": "595e747f3d1e8c5c3ba7c798bc5b6209da43b396",
+  "source_commit": "59a50908d405cca31a8917c0017a705c26abf641",
+  "workflows": [
+    {
+      "id": 39982701440,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "59a50908d405cca31a8917c0017a705c26abf641",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/39982701440",
+      "created_at": "2026-10-23T15:57:28Z",
+      "updated_at": "2026-10-23T15:57:57Z",
+      "jobs": [
+        {
+          "id": 120513830995,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/39982701440/job/120513830995"
+        }
+      ]
+    },
+    {
+      "id": 39982701270,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "59a50908d405cca31a8917c0017a705c26abf641",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/39982701270",
+      "created_at": "2026-10-23T15:57:28Z",
+      "updated_at": "2026-10-23T16:02:07Z",
+      "jobs": [
+        {
+          "id": 120513829336,
+          "name": "compose",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/39982701270/job/120513829336"
+        }
+      ]
+    },
+    {
+      "id": 39982701238,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "59a50908d405cca31a8917c0017a705c26abf641",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/39982701238",
+      "created_at": "2026-10-23T15:57:28Z",
+      "updated_at": "2026-10-23T15:59:19Z",
+      "jobs": [
+        {
+          "id": 120513829906,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/39982701238/job/120513829906"
+        }
+      ]
+    }
+  ],
+  "local_backend": {
+    "started_at": "2026-10-23T15:24:39.032631+00:00",
+    "finished_at": "2026-10-23T15:34:25.225858+00:00",
+    "exit_code": 0,
+    "native_database_override": false,
+    "reports": [
+      {
+        "suite": "com.fincore.account.AccountRecoveryIT",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.account.AccountSecurityTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.gateway.configuration.GatewaySecurityTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.beneficiary.BeneficiaryDatabaseIT",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.beneficiary.BeneficiarySecurityTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.customer.configuration.DatabaseIsolationIT",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.customer.configuration.CurrentSubjectSecurityTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.ledger.LedgerDatabaseIT",
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.ledger.InstructionSecurityTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.ledger.LedgerSecurityTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.ledger.MoneyTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.payment.PaymentRecoveryIT",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.payment.PaymentIdempotencyTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.payment.PaymentSecurityTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.payment.RiskPolicyTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "totals": {
+      "tests": 89,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "local_frontend": {
+    "component_tests": 17,
+    "failed": 0,
+    "skipped": 0,
+    "typecheck": "pass",
+    "lint": "pass",
+    "dependency_audit": {
+      "vulnerabilities": 0
+    },
+    "docker_production_builds": "pass"
+  },
+  "local_integration": {
+    "complete_browser_suite": {
+      "passed": 6,
+      "failed": 0,
+      "retries": 0,
+      "reported_duration": "4.4m"
+    },
+    "focused_final_customer_journey": {
+      "passed": 1,
+      "failed": 0,
+      "reported_duration_seconds": 55.5
+    },
+    "final_portal_images_refreshed": true,
+    "foundation_readiness_and_independent_customer_authentication": "pass",
+    "private_funding_same_key_replay": "same confirmed payment and journal",
+    "existing_data_and_credentials_preserved": true,
+    "running_services": [
+      {
+        "service": "account-service",
+        "state": "running",
+        "health": "healthy"
+      },
+      {
+        "service": "admin-portal",
+        "state": "running",
+        "health": "healthy"
+      },
+      {
+        "service": "api-gateway",
+        "state": "running",
+        "health": "healthy"
+      },
+      {
+        "service": "beneficiary-service",
+        "state": "running",
+        "health": "healthy"
+      },
+      {
+        "service": "customer-portal",
+        "state": "running",
+        "health": "healthy"
+      },
+      {
+        "service": "customer-service",
+        "state": "running",
+        "health": "healthy"
+      },
+      {
+        "service": "keycloak",
+        "state": "running",
+        "health": "healthy"
+      },
+      {
+        "service": "ledger-service",
+        "state": "running",
+        "health": "healthy"
+      },
+      {
+        "service": "payment-service",
+        "state": "running",
+        "health": "healthy"
+      },
+      {
+        "service": "postgres",
+        "state": "running",
+        "health": "healthy"
+      }
+    ],
+    "successful_oneshot_jobs": [
+      {
+        "service": "account-migrations",
+        "exit_code": 0
+      },
+      {
+        "service": "beneficiary-bootstrap",
+        "exit_code": 0
+      },
+      {
+        "service": "beneficiary-migrations",
+        "exit_code": 0
+      },
+      {
+        "service": "business-bootstrap",
+        "exit_code": 0
+      },
+      {
+        "service": "business-identity",
+        "exit_code": 0
+      },
+      {
+        "service": "customer-migrations",
+        "exit_code": 0
+      },
+      {
+        "service": "ledger-bootstrap",
+        "exit_code": 0
+      },
+      {
+        "service": "ledger-identity",
+        "exit_code": 0
+      },
+      {
+        "service": "ledger-migrations",
+        "exit_code": 0
+      },
+      {
+        "service": "payment-migrations",
+        "exit_code": 0
+      },
+      {
+        "service": "realm-config",
+        "exit_code": 0
+      }
+    ],
+    "manual_visual_inspection": [
+      "synthetic desktop dashboard",
+      "synthetic mobile dashboard",
+      "synthetic mobile dark mode"
+    ]
+  },
+  "limitations": [
+    "Synthetic identities and money; onboarding is not real KYC.",
+    "One unresolved transfer draft per subject/tab; no cross-device recovery.",
+    "CSV contains loaded filtered rows and is not a bank statement.",
+    "Review reserves no funds; address-book disablement is not a financial freeze.",
+    "Kafka notification delivery and operational review remain later milestones.",
+    "No production deployment or performance claim."
+  ],
+  "remote_observed_checks": {
+    "backend": {
+      "tests": 89,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frontend": {
+      "tests": 17,
+      "dependency_vulnerabilities": 0
+    },
+    "foundation": {
+      "browser_journeys": 6,
+      "reported_duration": "1.1m",
+      "ledger_http_journey": "pass",
+      "independent_customer_authentication": "pass"
+    }
+  }
+}
