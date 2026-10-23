@@ -6,6 +6,7 @@ spring:
     username: ledger_runtime
     password: ${LEDGER_DB_PASSWORD}
     hikari:
+      connection-init-sql: SET TIME ZONE 'UTC'
       maximum-pool-size: 10
       connection-timeout: 5000
   flyway:

@@ -5,7 +5,9 @@ from pathlib import Path
 import secrets
 
 ROOT = Path(__file__).resolve().parents[1]
-LEDGER_KEYS = ("LEDGER_DB_PASSWORD", "LEDGER_MIGRATION_PASSWORD", "LEDGER_CLIENT_SECRET")
+LEDGER_KEYS = ("LEDGER_DB_PASSWORD", "LEDGER_MIGRATION_PASSWORD", "LEDGER_CLIENT_SECRET",
+    "ACCOUNT_DB_PASSWORD", "ACCOUNT_MIGRATION_PASSWORD", "ACCOUNT_CLIENT_SECRET",
+    "PAYMENT_DB_PASSWORD", "PAYMENT_MIGRATION_PASSWORD", "PAYMENT_CLIENT_SECRET", "PAYMENT_OPERATOR_SECRET", "RECIPIENT_PASSWORD")
 
 
 def write_private(path: Path, text: str) -> None:
@@ -26,7 +28,12 @@ def main() -> None:
             missing = [key for key in LEDGER_KEYS if key not in existing]
             if missing:
                 write_private(env_path, content.rstrip() + "\n" + "".join(f"{key}={secrets.token_hex(24)}\n" for key in missing))
-                print("Added ledger configuration; existing secrets and realm retained.")
+                print("Added missing service configuration; existing secrets and realm retained.")
+            credentials = json.loads(credentials_path.read_text(encoding="utf-8"))
+            if "recipient" not in credentials:
+                env_values = dict(line.split("=", 1) for line in env_path.read_text().splitlines() if "=" in line and not line.startswith("#"))
+                credentials["recipient"] = {"username": "recipient.demo", "password": env_values["RECIPIENT_PASSWORD"]}
+                write_private(credentials_path, json.dumps(credentials, indent=2) + "\n")
             print("Existing local configuration retained. Credentials: .local/credentials.json")
             return
         raise SystemExit("Incomplete local configuration. Restore its matching files; do not rotate secrets against an existing database volume.")
@@ -35,11 +42,12 @@ def main() -> None:
         "KEYCLOAK_DB_PASSWORD", "KEYCLOAK_ADMIN_PASSWORD", *LEDGER_KEYS,
     )}
     credentials = {name: {"username": f"{name}.demo", "password": secrets.token_hex(16)} for name in ("customer", "admin")}
+    credentials["recipient"] = {"username": "recipient.demo", "password": values["RECIPIENT_PASSWORD"]}
     template = json.loads((ROOT / "infrastructure/keycloak/fincore-realm.template.json").read_text(encoding="utf-8"))
     template["users"] = [{
         "username": data["username"], "enabled": True, "emailVerified": True,
         "email": f"{name}@example.invalid", "firstName": "Synthetic", "lastName": name.title(),
-        "realmRoles": [name.upper()],
+        "realmRoles": ["ADMIN" if name == "admin" else "CUSTOMER"],
         "credentials": [{"type": "password", "value": data["password"], "temporary": False}],
     } for name, data in credentials.items()]
     write_private(env_path, "".join(f"{key}={value}\n" for key, value in values.items()))

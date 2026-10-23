@@ -21,6 +21,7 @@ public class CorrelationFilter extends OncePerRequestFilter {
         String incoming = request.getHeader("X-Correlation-ID");
         String id = incoming != null && incoming.matches("[A-Za-z0-9._-]{1,64}") ? incoming : UUID.randomUUID().toString();
         response.setHeader("X-Correlation-ID", id);
+        request.setAttribute("correlationId", id);
         MDC.put("correlationId", id);
         try {
             chain.doFilter(request, response);

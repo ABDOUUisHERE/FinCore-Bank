@@ -1,0 +1,227 @@
+openapi: 3.0.3
+info:
+  title: FinCore owned accounts and simulated payments
+  version: 0.3.0
+  description: >-
+    Public routes require CUSTOMER. Private operator routes require their explicit client roles.
+    Payment acceptance is not completion; poll until COMPLETED with a confirmed journalId.
+servers:
+  - url: http://localhost:8280
+security:
+  - bearer: []
+paths:
+  /api/v1/accounts:
+    get:
+      summary: List only owned accounts, at most 50
+      parameters: [{$ref: '#/components/parameters/After'}]
+      responses: {'200': {description: items and nullable nextCursor}}
+    post:
+      summary: Provision an owned zero-balance account after onboarding
+      parameters: [{$ref: '#/components/parameters/Key'}]
+      requestBody: {$ref: '#/components/requestBodies/Account'}
+      responses:
+        '201': {description: Ledger provisioning confirmed}
+        '202': {description: Durable provisioning pending; poll the account}
+        '409': {description: Key reused with different currency}
+  /api/v1/accounts/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      summary: Read owned account metadata and current version
+      responses: {'200': {description: Account metadata}, '404': {description: No visible account}}
+  /api/v1/accounts/{id}/balance:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      summary: Read the authoritative ledger balance
+      responses:
+        '200': {description: Exact string booked/available balances with currency and ledger version}
+        '404': {description: No visible account}
+        '409': {description: Provisioning not yet confirmed}
+  /api/v1/accounts/{id}/transactions:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      summary: Read owned ledger history, at most 50
+      parameters:
+        - {name: before, in: query, schema: {type: string, format: uuid}}
+      responses: {'200': {description: items and nullable nextCursor; exact amount strings and UTC timestamps}}
+  /api/v1/accounts/{id}/guard:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    put:
+      summary: Apply a versioned restriction and report its effective status
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [status, expectedVersion]
+              properties:
+                status: {type: string, enum: [ACTIVE, FROZEN, CLOSED]}
+                expectedVersion: {type: integer, format: int64, minimum: 0}
+      responses:
+        '200': {description: Ledger guard confirmed}
+        '202': {description: Guard intent remains pending; status is GUARD_PENDING}
+        '409': {description: Version conflict or nonempty closure}
+  /api/v1/transfers:
+    get:
+      summary: List only owned transfer resources, at most 50
+      parameters: [{$ref: '#/components/parameters/After'}]
+      responses: {'200': {description: items and nullable nextCursor}}
+    post:
+      summary: Authorize a customer transfer and persist its workflow
+      parameters: [{$ref: '#/components/parameters/Key'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/Transfer'}
+      responses:
+        '202':
+          description: Recorded initial response; identical keys replay this response even after completion
+          headers:
+            Location: {schema: {type: string}}
+            Retry-After: {schema: {type: string}}
+        '400': {description: Invalid syntax or money precision}
+        '404': {description: Source inaccessible or destination unavailable}
+        '409': {description: Same identity with changed canonical payload}
+        '422': {description: Restriction or currency mismatch before acceptance}
+        '503': {description: Authorization dependency unavailable; retry the original identity}
+  /api/v1/transfers/{id}:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      summary: Read the known owned payment state
+      responses:
+        '200':
+          description: Only COMPLETED with a journalId confirms posting
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Payment'}
+        '404': {description: No visible payment}
+  /api/v1/transfers/{id}/history:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      summary: Read append-only owned payment state history
+      responses: {'200': {description: items ordered by version}}
+  /api/v1/transfers/{id}/cancel:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      summary: Cancel before PROCESSING using the current version
+      requestBody: {$ref: '#/components/requestBodies/Version'}
+      responses:
+        '200': {description: REJECTED with CANCELLED reason}
+        '409': {description: Stale version or financial execution already started}
+  /internal/v1/payments/funding:
+    servers: [{url: 'http://payment-service:8080'}]
+    post:
+      summary: Synthetic funding; payment.fund technical scope
+      parameters: [{$ref: '#/components/parameters/Key'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [destinationAccountId, amount, currency]
+              properties:
+                destinationAccountId: {type: string, format: uuid}
+                amount: {$ref: '#/components/schemas/Amount'}
+                currency: {$ref: '#/components/schemas/Currency'}
+                reference: {type: string, maxLength: 140}
+      responses: {'202': {description: Initial recorded funding intent}}
+  /internal/v1/payments/{id}/reversal:
+    servers: [{url: 'http://payment-service:8080'}]
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      summary: Full compensation; payment.reverse technical scope
+      parameters: [{$ref: '#/components/parameters/Key'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {type: object, additionalProperties: false, maxProperties: 0}
+      responses: {'202': {description: Initial reversal intent}, '409': {description: State or identity conflict}}
+  /internal/v1/payments/{id}/decision:
+    servers: [{url: 'http://payment-service:8080'}]
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    post:
+      summary: Review a pending payment; payment.review technical scope
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion, approve, reason]
+              properties:
+                expectedVersion: {type: integer, format: int64, minimum: 0}
+                approve: {type: boolean}
+                reason: {type: string, pattern: '^[A-Z_]{3,80}$'}
+      responses: {'200': {description: Approval returns to validation; rejection moves to REJECTED}}
+  /internal/v1/payments/{id}:
+    servers: [{url: 'http://payment-service:8080'}]
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      summary: Inspect payment; payment.inspect technical scope
+      responses: {'200': {description: Known payment state}}
+components:
+  securitySchemes:
+    bearer: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    Id: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    Key:
+      name: Idempotency-Key
+      in: header
+      required: true
+      schema: {type: string, pattern: '^[A-Za-z0-9._:-]{1,120}$'}
+      description: Reuse this key after timeouts; identities are retained for the dataset lifetime
+    After: {name: after, in: query, schema: {type: string, format: uuid}}
+  requestBodies:
+    Account:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [currency]
+            properties:
+              currency: {$ref: '#/components/schemas/Currency'}
+    Version:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            additionalProperties: false
+            required: [expectedVersion]
+            properties:
+              expectedVersion: {type: integer, format: int64, minimum: 0}
+  schemas:
+    Amount:
+      type: string
+      pattern: '^(0|[1-9][0-9]{0,17})(\.[0-9]{1,2})?$'
+      description: Greater than zero; exact decimal text without floating-point JSON or rounding
+    Currency: {type: string, enum: [MAD, EUR, USD]}
+    Transfer:
+      type: object
+      additionalProperties: false
+      required: [sourceAccountId, destinationAccountId, amount, currency]
+      properties:
+        sourceAccountId: {type: string, format: uuid}
+        destinationAccountId: {type: string, format: uuid}
+        amount: {$ref: '#/components/schemas/Amount'}
+        currency: {$ref: '#/components/schemas/Currency'}
+        reference: {type: string, maxLength: 140}
+    Payment:
+      type: object
+      properties:
+        paymentId: {type: string, format: uuid}
+        kind: {type: string, enum: [TRANSFER, DEPOSIT, REVERSAL]}
+        status: {type: string, enum: [CREATED, VALIDATING, PENDING_RISK_REVIEW, PROCESSING, COMPLETED, FAILED, REJECTED, REVERSAL_PENDING, REVERSED]}
+        version: {type: integer, format: int64}
+        amount: {$ref: '#/components/schemas/Amount'}
+        currency: {$ref: '#/components/schemas/Currency'}
+        journalId: {type: string, format: uuid, nullable: true}
+        code: {type: string, nullable: true}

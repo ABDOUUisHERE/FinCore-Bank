@@ -2,7 +2,9 @@
 
 Distributed digital banking and payment processing **simulation**, using synthetic customers and simulated money exclusively.
 
-**Status: Phase 2 — internal double-entry ledger implemented; verification recorded below.** The foundation includes two React workspaces, Keycloak, independently protected Java services and isolated databases. The new private ledger supports exact money, atomic balanced postings, concurrent debit protection, durable idempotency, versioned guards, full reversals and reconciliation. Customer-facing accounts and payments remain Phase 3. GitHub now names this same repository `ABDOUUisHERE/FinCore`; the former URL redirects to it.
+**Status: Phase 3 ? owned accounts and recoverable simulated payments.** Customer onboarding, account ownership/provisioning/restrictions, authoritative ledger balances/history, signed actor authorization, risk-policy decisions and durable payment/reversal recovery are implemented. The React workspaces remain authentication shells; customer banking screens are Phase 4. See the [Phase 3 verification report](docs/verification/phase-3.md) for actual test results and limitations.
+
+GitHub's canonical repository is `ABDOUUisHERE/FinCore`.
 
 ## Quick start
 
@@ -11,7 +13,7 @@ Requires Git, Python 3.10+ and a running Docker Engine with Compose v2.
 ```sh
 git clone https://github.com/ABDOUUisHERE/FinCore.git
 cd FinCore
-git switch feature/fincore-ledger
+git switch main
 python scripts/bootstrap-local.py
 docker compose up --build -d --wait --wait-timeout 300
 docker compose run --rm ledger-check
@@ -21,7 +23,7 @@ Open **http://localhost:5173** for the customer workspace or **http://localhost:
 
 Stop with `docker compose down`. The named PostgreSQL volume survives normal shutdown. This loopback-only environment uses simulated identities and development HTTP; external deployment is outside this milestone.
 
-## Foundation architecture
+## Incremental architecture
 
 ![FinCore public workspace captured during the real native foundation verification](docs/evidence/foundation-desktop.png)
 
@@ -36,8 +38,14 @@ flowchart LR
   Service --> CDB[(Private customer database)]
   Keycloak --> KDB[(Private identity database)]
   Migration[One-shot Flyway migration] --> CDB
-  Operator[Private technical operator] --> Ledger[Ledger resource server]
+  Gateway --> Account[Account service]
+  Gateway --> Payment[Payment service]
+  Account --> ADB[(Private account database)]
+  Payment --> PDB[(Private payment database)]
+  Account --> Ledger[Authoritative ledger]
+  Payment --> Ledger
   Ledger --> LDB[(Private ledger database)]
+  Operator[Private simulation operator] --> Payment
   Operator --> Keycloak
 ```
 
@@ -45,7 +53,7 @@ Both Gateway and Customer independently validate signed JWTs, issuer, audience, 
 
 ## Architecture review
 
-The architecture was approved before implementation. The [Phase 0 review](docs/fincore/README.md) is the historical proposal. [Phase 1 verification](docs/verification/phase-1.md) preserves foundation evidence; [Phase 2 verification](docs/verification/phase-2.md) records the ledger milestone, actual results and limits. [Ledger API](contracts/openapi/ledger-v1.yaml) and [write-boundary ADR](docs/fincore/adr/0005-ledger-write-boundary.md) describe its contract and guarantees.
+The architecture was approved before implementation. The [Phase 0 review](docs/fincore/README.md) is the historical proposal. [Phase 1 verification](docs/verification/phase-1.md) preserves foundation evidence; [Phase 2 verification](docs/verification/phase-2.md) records the ledger milestone, actual results and limits. [Account/Payment API](contracts/openapi/business-v1.yaml), [Ledger API](contracts/openapi/ledger-v1.yaml) and [write-boundary ADR](docs/fincore/adr/0005-ledger-write-boundary.md) describe its contract and guarantees.
 
 | Document | Contents |
 | --- | --- |
@@ -76,7 +84,7 @@ npm run build
 npm audit --audit-level=high
 ```
 
-Use `mvnw.cmd` on Windows. Maven integration tests use real PostgreSQL through Docker; `-DskipITs` explicitly omits them. Once the stack is running, `docker compose run --rm ledger-check` tests the private financial API with a real technical token. `python scripts/check-foundation.py` and `npm run test:e2e` check private Customer rejection and browser PKCE login (install Chromium with `npx playwright install chromium`). See the [test guide](docs/testing.md) and [ledger verification](docs/verification/phase-2.md) for actual outcomes. GitHub Actions runs backend, frontend and Compose/browser/ledger checks; no automatic deployment is configured.
+Use `mvnw.cmd` on Windows. Maven integration tests use real PostgreSQL through Docker; `-DskipITs` explicitly omits them. Once the stack is running, `docker compose run --rm ledger-check` tests the private financial API with a real technical token. `python scripts/check-foundation.py` and `npm run test:e2e` check private Customer rejection and browser PKCE login (install Chromium with `npx playwright install chromium`). The browser suite also completes a two-customer financial API journey using real PKCE tokens and the private check runner. See the [test guide](docs/testing.md) and [current verification](docs/verification/phase-3.md) for actual outcomes. GitHub Actions runs backend, frontend and Compose/browser/ledger checks; no automatic deployment is configured.
 
 Do not use the Core5G simulator from the previously selected workspace as FinCore runtime or evidence: it is a separate project and repository.
 

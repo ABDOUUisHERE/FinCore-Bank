@@ -1,6 +1,7 @@
 FROM maven:3.9.9-eclipse-temurin-21 AS build
 WORKDIR /build
 COPY pom.xml ./
+COPY libraries ./libraries
 COPY services ./services
 RUN mvn -B -pl services/customer-service -am package -DskipTests
 FROM eclipse-temurin:21.0.12.1_1-jre-alpine-3.24

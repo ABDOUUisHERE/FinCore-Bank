@@ -53,6 +53,9 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me").hasRole("CUSTOMER")
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me/profile").hasRole("CUSTOMER")
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/customers/me/onboarding").hasRole("CUSTOMER")
+                .requestMatchers(org.springframework.http.HttpMethod.PATCH, "/api/v1/customers/me/profile").hasRole("CUSTOMER")
                 .anyRequest().denyAll())
             .oauth2ResourceServer(resource -> resource.jwt(jwt -> jwt.jwtAuthenticationConverter(converter))
                 .authenticationEntryPoint((request, response, exception) -> problem(request, response, 401)))

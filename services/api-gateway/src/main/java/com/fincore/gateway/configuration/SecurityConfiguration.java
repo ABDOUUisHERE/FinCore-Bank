@@ -39,9 +39,9 @@ public class SecurityConfiguration {
             @Value("${fincore.security.origins}") List<String> origins) {
         var cors = new CorsConfiguration();
         cors.setAllowedOrigins(origins);
-        cors.setAllowedMethods(List.of("GET", "OPTIONS"));
-        cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Correlation-ID"));
-        cors.setExposedHeaders(List.of("X-Correlation-ID"));
+        cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "OPTIONS"));
+        cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Correlation-ID", "Idempotency-Key"));
+        cors.setExposedHeaders(List.of("X-Correlation-ID", "Location", "Retry-After"));
         var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", cors);
         var converter = new JwtAuthenticationConverter();
@@ -57,6 +57,10 @@ public class SecurityConfiguration {
             .authorizeExchange(auth -> auth
                 .pathMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .pathMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me").hasRole("CUSTOMER")
+                .pathMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me/profile", "/api/v1/accounts", "/api/v1/accounts/*", "/api/v1/accounts/*/balance", "/api/v1/accounts/*/transactions", "/api/v1/transfers", "/api/v1/transfers/*", "/api/v1/transfers/*/history").hasRole("CUSTOMER")
+                .pathMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/customers/me/onboarding", "/api/v1/accounts", "/api/v1/transfers", "/api/v1/transfers/*/cancel").hasRole("CUSTOMER")
+                .pathMatchers(org.springframework.http.HttpMethod.PATCH, "/api/v1/customers/me/profile").hasRole("CUSTOMER")
+                .pathMatchers(org.springframework.http.HttpMethod.PUT, "/api/v1/accounts/*/guard").hasRole("CUSTOMER")
                 .anyExchange().denyAll())
             .oauth2ResourceServer(resource -> resource.jwt(jwt -> jwt.jwtAuthenticationConverter(
                 new ReactiveJwtAuthenticationConverterAdapter(converter)))

@@ -235,4 +235,42 @@ class LedgerDatabaseIT {
             return List.of(a.get(20,TimeUnit.SECONDS),b.get(20,TimeUnit.SECONDS));
         }
     }
+    JsonNode authorize(UUID id,String actor,String key,UUID debit,UUID credit,String amount){
+        String value=runtime.queryForObject("select ledger.authorize_instruction(?,?,?,?,?,?,?,?,?,?::jsonb,null)::text",String.class,id,"fincore-payment",actor,key,"TRANSFER",debit,credit,amount,"MAD","{\"source\":\"synthetic-test\"}");
+        try{return JSON.readTree(value);}catch(java.io.IOException error){throw new IllegalStateException(error);}
+    }
+    JsonNode execute(UUID id,java.time.Instant expires){
+        String value=runtime.queryForObject("select ledger.execute_instruction(?,?,?::timestamptz)::text",String.class,"fincore-payment",id,expires.toString());
+        try{return JSON.readTree(value);}catch(java.io.IOException error){throw new IllegalStateException(error);}
+    }
+    @Test void durableAuthorizationBindsActorAndWorkerExecutesExactlyOnce()throws Exception{
+        UUID a=customer(),b=customer(),instruction=UUID.randomUUID();fund(a,"100");String key=id();
+        assertThatThrownBy(()->authorize(instruction,"forged-owner",key,a,b,"10")).hasMessageContaining("INSTRUCTION_NOT_AUTHORIZED");
+        var receipt=authorize(instruction,ACTOR,key,a,b,"10");
+        assertThat(authorize(instruction,ACTOR,key,a,b,"10.00")).isEqualTo(receipt);
+        assertThat(balance(a)).isEqualTo("100.00");
+        assertThatThrownBy(()->authorize(instruction,ACTOR,key,a,b,"11")).hasMessageContaining("IDEMPOTENCY_CONFLICT");
+        var results=race(()->execute(instruction,java.time.Instant.now().plusSeconds(30)),()->execute(instruction,java.time.Instant.now().plusSeconds(30)));
+        assertThat(results.getFirst()).isEqualTo(results.getLast());assertThat(balance(a)).isEqualTo("90.00");assertThat(balance(b)).isEqualTo("10.00");
+        assertThat(runtime.queryForObject("select actor from ledger.operation where issuer='fincore-payment' and business_reference=?",String.class,instruction.toString())).isEqualTo(ACTOR);
+        assertThatThrownBy(()->runtime.queryForObject("select ledger.execute_instruction('another-service',?,now()+interval '30 seconds')",String.class,instruction)).hasMessageContaining("INSTRUCTION_NOT_FOUND");
+        assertThatThrownBy(()->owner.execute("delete from ledger.instruction")).hasMessageContaining("IMMUTABLE_FINANCIAL_RECORD");cleanReconciliation();
+    }
+    @Test void expiredAssessmentDoesNotConsumeIdentityAndFreshAssessmentCanResume(){
+        UUID a=customer(),b=customer(),instruction=UUID.randomUUID();fund(a,"100");authorize(instruction,ACTOR,id(),a,b,"10");
+        long journals=count("journal");
+        assertThatThrownBy(()->execute(instruction,java.time.Instant.now().minusSeconds(1))).hasMessageContaining("ASSESSMENT_EXPIRED");
+        assertThat(count("journal")).isEqualTo(journals);assertThat(balance(a)).isEqualTo("100.00");
+        assertThat(execute(instruction,java.time.Instant.now().plusSeconds(30)).path("status").asText()).isEqualTo("POSTED");cleanReconciliation();
+    }
+    @Test void assessmentExpiryDuringBalanceContentionRollsBackAtJournalInsertion()throws Exception{
+        UUID a=customer(),b=customer(),instruction=UUID.randomUUID();fund(a,"100");authorize(instruction,ACTOR,id(),a,b,"10");
+        try(var blocker=DriverManager.getConnection(url,"ledger_migrator",MIGRATOR);var executor=Executors.newVirtualThreadPerTaskExecutor()){
+            blocker.setAutoCommit(false);try(var lock=blocker.prepareStatement("select 1 from ledger.account where id=? for update")){lock.setObject(1,a);lock.executeQuery().close();}
+            var future=executor.submit(()->execute(instruction,java.time.Instant.now().plusMillis(150)));
+            Thread.sleep(400);blocker.commit();assertThatThrownBy(()->future.get(10,TimeUnit.SECONDS)).hasStackTraceContaining("ASSESSMENT_EXPIRED");
+        }
+        assertThat(balance(a)).isEqualTo("100.00");assertThat(balance(b)).isEqualTo("0.00");
+        assertThat(execute(instruction,java.time.Instant.now().plusSeconds(30)).path("status").asText()).isEqualTo("POSTED");cleanReconciliation();
+    }
 }

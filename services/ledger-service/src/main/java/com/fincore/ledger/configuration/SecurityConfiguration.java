@@ -41,7 +41,7 @@ public class SecurityConfiguration {
         if (resources == null || !(resources.get("ledger-service") instanceof Map<?, ?> client)
             || !(client.get("roles") instanceof List<?> values)) return List.of();
         return values.stream().filter(String.class::isInstance).map(String.class::cast)
-            .filter(role -> List.of("ledger.provision", "ledger.guard", "ledger.post", "ledger.fund", "ledger.reverse", "ledger.read").contains(role))
+            .filter(role -> List.of("ledger.provision", "ledger.guard", "ledger.post", "ledger.fund", "ledger.reverse", "ledger.read", "ledger.prepare", "ledger.prepare.fund", "ledger.prepare.reverse", "ledger.execute", "ledger.instructions.read").contains(role))
             .distinct().<GrantedAuthority>map(SimpleGrantedAuthority::new).toList();
     }
 
@@ -53,6 +53,10 @@ public class SecurityConfiguration {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/internal/v1/ledger/instructions").hasAnyAuthority("ledger.prepare", "ledger.prepare.fund", "ledger.prepare.reverse")
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/internal/v1/ledger/instructions/*/execute").hasAuthority("ledger.execute")
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/internal/v1/ledger/settlement/*").hasAuthority("ledger.execute")
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/internal/v1/ledger/instructions", "/internal/v1/ledger/instructions/*").hasAuthority("ledger.instructions.read")
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/internal/v1/ledger/**").hasAuthority("ledger.read")
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/internal/v1/ledger/accounts").hasAuthority("ledger.provision")
                 .requestMatchers(org.springframework.http.HttpMethod.PUT, "/internal/v1/ledger/accounts/*/guard").hasAuthority("ledger.guard")

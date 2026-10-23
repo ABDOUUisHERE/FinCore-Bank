@@ -154,17 +154,138 @@ services:
     depends_on:
       ledger-service: { condition: service_healthy }
     networks: [backend]
+  business-bootstrap:
+    image: postgres:17.11-alpine
+    entrypoint: [/bin/sh, /bootstrap/init-business.sh]
+    environment:
+      PGHOST: postgres
+      PGUSER: fincore_bootstrap
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Run local bootstrap first}
+      ACCOUNT_DB_PASSWORD: ${ACCOUNT_DB_PASSWORD:?Run local bootstrap first}
+      ACCOUNT_MIGRATION_PASSWORD: ${ACCOUNT_MIGRATION_PASSWORD:?Run local bootstrap first}
+      PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD:?Run local bootstrap first}
+      PAYMENT_MIGRATION_PASSWORD: ${PAYMENT_MIGRATION_PASSWORD:?Run local bootstrap first}
+    volumes: ["./infrastructure/docker/postgres/init-business.sh:/bootstrap/init-business.sh:ro"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]
+  business-identity:
+    image: python:3.14.2-alpine
+    user: '65534:65534'
+    command: [python, /scripts/configure-business-clients.py]
+    environment:
+      KEYCLOAK_URL: http://keycloak:8180
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Run local bootstrap first}
+      ACCOUNT_CLIENT_SECRET: ${ACCOUNT_CLIENT_SECRET:?Run local bootstrap first}
+      PAYMENT_CLIENT_SECRET: ${PAYMENT_CLIENT_SECRET:?Run local bootstrap first}
+      PAYMENT_OPERATOR_SECRET: ${PAYMENT_OPERATOR_SECRET:?Run local bootstrap first}
+      RECIPIENT_PASSWORD: ${RECIPIENT_PASSWORD:?Run local bootstrap first}
+    volumes: ["./scripts/configure-business-clients.py:/scripts/configure-business-clients.py:ro"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on:
+      ledger-identity: { condition: service_completed_successfully }
+    networks: [backend]
+  account-migrations:
+    image: fincore/account-service:local
+    build: { context: ., dockerfile: services/account-service/Dockerfile }
+    command: [--migrate-only]
+    environment:
+      ACCOUNT_DATABASE_URL: jdbc:postgresql://postgres:5432/account
+      ACCOUNT_MIGRATION_PASSWORD: ${ACCOUNT_MIGRATION_PASSWORD:?Run local bootstrap first}
+    healthcheck:
+      disable: true
+    depends_on:
+      business-bootstrap: { condition: service_completed_successfully }
+    networks: [backend]
+  account-service:
+    image: fincore/account-service:local
+    build: { context: ., dockerfile: services/account-service/Dockerfile }
+    environment:
+      SERVER_PORT: '8080'
+      ACCOUNT_DATABASE_URL: jdbc:postgresql://postgres:5432/account
+      ACCOUNT_DB_PASSWORD: ${ACCOUNT_DB_PASSWORD:?Run local bootstrap first}
+      ACCOUNT_CLIENT_SECRET: ${ACCOUNT_CLIENT_SECRET:?Run local bootstrap first}
+      TOKEN_ENDPOINT: http://keycloak:8180/realms/fincore/protocol/openid-connect/token
+      LEDGER_URL: http://ledger-service:8080
+      CUSTOMER_URL: http://customer-service:8080
+      ACCOUNT_URL: http://account-service:8080
+      OIDC_ISSUER: http://localhost:8180/realms/fincore
+      OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
+    depends_on:
+      account-migrations: { condition: service_completed_successfully }
+      business-identity: { condition: service_completed_successfully }
+      ledger-service: { condition: service_healthy }
+      customer-service: { condition: service_healthy }
+    networks: [backend]
+  payment-migrations:
+    image: fincore/payment-service:local
+    build: { context: ., dockerfile: services/payment-service/Dockerfile }
+    command: [--migrate-only]
+    environment:
+      PAYMENT_DATABASE_URL: jdbc:postgresql://postgres:5432/payment
+      PAYMENT_MIGRATION_PASSWORD: ${PAYMENT_MIGRATION_PASSWORD:?Run local bootstrap first}
+    healthcheck:
+      disable: true
+    depends_on:
+      business-bootstrap: { condition: service_completed_successfully }
+    networks: [backend]
+  payment-service:
+    image: fincore/payment-service:local
+    build: { context: ., dockerfile: services/payment-service/Dockerfile }
+    environment:
+      SERVER_PORT: '8080'
+      PAYMENT_DATABASE_URL: jdbc:postgresql://postgres:5432/payment
+      PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD:?Run local bootstrap first}
+      PAYMENT_CLIENT_SECRET: ${PAYMENT_CLIENT_SECRET:?Run local bootstrap first}
+      TOKEN_ENDPOINT: http://keycloak:8180/realms/fincore/protocol/openid-connect/token
+      LEDGER_URL: http://ledger-service:8080
+      CUSTOMER_URL: http://customer-service:8080
+      ACCOUNT_URL: http://account-service:8080
+      OIDC_ISSUER: http://localhost:8180/realms/fincore
+      OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
+    depends_on:
+      payment-migrations: { condition: service_completed_successfully }
+      business-identity: { condition: service_completed_successfully }
+      ledger-service: { condition: service_healthy }
+      account-service: { condition: service_healthy }
+    networks: [backend]
+  business-check:
+    image: python:3.14.2-alpine
+    profiles: [tools]
+    user: '65534:65534'
+    command: [python, /scripts/check-business.py]
+    stdin_open: true
+    environment:
+      KEYCLOAK_URL: http://keycloak:8180
+      API_URL: http://api-gateway:8080
+      PAYMENT_URL: http://payment-service:8080
+      LEDGER_URL: http://ledger-service:8080
+      PAYMENT_OPERATOR_SECRET: ${PAYMENT_OPERATOR_SECRET:?Run local bootstrap first}
+      LEDGER_CLIENT_SECRET: ${LEDGER_CLIENT_SECRET:?Run local bootstrap first}
+    volumes: ["./scripts/check-business.py:/scripts/check-business.py:ro"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    depends_on:
+      api-gateway: { condition: service_healthy }
+    networks: [backend]
   api-gateway:
     image: fincore/api-gateway:local
     build: { context: ., dockerfile: services/api-gateway/Dockerfile }
     environment:
       SERVER_PORT: "8080"
       CUSTOMER_SERVICE_URL: http://customer-service:8080
+      ACCOUNT_SERVICE_URL: http://account-service:8080
+      PAYMENT_SERVICE_URL: http://payment-service:8080
       OIDC_ISSUER: http://localhost:8180/realms/fincore
       OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
     ports: ["127.0.0.1:8280:8080"]
     depends_on:
       customer-service: { condition: service_healthy }
+      account-service: { condition: service_healthy }
+      payment-service: { condition: service_healthy }
     networks: [backend]
   customer-portal:
     image: fincore/customer-portal:local

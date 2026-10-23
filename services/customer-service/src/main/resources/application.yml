@@ -6,7 +6,14 @@ spring:
     username: customer_runtime
     password: ${CUSTOMER_DB_PASSWORD}
     hikari:
+      connection-init-sql: SET TIME ZONE 'UTC'
       maximum-pool-size: 5
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+  mvc:
+    problemdetails:
+      enabled: true
   flyway:
     enabled: false
 server:

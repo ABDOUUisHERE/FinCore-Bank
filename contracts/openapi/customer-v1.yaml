@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: FinCore foundation customer API
-  version: 0.1.0
-  description: Authenticated subject only. Customer profiles and banking features are not implemented.
+  title: FinCore customer identity and profile API
+  version: 0.3.0
+  description: Synthetic onboarding and versioned own-profile updates; no real KYC verification is claimed.
 servers:
   - url: http://localhost:8280
 paths:
@@ -13,61 +13,182 @@ paths:
       security:
         - bearerAuth: []
       responses:
-        "200":
+        '200':
           description: Authenticated subject and recognized realm roles
           content:
             application/json:
               schema:
                 type: object
                 additionalProperties: false
-                required: [subject, roles]
+                required:
+                  - subject
+                  - roles
                 properties:
-                  subject: { type: string }
+                  subject:
+                    type: string
                   roles:
                     type: array
                     items:
-                      {
-                        type: string,
-                        enum:
-                          [
-                            CUSTOMER,
-                            SUPPORT_AGENT,
-                            FRAUD_ANALYST,
-                            FINANCE_OPERATOR,
-                            ADMIN,
-                          ],
-                      }
-        "401":
+                      type: string
+                      enum:
+                        - CUSTOMER
+                        - SUPPORT_AGENT
+                        - FRAUD_ANALYST
+                        - FINANCE_OPERATOR
+                        - ADMIN
+        '401':
           description: Invalid or missing token; RFC 9457 problem response
           content:
             application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
-        "403":
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '403':
           description: Required CUSTOMER role absent
           content:
             application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
-        "429":
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '429':
           description: Gateway local request budget exceeded
           content:
             application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
-        "503":
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '503':
           description: Required backend connection unavailable; redacted RFC 9457 response
           content:
             application/problem+json:
-              schema: { $ref: "#/components/schemas/Problem" }
+              schema:
+                $ref: '#/components/schemas/Problem'
+  /api/v1/customers/me/onboarding:
+    post:
+      summary: Idempotent synthetic customer onboarding
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Own profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '409':
+          description: Onboarding payload or profile version conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - displayName
+                - countryCode
+              properties:
+                displayName:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+                countryCode:
+                  type: string
+                  pattern: ^[A-Z]{2}$
+  /api/v1/customers/me/profile:
+    patch:
+      summary: Versioned own-profile update
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Own profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '409':
+          description: Onboarding payload or profile version conflict
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - displayName
+                - countryCode
+                - expectedVersion
+              properties:
+                displayName:
+                  type: string
+                  minLength: 1
+                  maxLength: 80
+                countryCode:
+                  type: string
+                  pattern: ^[A-Z]{2}$
+                expectedVersion:
+                  type: integer
+                  format: int64
+                  minimum: 0
+    get:
+      summary: Read own profile
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Own profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Profile'
+        '409':
+          description: Onboarding payload or profile version conflict
 components:
   securitySchemes:
-    bearerAuth: { type: http, scheme: bearer, bearerFormat: JWT }
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     Problem:
       type: object
-      required: [type, title, status, detail, code, correlationId]
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - code
+        - correlationId
       properties:
-        type: { type: string }
-        title: { type: string }
-        status: { type: integer }
-        detail: { type: string }
-        code: { type: string }
-        correlationId: { type: string }
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        code:
+          type: string
+        correlationId:
+          type: string
+    Profile:
+      type: object
+      properties:
+        customerId:
+          type: string
+          format: uuid
+        subject:
+          type: string
+        displayName:
+          type: string
+          maxLength: 80
+        countryCode:
+          type: string
+          pattern: ^[A-Z]{2}$
+        status:
+          type: string
+          enum:
+            - ACTIVE
+        version:
+          type: integer
+          format: int64

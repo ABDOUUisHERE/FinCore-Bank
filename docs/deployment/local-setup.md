@@ -1,6 +1,6 @@
-# Local foundation and ledger setup
+# Local FinCore setup
 
-The foundation provides authentication, protected service communication and two portal shells. Phase 2 adds a private technical ledger; browser account and transfer workflows are still upcoming. All identities and money are synthetic.
+The foundation provides authentication, protected service communication and two portal shells. Phase 3 adds owned account and payment APIs backed by the private ledger; browser banking forms are Phase 4. All identities and money are synthetic.
 
 ## Prerequisites
 
@@ -11,7 +11,7 @@ Git, Python 3.10+ and a running Docker Engine with Docker Compose v2. Allow seve
 ```sh
 git clone https://github.com/ABDOUUisHERE/FinCore.git
 cd FinCore
-git switch feature/fincore-ledger
+git switch main
 python scripts/bootstrap-local.py
 docker compose up --build -d --wait --wait-timeout 300
 docker compose run --rm ledger-check
@@ -66,3 +66,13 @@ docker compose down
 Normal shutdown keeps the `postgres-data` volume. Removing volumes deliberately destroys all synthetic identities and service data; do not do that just to rotate one password. Back up the matching ignored configuration if you need the dataset again. Never publish unreviewed logs/configuration dumps: `docker compose config` can expand secrets; prefer `docker compose config --quiet` for validation.
 
 If Docker calls hang, resolve Docker Desktop/engine readiness before starting the stack; Java/frontend unit checks can still run independently. If a sign-in fails, verify the exact localhost URL, generated user credentials, Keycloak health and persisted realm configuration. If Customer readiness fails, inspect the migration job and database grants rather than disabling its DB health check. Browser code never receives database or client secrets.
+
+## Phase 3 services and upgrades
+
+`business-bootstrap` creates isolated Account/Payment databases and separate runtime/migration roles without changing existing secrets or resetting volumes. `business-identity` creates narrow service clients and configures standard token exchange on fresh and persisted Keycloak realms. A generated second synthetic identity, `recipient.demo`, is recorded in the private credentials file; existing user passwords remain unchanged. Applications start only after their migrations, identity setup and dependencies are ready.
+
+The Account runtime receives only its own DB password and Account client secret. Payment receives only its own DB password and Payment client secret; it does not receive the simulation operator secret or ledger migration credentials. Ledger remains internal with no Gateway route. Account/Payment also have no published host ports. Public `/api/v1/accounts` and `/api/v1/transfers` routes are independently authorized by their owners. The private funding/review/reversal routes are not routed by Gateway.
+
+To verify the financial journey, install Chromium and run `npm run test:e2e`. The new browser test signs in two customers with real Authorization Code + PKCE, passes their short-lived access tokens to `business-check` through stdin only and exercises the private network. No token is written to disk or command-line arguments. Running `business-check` by itself without those genuine tokens is not a browser-login substitute. The isolated native verification option is documented in the test guide.
+
+Accepted payment responses remain 202/CREATED on exact replay. Read the Location resource for its current state. Pending risk review reserves no funds. Cancellation is possible only before PROCESSING; a timeout after sending money keeps the payment PROCESSING until the ledger outcome is known. Account provisioning/guard intent can similarly remain pending through an outage and reconcile on recovery. All domain money is synthetic.

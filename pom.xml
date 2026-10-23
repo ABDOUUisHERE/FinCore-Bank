@@ -5,7 +5,7 @@
   <groupId>com.fincore</groupId><artifactId>fincore-parent</artifactId><version>0.1.0-SNAPSHOT</version><packaging>pom</packaging>
   <name>FinCore</name>
   <properties><java.version>21</java.version><spring-cloud.version>2025.0.3</spring-cloud.version></properties>
-  <modules><module>services/api-gateway</module><module>services/customer-service</module><module>services/ledger-service</module></modules>
+  <modules><module>libraries/service-support</module><module>services/api-gateway</module><module>services/customer-service</module><module>services/ledger-service</module><module>services/account-service</module><module>services/payment-service</module></modules>
   <dependencyManagement><dependencies><dependency><groupId>org.springframework.cloud</groupId><artifactId>spring-cloud-dependencies</artifactId><version>${spring-cloud.version}</version><type>pom</type><scope>import</scope></dependency></dependencies></dependencyManagement>
   <build><plugins>
     <plugin><groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><configuration><parameters>true</parameters><compilerArgs><arg>-Xlint:all,-processing</arg></compilerArgs></configuration></plugin>
