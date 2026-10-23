@@ -4,15 +4,15 @@ Distributed digital banking and payment processing **simulation**, using synthet
 
 **Status: Phase 3 ? owned accounts and recoverable simulated payments.** Customer onboarding, account ownership/provisioning/restrictions, authoritative ledger balances/history, signed actor authorization, risk-policy decisions and durable payment/reversal recovery are implemented. The React workspaces remain authentication shells; customer banking screens are Phase 4. See the [Phase 3 verification report](docs/verification/phase-3.md) for actual test results and limitations.
 
-GitHub's canonical repository is `ABDOUUisHERE/FinCore`.
+GitHub's canonical repository is `ABDOUUisHERE/FinCore-Bank`.
 
 ## Quick start
 
 Requires Git, Python 3.10+ and a running Docker Engine with Compose v2.
 
 ```sh
-git clone https://github.com/ABDOUUisHERE/FinCore.git
-cd FinCore
+git clone https://github.com/ABDOUUisHERE/FinCore-Bank.git
+cd FinCore-Bank
 git switch main
 python scripts/bootstrap-local.py
 docker compose up --build -d --wait --wait-timeout 300
