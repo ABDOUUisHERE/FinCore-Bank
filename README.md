@@ -2,15 +2,15 @@
 
 Distributed digital banking and payment processing **simulation**, using synthetic customers and simulated money exclusively.
 
-**Status: Phase 2 — internal double-entry ledger implemented; verification recorded below.** The foundation includes two React workspaces, Keycloak, independently protected Java services and isolated databases. The new private ledger supports exact money, atomic balanced postings, concurrent debit protection, durable idempotency, versioned guards, full reversals and reconciliation. Customer-facing accounts and payments remain Phase 3. This repository retains its existing GitHub name, `task-app-management`.
+**Status: Phase 2 — internal double-entry ledger implemented; verification recorded below.** The foundation includes two React workspaces, Keycloak, independently protected Java services and isolated databases. The new private ledger supports exact money, atomic balanced postings, concurrent debit protection, durable idempotency, versioned guards, full reversals and reconciliation. Customer-facing accounts and payments remain Phase 3. GitHub now names this same repository `ABDOUUisHERE/FinCore`; the former URL redirects to it.
 
 ## Quick start
 
 Requires Git, Python 3.10+ and a running Docker Engine with Compose v2.
 
 ```sh
-git clone https://github.com/ABDOUUisHERE/task-app-management.git
-cd task-app-management
+git clone https://github.com/ABDOUUisHERE/FinCore.git
+cd FinCore
 git switch feature/fincore-ledger
 python scripts/bootstrap-local.py
 docker compose up --build -d --wait --wait-timeout 300

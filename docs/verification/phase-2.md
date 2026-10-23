@@ -1,6 +1,6 @@
 # Phase 2 — ledger kernel implementation and verification
 
-Date: 2026-10-22 UTC. Branch `feature/fincore-ledger`, based on the completed foundation documentation commit `9fb4cb58a32b3260bfeee5d4aa97619a854a47bd`. Branches remain stacked and unmerged.
+Implementation: 2026-10-22 UTC. Final evidence: 2026-10-23 UTC. Branch `feature/fincore-ledger`, based on the completed foundation documentation commit `9fb4cb58a32b3260bfeee5d4aa97619a854a47bd`. Branches remain stacked and unmerged.
 
 ## A. Current state
 
@@ -34,7 +34,9 @@ Exact decimal edge cases; real signed JWT validation/authorization; actual Postg
 
 ## F. Implementation status
 
-Implementation complete locally. Source commit and final CI evidence will be recorded after push. No merge or external deployment is performed.
+Implementation and acceptance checks complete. All three final workflows passed for source commit `10f955eee6f146964ab4e97dcdb2d9826195464a`. Documentation-only follow-up changes record these results and the repository rename; they do not alter application behavior. No merge or external deployment is performed.
+
+GitHub now identifies this same repository (ID `1138747020`) as `ABDOUUisHERE/FinCore`; the previous `task-app-management` URLs redirect to it. The Git remote and current clone instructions use the canonical name.
 
 ## G. Verification
 
@@ -49,9 +51,13 @@ Implementation complete locally. Source commit and final CI evidence will be rec
 | Compose configuration | PASS: `docker compose config --quiet`; this is configuration validation only |
 | OpenAPI YAML parse | PASS: eight paths, all authored flow descriptions checked |
 | Local Docker engine | UNAVAILABLE: bounded probes to both contexts time out despite Desktop launch; no volume reset or broad Docker/WSL termination attempted |
-| Full Linux PostgreSQL 17.11/Compose/portal CI | Pending push and completion; no pass claimed yet |
+| [Backend quality](https://github.com/ABDOUUisHERE/FinCore/actions/runs/39826976519) | PASS: all modules packaged; 46 tests, no failures/errors/skips, including 16 ledger PostgreSQL 17.11 tests and 1 Customer isolation test |
+| [Frontend quality](https://github.com/ABDOUUisHERE/FinCore/actions/runs/39826976487) | PASS: typecheck, lint, 7 components, both builds and dependency audit |
+| [Foundation integration](https://github.com/ABDOUUisHERE/FinCore/actions/runs/39826976489) | PASS: all Compose images/one-shots/readiness, private Customer rejection, real Keycloak/private Ledger journey, 4 browser PKCE journeys and clean shutdown |
 
-The native lab uses its own repository-local cluster on port 5548, separate from the existing Windows PostgreSQL service. Native verification is not Compose evidence. Generated secrets/tokens are not committed or printed. The initial SQL privilege assertion was corrected to check PostgreSQL permission SQLSTATE rather than a translated top-level message. A Windows reactor packaging attempt encountered open runtime JAR handles; stopping only the scoped native verification processes and restarting from copied JARs resolved it. Final checks passed. Earlier failed tests were corrected and rerun; the final results below supersede those runs once recorded.
+The [machine-readable evidence](../evidence/phase-2-checks.json) records the exact source SHA, workflow metadata and environment distinctions. Docker image package stages explicitly skip tests because the independent Backend quality workflow executes the complete suite.
+
+The native lab uses its own repository-local cluster on port 5548, separate from the existing Windows PostgreSQL service. Native verification is not Compose evidence. After final verification, the scoped native lab processes and its port-5548 cluster were stopped; data was preserved and the unrelated Windows PostgreSQL service was untouched. Generated secrets/tokens are not committed or printed. The initial SQL privilege assertion was corrected to check PostgreSQL permission SQLSTATE rather than a translated top-level message. A Windows reactor packaging attempt encountered open runtime JAR handles; stopping only the scoped native verification processes and restarting from copied JARs resolved it. Final checks passed. Earlier failed tests were corrected and rerun; the final local and CI results above supersede those attempts.
 
 ## H. Next milestone
 

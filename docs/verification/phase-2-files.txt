@@ -4,6 +4,7 @@ README.md
 compose.yaml
 contracts/openapi/ledger-v1.yaml
 docs/deployment/local-setup.md
+docs/evidence/phase-2-checks.json
 docs/fincore/adr/0005-ledger-write-boundary.md
 docs/testing.md
 docs/verification/phase-2-files.txt

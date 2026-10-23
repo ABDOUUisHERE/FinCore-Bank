@@ -9,8 +9,8 @@ Git, Python 3.10+ and a running Docker Engine with Docker Compose v2. Allow seve
 ## Start
 
 ```sh
-git clone https://github.com/ABDOUUisHERE/task-app-management.git
-cd task-app-management
+git clone https://github.com/ABDOUUisHERE/FinCore.git
+cd FinCore
 git switch feature/fincore-ledger
 python scripts/bootstrap-local.py
 docker compose up --build -d --wait --wait-timeout 300
