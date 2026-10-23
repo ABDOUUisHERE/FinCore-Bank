@@ -1,9 +1,12 @@
 FROM node:24.13.0-alpine AS build
 WORKDIR /build
 COPY package.json package-lock.json ./
+COPY apps/customer-portal/package.json ./apps/customer-portal/package.json
+COPY apps/admin-portal/package.json ./apps/admin-portal/package.json
+COPY packages/portal-ui/package.json ./packages/portal-ui/package.json
+RUN --mount=type=cache,id=fincore-npm,target=/root/.npm,sharing=locked npm ci
 COPY apps ./apps
 COPY packages ./packages
-RUN npm ci
 COPY tsconfig.json ./
 RUN npm run build --workspace @fincore/admin-portal
 FROM nginxinc/nginx-unprivileged:1.28.0-alpine

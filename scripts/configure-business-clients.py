@@ -73,6 +73,10 @@ def main():
     assign(account_client, resource, [ledger_roles[name] for name in ("ledger.provision", "ledger.guard", "ledger.read")])
     audience(account_client, "ledger-service")
     role_claim(account_client, "ledger-service")
+    beneficiary_client = machine("fincore-beneficiary", "BENEFICIARY_CLIENT_SECRET")
+    assign(beneficiary_client, account_resource, [account_lookup])
+    audience(beneficiary_client, "account-service")
+    role_claim(beneficiary_client, "account-service")
     payment_client = machine("fincore-payment", "PAYMENT_CLIENT_SECRET", exchange=True)
     assign(payment_client, resource, [ledger_roles[name] for name in ("ledger.execute", "ledger.instructions.read")])
     assign(payment_client, account_resource, [account_lookup])
@@ -100,7 +104,7 @@ def main():
             "credentials": [{"type": "password", "value": values["RECIPIENT_PASSWORD"], "temporary": False}]})
         users = api("GET", "/users?username=recipient.demo&exact=true")
     api("POST", f"/users/{users[0]['id']}/role-mappings/realm", [api("GET", "/roles/CUSTOMER")])
-    print("Account/Payment identities, bounded scopes and standard token exchange configured.")
+    print("Account/Payment/Beneficiary identities, bounded scopes and standard token exchange configured.")
 
 
 if __name__ == "__main__":

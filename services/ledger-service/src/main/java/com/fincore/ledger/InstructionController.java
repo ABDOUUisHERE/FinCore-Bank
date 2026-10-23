@@ -43,10 +43,6 @@ public class InstructionController {
     }
     @GetMapping("/accounts/{id}") public JsonNode account(@PathVariable UUID id){return one("select to_jsonb(a) from ledger.account a where id=?",id);}
     @GetMapping("/settlement/{currency}") public JsonNode settlement(@PathVariable String currency,@AuthenticationPrincipal Jwt jwt){payment(jwt);return one("select to_jsonb(a) from ledger.account a where external_reference=? and type='SETTLEMENT_ASSET'","payment-settlement:"+currency);}
-    @GetMapping("/accounts/{id}/transactions") public Map<String,Object> history(@PathVariable UUID id,@RequestParam(required=false) UUID before){
-        var rows=jdbc.query("select jsonb_build_object('journalId',j.id,'operationId',j.operation_id,'currency',p.currency,'side',p.side,'amount',p.amount::text,'createdAt',j.created_at,'reversalOf',j.reversal_of)::text from ledger.posting p join ledger.journal j on j.id=p.journal_id where p.account_id=? and (?::uuid is null or (j.created_at,j.id)<(select c.created_at,c.id from ledger.journal c join ledger.posting cp on cp.journal_id=c.id where cp.account_id=? and c.id=?)) order by j.created_at desc,j.id desc limit 50",(rs,n)->decode(rs.getString(1)),id,before,id,before);
-        var result=new LinkedHashMap<String,Object>();result.put("items",rows);result.put("nextCursor",rows.size()==50?rows.getLast().path("journalId").asText():null);return result;
-    }
     private void payment(Jwt jwt){if(!"fincore-payment".equals(jwt.getClaimAsString("azp")))throw new AccessDeniedException("Payment issuer required");}
     private JsonNode one(String sql,Object...args){var rows=jdbc.query(sql,(rs,n)->decode(rs.getString(1)),args);if(rows.isEmpty())throw new LedgerStore.MissingRecord();return rows.getFirst();}
     private JsonNode decode(String value){try{return json.readTree(value);}catch(java.io.IOException error){throw new IllegalStateException("Invalid instruction data",error);}}

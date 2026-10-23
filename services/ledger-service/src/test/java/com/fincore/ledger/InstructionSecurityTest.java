@@ -22,7 +22,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@WebMvcTest(InstructionController.class)
+@WebMvcTest({InstructionController.class,ActivityController.class})
 @Import({SecurityConfiguration.class,JsonConfiguration.class,CorrelationFilter.class,BodyLimitFilter.class,InstructionSecurityTest.Decoders.class})
 class InstructionSecurityTest {
     @Autowired MockMvc http;
@@ -50,4 +50,11 @@ class InstructionSecurityTest {
         http.perform(post("/internal/v1/ledger/instructions").header("Authorization","Bearer "+token("fincore-payment","ledger.prepare")).contentType("application/json").content(BODY.replace("TRANSFER","DEPOSIT"))).andExpect(status().isForbidden());
         http.perform(post("/internal/v1/ledger/instructions/00000000-0000-0000-0000-000000000003/execute").header("Authorization","Bearer "+token("fincore-payment","ledger.prepare")).contentType("application/json").content("{}")).andExpect(status().isForbidden());verifyNoInteractions(jdbc);
     }
+    @Test void newActivityReadsStillRequirePrivateLedgerReadScope()throws Exception{
+        String path="/internal/v1/ledger/accounts/"+UUID.randomUUID()+"/activity";
+        http.perform(get(path).header("Authorization","Bearer "+token("fincore-customer","ledger.prepare"))).andExpect(status().isForbidden());
+        http.perform(get(path+"?month=invalid").header("Authorization","Bearer "+token("fincore-account","ledger.read"))).andExpect(status().isBadRequest());
+        verifyNoInteractions(jdbc);
+    }
+
 }

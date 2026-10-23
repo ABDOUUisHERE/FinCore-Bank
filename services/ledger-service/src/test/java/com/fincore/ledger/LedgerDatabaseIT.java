@@ -273,4 +273,39 @@ class LedgerDatabaseIT {
         assertThat(balance(a)).isEqualTo("100.00");assertThat(balance(b)).isEqualTo("0.00");
         assertThat(execute(instruction,java.time.Instant.now().plusSeconds(30)).path("status").asText()).isEqualTo("POSTED");cleanReconciliation();
     }
+    @Test void filtersActualHistoryAndComputesWholeMonthActivityWithoutPagingLoss() {
+        UUID sender=customer(),recipient=customer();fund(sender,"200.00");
+        String reference="phase-four-"+id();
+        var transfer=store.post(ISSUER,ACTOR,id(),command("TRANSFER",reference,sender,recipient,"0.30"));
+        var reads=new ActivityController(runtime,JSON);
+        var page=reads.history(sender,Map.of("search",reference,"side","DEBIT","minimum","0.30","maximum","0.30"));
+        @SuppressWarnings("unchecked") var rows=(List<JsonNode>)page.get("items");assertThat(rows).hasSize(1);
+        assertThat(rows.getFirst().path("amount").asText()).isEqualTo("0.30");assertThat(rows.getFirst().path("kind").asText()).isEqualTo("TRANSFER");
+        assertThat((List<?>)reads.history(recipient,Map.of("side","DEBIT")).get("items")).isEmpty();
+        var activity=JSON.valueToTree(reads.activity(sender,java.time.YearMonth.now(java.time.ZoneOffset.UTC).toString()));
+        var incoming=java.math.BigDecimal.ZERO;var outgoing=java.math.BigDecimal.ZERO;
+        for(var day:activity.path("days")){incoming=incoming.add(new java.math.BigDecimal(day.path("incoming").asText()));outgoing=outgoing.add(new java.math.BigDecimal(day.path("outgoing").asText()));}
+        assertThat(incoming).isEqualByComparingTo("200.00");assertThat(outgoing).isEqualByComparingTo("0.30");
+        var original=UUID.fromString(transfer.path("journalId").asText());store.reverse(ISSUER,ACTOR,id(),original,id());
+        @SuppressWarnings("unchecked") var reversals=(List<JsonNode>)reads.history(sender,Map.of("kind","REVERSAL")).get("items");
+        assertThat(reversals).hasSize(1);assertThat(reversals.getFirst().path("reversalOf").asText()).isEqualTo(original.toString());
+        @SuppressWarnings("unchecked") var linked=(List<JsonNode>)reads.history(sender,Map.of("journal",original.toString())).get("items");
+        assertThat(linked).hasSize(1);assertThat(linked.getFirst().path("reversedBy").asText()).isEqualTo(reversals.getFirst().path("journalId").asText());
+    }
+    @Test void chronologicalHistoryCursorDoesNotLoseOrRepeatFilteredRows() {
+        UUID sender=customer(),recipient=customer();fund(sender,"5.00");
+        for(int n=0;n<52;n++)post("TRANSFER",sender,recipient,"0.01");
+        var reads=new ActivityController(runtime,JSON);var first=reads.history(sender,Map.of("side","DEBIT"));
+        @SuppressWarnings("unchecked") var one=(List<JsonNode>)first.get("items");assertThat(one).hasSize(50);
+        @SuppressWarnings("unchecked") var two=(List<JsonNode>)reads.history(sender,Map.of("side","DEBIT","before",first.get("nextCursor").toString())).get("items");assertThat(two).hasSize(2);
+        var ids=new HashSet<String>();one.forEach(r->ids.add(r.path("journalId").asText()));two.forEach(r->ids.add(r.path("journalId").asText()));assertThat(ids).hasSize(52);
+        assertThat((List<?>)reads.history(sender,Map.of("from","2099-01-01")).get("items")).isEmpty();
+    }
+    @Test void invalidReadFiltersCannotBecomeSqlOrRoundedAmounts() {
+        var reads=new ActivityController(runtime,JSON);var sender=customer();
+        for(var filters:List.of(Map.of("minimum","0.001"),Map.of("maximum","1e2"),Map.of("side","OTHER"),Map.of("from","invalid"),Map.of("from","2026-02-01","to","2026-01-01"),Map.of("minimum","2","maximum","1")))
+            assertThatThrownBy(()->reads.history(sender,filters)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(()->reads.activity(sender,"0000-01")).isInstanceOf(IllegalArgumentException.class);
+    }
+
 }

@@ -57,6 +57,8 @@ test("hosted PKCE login connects the customer API and logout clears access", asy
     ),
   ).toBe(false);
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Sign out of FinCore?" })).toBeVisible();
+  await page.getByRole("button", { name: "Confirm sign out", exact: true }).click();
   await expect(
     page.getByRole("button", { name: "Sign in securely" }),
   ).toBeVisible();

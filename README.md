@@ -2,7 +2,7 @@
 
 Distributed digital banking and payment processing **simulation**, using synthetic customers and simulated money exclusively.
 
-**Status: Phase 3 ? owned accounts and recoverable simulated payments.** Customer onboarding, account ownership/provisioning/restrictions, authoritative ledger balances/history, signed actor authorization, risk-policy decisions and durable payment/reversal recovery are implemented. The React workspaces remain authentication shells; customer banking screens are Phase 4. See the [Phase 3 verification report](docs/verification/phase-3.md) for actual test results and limitations.
+**Status: Phase 4 - customer banking experience.** The customer portal connects profile onboarding, owned accounts and restrictions, exact balances by currency, monthly ledger activity, beneficiaries, transfer review/recovery/cancellation and filtered history to the actual services. Completion requires the recorded payment outcome and a journal reference. Cards, notifications, statements and operational dashboards remain later milestones. See the [Phase 4 verification report](docs/verification/phase-4.md) and [customer demo](docs/deployment/customer-demo.md).
 
 GitHub's canonical repository is `ABDOUUisHERE/FinCore-Bank`. Local Docker validation is recorded in the [workstation verification report](docs/verification/local-docker-2026-10-23.md).
 
@@ -40,6 +40,9 @@ flowchart LR
   Migration[One-shot Flyway migration] --> CDB
   Gateway --> Account[Account service]
   Gateway --> Payment[Payment service]
+  Gateway --> Beneficiary[Beneficiary service]
+  Beneficiary --> BDB[(Private beneficiary database)]
+  Beneficiary --> Account
   Account --> ADB[(Private account database)]
   Payment --> PDB[(Private payment database)]
   Account --> Ledger[Authoritative ledger]
@@ -49,7 +52,7 @@ flowchart LR
   Operator --> Keycloak
 ```
 
-Both Gateway and Customer independently validate signed JWTs, issuer, audience, expiry and roles. Customer APIs derive identity from the token; administrator privileges do not imply customer privileges. Portal tokens stay in memory. The operations shell currently has no operational data APIs. [API contract](contracts/openapi/customer-v1.yaml): `GET /api/v1/customers/me` returns the authorized subject and recognized roles only.
+Gateway and each business resource server independently validate signed JWTs, issuer, audience, expiry and roles. Customer APIs derive identity from the token; administrator privileges do not imply customer privileges. Portal tokens stay in memory. The operations shell currently has no operational data APIs. [API contract](contracts/openapi/customer-v1.yaml): `GET /api/v1/customers/me` returns the authorized subject and recognized roles only.
 
 ## Architecture review
 

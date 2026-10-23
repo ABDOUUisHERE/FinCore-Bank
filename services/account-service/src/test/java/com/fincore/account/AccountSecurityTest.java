@@ -44,4 +44,10 @@ class AccountSecurityTest {
         http.perform(post("/api/v1/accounts").header("Authorization","Bearer "+SignedTokens.customer()).header("Idempotency-Key","request-key").contentType("application/json").content("{\"currency\":\"MAD\",\"ownerSubject\":\"forged\"}")).andExpect(status().isBadRequest());
         http.perform(put("/api/v1/accounts/"+UUID.randomUUID()+"/guard").header("Authorization","Bearer "+SignedTokens.customer()).contentType("application/json").content("{\"status\":\"FROZEN\"}")).andExpect(status().isBadRequest());verifyNoInteractions(store);
     }
+    @Test void historyAndMonthlyActivityEnforceOwnershipBeforeLedgerAccess()throws Exception{
+        UUID id=UUID.randomUUID();when(store.own(id,"verified-customer")).thenThrow(new ApiFailure(404,"ACCOUNT_NOT_FOUND"));
+        for(String suffix:List.of("transactions?search=private","activity?month=2026-10"))http.perform(get("/api/v1/accounts/"+id+"/"+suffix).header("Authorization","Bearer "+SignedTokens.customer())).andExpect(status().isNotFound());
+        verifyNoInteractions(coordinator);
+    }
+
 }

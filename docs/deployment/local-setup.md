@@ -1,5 +1,13 @@
 # Local FinCore setup
 
+Phase 4 adds the connected customer workspace; follow the [customer demo](customer-demo.md) for profile, accounts, private simulated funding, beneficiaries, transfer confirmation, history and restrictions.
+
+The new `beneficiary-bootstrap` creates its separate database/roles on existing volumes without rotating passwords. `beneficiary-migrations` owns schema changes; the non-root runtime has only its own DB/client secrets. Bootstrap appends missing beneficiary secrets and business identity setup configures its narrow Account lookup client. It has no ledger posting role. Gateway adds public CUSTOMER beneficiary routes and owner-checked account activity. Funding and ledger APIs remain private.
+
+Image builds use locked named Maven/npm dependency caches. Frontend manifest layers precede source copies. Package image stages still skip tests; Backend quality independently executes the full suite.
+
+`docker compose run --rm simulation-fund ACCOUNT_REFERENCE 1000.00 MAD` credits a selected simulated account through the private Payment API. Replace ACCOUNT_REFERENCE with the UUID from account details. The helper prints a non-secret request key before submission. After an unconfirmed response, repeat unchanged details with `--key ORIGINAL_KEY`. Only COMPLETED with a journal counts as completed funding; other outcomes return nonzero. No infrastructure admin, database or browser credential is needed by this helper.
+
 The foundation provides authentication, protected service communication and two portal shells. Phase 3 adds owned account and payment APIs backed by the private ledger; browser banking forms are Phase 4. All identities and money are synthetic.
 
 ## Prerequisites

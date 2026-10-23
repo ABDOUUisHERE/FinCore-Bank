@@ -3,7 +3,7 @@ WORKDIR /build
 COPY pom.xml ./
 COPY libraries ./libraries
 COPY services ./services
-RUN mvn -B -pl services/ledger-service -am package -DskipTests
+RUN --mount=type=cache,id=fincore-maven,target=/root/.m2,sharing=locked mvn -B -ntp -pl services/ledger-service -am package -DskipTests
 FROM eclipse-temurin:21.0.12.1_1-jre-alpine-3.24
 RUN addgroup -S fincore && adduser -S fincore -G fincore
 WORKDIR /app

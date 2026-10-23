@@ -17,7 +17,11 @@ public class PaymentStore {
     public JsonNode get(UUID id){var values=jdbc.query("select to_jsonb(p)::text from payment p where id=?",ROW,id);if(values.isEmpty())throw new ApiFailure(404,"PAYMENT_NOT_FOUND");return values.getFirst();}
     public JsonNode own(UUID id,String actor){var payment=get(id);if(!payment.path("actor").asText().equals(actor))throw new ApiFailure(404,"PAYMENT_NOT_FOUND");return payment;}
     public boolean exists(UUID id){return Boolean.TRUE.equals(jdbc.queryForObject("select exists(select from payment where id=?)",Boolean.class,id));}
-    public List<JsonNode> list(String actor,UUID after){return jdbc.query("select to_jsonb(p)::text from payment p where actor=? and kind='TRANSFER' and (?::uuid is null or id>?::uuid) order by id limit 50",ROW,actor,after,after);}
+    public List<JsonNode> list(String actor,UUID after){return list(actor,after,"");}
+    public List<JsonNode> list(String actor,UUID after,String status){
+        if(!status.isEmpty() && Arrays.stream(PaymentState.values()).noneMatch(s->s.name().equals(status)))throw new ApiFailure(400,"INVALID_PAYMENT_FILTER");
+        return jdbc.query("select to_jsonb(p)::text from payment p where actor=? and kind='TRANSFER' and (?='' or status=?) and (?::uuid is null or (created_at,id)<(select c.created_at,c.id from payment c where c.id=? and c.actor=? and c.kind='TRANSFER')) order by created_at desc,id desc limit 50",ROW,actor,status,status,after,after,actor);
+    }
     @Transactional public JsonNode importInstruction(JsonNode instruction){
         var id=uuid(instruction,"id");if(exists(id))return get(id);
         var metadata=instruction.path("metadata");var kind=instruction.path("kind").asText();var actor=instruction.path("actor").asText();
@@ -74,6 +78,7 @@ public class PaymentStore {
     public static Map<String,Object> view(JsonNode payment){
         var result=new LinkedHashMap<String,Object>();result.put("paymentId",payment.path("id").asText());result.put("kind",payment.path("kind").asText());result.put("status",payment.path("status").asText());result.put("version",payment.path("version").asLong());
         result.put("amount",new BigDecimal(payment.path("amount").asText()).setScale(2).toPlainString());result.put("currency",payment.path("currency").asText());result.put("reference",payment.path("reference").asText());
+        result.put("sourceAccountId",payment.path("source_account_id").asText(null));result.put("destinationAccountId",payment.path("destination_account_id").asText(null));result.put("createdAt",payment.path("created_at").asText());
         result.put("journalId",payment.path("journal_id").isNull()?null:payment.path("journal_id").asText());result.put("code",payment.path("terminal_code").isNull()?null:payment.path("terminal_code").asText());return result;
     }
 }

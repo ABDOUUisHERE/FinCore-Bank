@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FinCore owned accounts and simulated payments
-  version: 0.3.0
+  version: 0.4.0
   description: >-
     Public routes require CUSTOMER. Private operator routes require their explicit client roles.
     Payment acceptance is not completion; poll until COMPLETED with a confirmed journalId.
@@ -42,7 +42,24 @@ paths:
       summary: Read owned ledger history, at most 50
       parameters:
         - {name: before, in: query, schema: {type: string, format: uuid}}
-      responses: {'200': {description: items and nullable nextCursor; exact amount strings and UTC timestamps}}
+        - {name: journal, in: query, schema: {type: string, format: uuid}, description: 'Read a linked journal only if it posted to this owned account'}
+        - {name: from, in: query, schema: {type: string, format: date}, description: Inclusive UTC date}
+        - {name: to, in: query, schema: {type: string, format: date}, description: Inclusive UTC date}
+        - {name: minimum, in: query, schema: {type: string}, description: Inclusive nonnegative exact decimal with at most two fractional digits}
+        - {name: maximum, in: query, schema: {type: string}, description: Inclusive nonnegative exact decimal with at most two fractional digits}
+        - {name: side, in: query, schema: {type: string, enum: [DEBIT, CREDIT]}}
+        - {name: kind, in: query, schema: {type: string, enum: [DEPOSIT, TRANSFER, REVERSAL, WITHDRAWAL, MERCHANT_PAYMENT]}}
+        - {name: search, in: query, schema: {type: string, maxLength: 140}, description: Literal case-insensitive reference substring}
+      responses: {'200': {description: "items and nullable nextCursor; exact amounts, UTC timestamps, reference, kind, paymentId, sourceAccountId, reversalOf and reversedBy. Descending by createdAt then journal UUID; all filters precede pagination"}}
+  /api/v1/accounts/{id}/activity:
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      summary: Whole-month confirmed account flows, independent of history pagination
+      parameters:
+        - {name: month, in: query, schema: {type: string, pattern: '^[0-9]{4}-[0-9]{2}$'}, description: UTC year-month; defaults to the current UTC month}
+      responses:
+        '200': {description: "'month and days, each with date, incoming and outgoing exact decimal strings; includes funding and compensation'"}
+        '404': {description: No visible account}
   /api/v1/accounts/{id}/guard:
     parameters: [{$ref: '#/components/parameters/Id'}]
     put:
@@ -64,8 +81,10 @@ paths:
         '409': {description: Version conflict or nonempty closure}
   /api/v1/transfers:
     get:
-      summary: List only owned transfer resources, at most 50
-      parameters: [{$ref: '#/components/parameters/After'}]
+      summary: List only owned transfer resources, at most 50, descending by creation time then UUID
+      parameters:
+        - {$ref: '#/components/parameters/After'}
+        - {name: status, in: query, schema: {type: string, enum: [CREATED, VALIDATING, PENDING_RISK_REVIEW, PROCESSING, COMPLETED, FAILED, REJECTED, REVERSAL_PENDING, REVERSED]}}
       responses: {'200': {description: items and nullable nextCursor}}
     post:
       summary: Authorize a customer transfer and persist its workflow
@@ -223,5 +242,8 @@ components:
         version: {type: integer, format: int64}
         amount: {$ref: '#/components/schemas/Amount'}
         currency: {$ref: '#/components/schemas/Currency'}
+        sourceAccountId: {type: string, format: uuid, nullable: true}
+        destinationAccountId: {type: string, format: uuid, nullable: true}
+        createdAt: {type: string, format: date-time}
         journalId: {type: string, format: uuid, nullable: true}
         code: {type: string, nullable: true}

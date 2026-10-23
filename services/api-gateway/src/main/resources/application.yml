@@ -28,6 +28,14 @@ spring:
                 - name: RequestSize
                   args:
                     maxSize: 16KB
+            - id: beneficiaries
+              uri: ${BENEFICIARY_SERVICE_URL:http://localhost:8085}
+              predicates:
+                - Path=/api/v1/beneficiaries,/api/v1/beneficiaries/**
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: 16KB
             - id: transfers
               uri: ${PAYMENT_SERVICE_URL:http://localhost:8084}
               predicates:

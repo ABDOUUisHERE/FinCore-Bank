@@ -36,7 +36,7 @@ describe("customer workspace", () => {
       screen.getByRole("button", { name: /sign in securely/i }),
     );
     expect(mocks.session.login).toHaveBeenCalledOnce();
-    expect(screen.getByText("Available in a future release")).toBeVisible();
+    expect(screen.getByText("Virtual cards arrive in a future release.")).toBeVisible();
   });
   it("shows expiration with an explicit sign-in action", () => {
     mocks.session.status = "expired";
@@ -58,22 +58,12 @@ describe("customer workspace", () => {
   it("loads real subject data through the authenticated API adapter", async () => {
     mocks.session.status = "authenticated";
     mocks.session.roles = ["CUSTOMER"];
-    vi.stubGlobal(
-      "fetch",
-      vi
-        .fn()
-        .mockResolvedValue(
-          new Response(
-            JSON.stringify({
-              subject: "verified-subject",
-              roles: ["CUSTOMER"],
-            }),
-            { status: 200 },
-          ),
-        ),
-    );
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => Promise.resolve(
+      url.endsWith("/customers/me") ? new Response(JSON.stringify({ subject: "verified-subject", roles: ["CUSTOMER"] }), { status: 200 }) :
+        new Response(JSON.stringify({ code: "ONBOARDING_REQUIRED" }), { status: 404 })
+    )));
     open();
-    expect(await screen.findByText("verified-subject")).toBeVisible();
+    expect(await screen.findByText("Identity verified by the customer service")).toBeVisible();
     expect(fetch).toHaveBeenCalledWith(
       "http://localhost:8280/api/v1/customers/me",
       expect.objectContaining({

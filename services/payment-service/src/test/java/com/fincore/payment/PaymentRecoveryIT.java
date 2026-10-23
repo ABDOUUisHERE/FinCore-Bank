@@ -95,4 +95,12 @@ class PaymentRecoveryIT {
         assertThatThrownBy(()->store.own(f.id(),"another-customer")).hasMessage("PAYMENT_NOT_FOUND");
     }
     @AfterAll static void close(){LAB.close();}
+    @Test void filteredTransferListUsesOwnedChronologicalCursors(){
+        var f=transfer("1.00");store.importInstruction(f.receipt());store.cancel(f.id(),ACTOR,0);
+        assertThat(store.list(ACTOR,null,"REJECTED")).anySatisfy(row->assertThat(row.path("id").asText()).isEqualTo(f.id().toString()));
+        assertThat(store.list("another-actor",null,"REJECTED")).isEmpty();
+        assertThat(store.list(ACTOR,UUID.randomUUID(),"")).isEmpty();
+        assertThatThrownBy(()->store.list(ACTOR,null,"invented")).isInstanceOf(ApiFailure.class).hasMessage("INVALID_PAYMENT_FILTER");
+    }
+
 }

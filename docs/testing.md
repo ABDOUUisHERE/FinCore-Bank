@@ -1,6 +1,20 @@
-# Foundation and ledger test guide
+# FinCore test guide
 
-Run from the repository root. Java 21 and Node 24 are the reference toolchains. Actual outcomes are reported in [Phase 1](verification/phase-1.md) and [Phase 2](verification/phase-2.md) verification.
+Run from the repository root. Java 21 and Node 24 are the reference toolchains. Milestone outcomes are reported in [Phase 1](verification/phase-1.md), [Phase 2](verification/phase-2.md), [Phase 3](verification/phase-3.md) and [Phase 4](verification/phase-4.md).
+
+## Phase 4 customer acceptance
+
+The complete reactor executes 89 cases: 49 unit/security and 40 real PostgreSQL 17.11 integration cases. Beneficiary coverage includes independent signed-JWT/subject binding, private runtime grants, immutable identities, version conflicts, transactional audit rollback, owner pagination/search and eight pairs of concurrent identical inserts. Ledger read tests cover monthly totals, server-side filters, account-scoped chronological pagination and compensation links. Existing financial tests remain mandatory.
+
+The frontend suite has 17 cases: exact large decimal formatting, separate currency totals, unavailable balances, journal-confirmed success, immutable response-loss/remount recovery, a later-denied retry, a definitive first rejection, storage-write failure, cancellation conflict and inaccessible payment data. Stubbed component fetches do not establish real OIDC or financial execution.
+
+`npm run test:e2e` runs six real browser journeys, retries disabled. The customer case creates two synthetic identities through the private fixture and signs both in with Code + PKCE. It onboards, opens accounts, funds privately, saves/searches/renames/disables a beneficiary, sends a transfer and deliberately loses its accepted response. Reload must reuse the same key/body and produce one confirmed transfer. Private checks independently verify both balances, one outgoing journal, balanced postings, reconciliation and wrong-owner rejection. The UI also tests risk-review cancellation, filtered CSV download, effective freeze/unfreeze, profile persistence, 1440/768/390/320 layouts and dark mode. Logout requires confirmation.
+
+Fresh fixture credentials remain in memory/private process pipes; bearer tokens remain in memory/stdin. Do not print the identity fixture's stdout or start all tools-profile services together. The portals and business service runtimes receive no setup/funding credentials. CI uploads only anonymous public PNG captures.
+
+For manual visual QA on exclusively test-owned synthetic records, `FINCORE_VISUAL_QA=1` writes ignored `.local/visual/phase-4-dashboard-*.png` and public account UUIDs to ignored `.local/phase-4-demo-fixture.json`. This opt-in is off in CI and never captures identity forms, traces or bearer values. These captures are not committed or uploaded.
+
+Transfer key/body recovery lasts for the current browser tab and is scoped to the verified subject. An ambiguous operation stays immutable even if a later retry is refused. Closing its tab requires inspecting the owned transfer list before creating a new request. CSV export explicitly includes loaded filtered rows; whole-month activity does not depend on history pagination.
 
 ## Backend
 
@@ -58,7 +72,7 @@ docker compose run --rm ledger-check
 
 The Maven module runs Money precision/normalization/overflow tests, signed-RSA HTTP authorization tests and `LedgerDatabaseIT` on a real PostgreSQL 17.11 Testcontainer. The integration suite creates its own randomly named database, migrates with the owner and invokes financial commands with the restricted runtime role. It covers opposing/concurrent debits, duplicate keys and changed transport keys, definitive rejection replay after funding, restriction races, competing full reversals, forbidden SQL mutations, empty/unbalanced/late postings, reconciliation corruption detection, explicit rollback and an injected database failure after balances change. It fails if PostgreSQL cannot start; no automatic Docker-unavailable skip is configured.
 
-The HTTP smoke uses real Keycloak client credentials and the private service. It funds 1,000.00 synthetic MAD, transfers 100.00, checks balances and identity replay/conflict, refuses insufficient funds, compensates exactly once without changing the original journal, applies/reopens a versioned freeze and checks reconciliation. It creates a new synthetic dataset on each run. No public funding or customer payment endpoint exists yet.
+The HTTP smoke uses real Keycloak client credentials and the private service. It funds 1,000.00 synthetic MAD, transfers 100.00, checks balances and identity replay/conflict, refuses insufficient funds, compensates exactly once without changing the original journal, applies/reopens a versioned freeze and checks reconciliation. It creates a new synthetic dataset on each run. This legacy ledger-only check uses private endpoints. Customer payment APIs and UI journeys are tested separately; funding remains private.
 
 For a deliberately isolated native PostgreSQL test lab, `LedgerDatabaseIT` also accepts `LEDGER_TEST_ADMIN_URL`, `LEDGER_TEST_ADMIN_USER`, `LEDGER_TEST_ADMIN_PASSWORD`, `LEDGER_TEST_RUNTIME_PASSWORD` and `LEDGER_TEST_MIGRATION_PASSWORD` via the environment. Use a dedicated lab cluster, never an unrelated application database. The suite creates/drops only its own `ledger_test_<random UUID>` database and preserves existing role passwords. Native PostgreSQL 16.9 results are labeled separately from PostgreSQL 17.11 container evidence. This alternative does not bypass Customer's separate Docker-based isolation test; a full default reactor verify still requires Docker.
 

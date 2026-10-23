@@ -180,6 +180,7 @@ services:
       PAYMENT_CLIENT_SECRET: ${PAYMENT_CLIENT_SECRET:?Run local bootstrap first}
       PAYMENT_OPERATOR_SECRET: ${PAYMENT_OPERATOR_SECRET:?Run local bootstrap first}
       RECIPIENT_PASSWORD: ${RECIPIENT_PASSWORD:?Run local bootstrap first}
+      BENEFICIARY_CLIENT_SECRET: ${BENEFICIARY_CLIENT_SECRET:?Run local bootstrap first}
     volumes: ["./scripts/configure-business-clients.py:/scripts/configure-business-clients.py:ro"]
     read_only: true
     cap_drop: [ALL]
@@ -271,6 +272,80 @@ services:
     depends_on:
       api-gateway: { condition: service_healthy }
     networks: [backend]
+  simulation-fund:
+    image: python:3.14.2-alpine
+    profiles: [tools]
+    user: '65534:65534'
+    entrypoint: [python, /scripts/fund-simulation.py]
+    environment:
+      KEYCLOAK_URL: http://keycloak:8180
+      PAYMENT_URL: http://payment-service:8080
+      PAYMENT_OPERATOR_SECRET: ${PAYMENT_OPERATOR_SECRET:?Run local bootstrap first}
+    volumes: ["./scripts/fund-simulation.py:/scripts/fund-simulation.py:ro"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [backend]
+  customer-fixture:
+    image: python:3.14.2-alpine
+    profiles: [tools]
+    user: '65534:65534'
+    entrypoint: [python, /scripts/prepare-customer-journey.py]
+    stdin_open: true
+    environment:
+      KEYCLOAK_URL: http://keycloak:8180
+      API_URL: http://api-gateway:8080
+      PAYMENT_URL: http://payment-service:8080
+      LEDGER_URL: http://ledger-service:8080
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Run local bootstrap first}
+      PAYMENT_OPERATOR_SECRET: ${PAYMENT_OPERATOR_SECRET:?Run local bootstrap first}
+      LEDGER_CLIENT_SECRET: ${LEDGER_CLIENT_SECRET:?Run local bootstrap first}
+    volumes: ["./scripts/prepare-customer-journey.py:/scripts/prepare-customer-journey.py:ro"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    networks: [backend]
+  beneficiary-bootstrap:
+    image: postgres:17.11-alpine
+    entrypoint: [/bin/sh, /bootstrap/init-beneficiaries.sh]
+    environment:
+      PGHOST: postgres
+      PGUSER: fincore_bootstrap
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Run local bootstrap first}
+      BENEFICIARY_DB_PASSWORD: ${BENEFICIARY_DB_PASSWORD:?Run local bootstrap first}
+      BENEFICIARY_MIGRATION_PASSWORD: ${BENEFICIARY_MIGRATION_PASSWORD:?Run local bootstrap first}
+    volumes: ["./infrastructure/docker/postgres/init-beneficiaries.sh:/bootstrap/init-beneficiaries.sh:ro"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]
+  beneficiary-migrations:
+    image: fincore/beneficiary-service:local
+    build: { context: ., dockerfile: services/beneficiary-service/Dockerfile }
+    command: [--migrate-only]
+    environment:
+      BENEFICIARY_DATABASE_URL: jdbc:postgresql://postgres:5432/beneficiary
+      BENEFICIARY_MIGRATION_PASSWORD: ${BENEFICIARY_MIGRATION_PASSWORD:?Run local bootstrap first}
+    healthcheck: { disable: true }
+    depends_on:
+      beneficiary-bootstrap: { condition: service_completed_successfully }
+    networks: [backend]
+  beneficiary-service:
+    image: fincore/beneficiary-service:local
+    build: { context: ., dockerfile: services/beneficiary-service/Dockerfile }
+    environment:
+      SERVER_PORT: '8080'
+      BENEFICIARY_DATABASE_URL: jdbc:postgresql://postgres:5432/beneficiary
+      BENEFICIARY_DB_PASSWORD: ${BENEFICIARY_DB_PASSWORD:?Run local bootstrap first}
+      BENEFICIARY_CLIENT_SECRET: ${BENEFICIARY_CLIENT_SECRET:?Run local bootstrap first}
+      TOKEN_ENDPOINT: http://keycloak:8180/realms/fincore/protocol/openid-connect/token
+      ACCOUNT_URL: http://account-service:8080
+      OIDC_ISSUER: http://localhost:8180/realms/fincore
+      OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
+    depends_on:
+      beneficiary-migrations: { condition: service_completed_successfully }
+      business-identity: { condition: service_completed_successfully }
+      account-service: { condition: service_healthy }
+    networks: [backend]
   api-gateway:
     image: fincore/api-gateway:local
     build: { context: ., dockerfile: services/api-gateway/Dockerfile }
@@ -279,6 +354,7 @@ services:
       CUSTOMER_SERVICE_URL: http://customer-service:8080
       ACCOUNT_SERVICE_URL: http://account-service:8080
       PAYMENT_SERVICE_URL: http://payment-service:8080
+      BENEFICIARY_SERVICE_URL: http://beneficiary-service:8080
       OIDC_ISSUER: http://localhost:8180/realms/fincore
       OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
     ports: ["127.0.0.1:8280:8080"]
@@ -286,6 +362,7 @@ services:
       customer-service: { condition: service_healthy }
       account-service: { condition: service_healthy }
       payment-service: { condition: service_healthy }
+      beneficiary-service: { condition: service_healthy }
     networks: [backend]
   customer-portal:
     image: fincore/customer-portal:local

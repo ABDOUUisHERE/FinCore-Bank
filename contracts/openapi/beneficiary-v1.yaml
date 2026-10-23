@@ -1,0 +1,106 @@
+openapi: 3.0.3
+info:
+  title: FinCore owned internal beneficiaries
+  version: 0.4.0
+  description: >-
+    Requires a validated fincore-api JWT and CUSTOMER role independently at Gateway and service.
+    Ownership is the signed subject, never a request field. Destination references are immutable.
+    Active means selectable in the address book; financial account restrictions remain authoritative.
+servers: [{url: 'http://localhost:8280'}]
+security: [{bearer: []}]
+paths:
+  /api/v1/beneficiaries:
+    get:
+      summary: List at most 50 owned beneficiaries, including disabled entries
+      parameters:
+        - {name: after, in: query, schema: {type: string, format: uuid}}
+        - name: search
+          in: query
+          schema: {type: string, maxLength: 140}
+          description: Case-insensitive label substring or exact destination UUID; filtering precedes pagination
+      responses:
+        '200': {description: 'items and nullable nextCursor; ordered by beneficiary UUID'}
+        '401': {description: Invalid identity}
+        '403': {description: CUSTOMER role required}
+    post:
+      summary: Save a verified active internal destination with a private label
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: {type: string, pattern: '^[A-Za-z0-9._:-]{1,120}$'}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [label, destinationAccountId]
+              properties:
+                label: {type: string, minLength: 1, maxLength: 80}
+                destinationAccountId: {type: string, format: uuid}
+      responses:
+        '201':
+          description: Saved identity; identical key and original details replay its current view even after edits or disablement
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Beneficiary'}
+        '400': {description: Invalid or unknown request fields}
+        '404': {description: Destination unavailable}
+        '409': {description: "Key reused with different original details, or duplicate destination for this owner"}
+        '422': {description: Destination not active}
+        '503': {description: Destination verification unavailable; retry original key}
+  /api/v1/beneficiaries/{id}:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      summary: Read only an owned beneficiary
+      responses:
+        '200':
+          description: Current owned view
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Beneficiary'}
+        '404': {description: No visible beneficiary}
+    put:
+      summary: Rename, disable or enable with the exact current version
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [label, status, expectedVersion]
+              properties:
+                label: {type: string, minLength: 1, maxLength: 80}
+                status: {type: string, enum: [ACTIVE, DISABLED]}
+                expectedVersion: {type: integer, format: int64, minimum: 0}
+      responses:
+        '200': {description: Updated current view and append-only audit fact in one transaction}
+        '404': {description: No visible beneficiary}
+        '409': {description: Stale version; fetch current view}
+  /api/v1/beneficiaries/{id}/history:
+    parameters:
+      - {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    get:
+      summary: Read the latest 100 owned audit facts, descending by version
+      responses:
+        '200': {description: "'items: version, label, status and occurredAt UTC'"}
+        '404': {description: No visible beneficiary}
+components:
+  securitySchemes:
+    bearer: {type: http, scheme: bearer, bearerFormat: JWT}
+  schemas:
+    Beneficiary:
+      type: object
+      required: [beneficiaryId, destinationAccountId, label, currency, status, version]
+      properties:
+        beneficiaryId: {type: string, format: uuid}
+        destinationAccountId: {type: string, format: uuid}
+        label: {type: string}
+        currency: {type: string, enum: [MAD, EUR, USD]}
+        status: {type: string, enum: [ACTIVE, DISABLED]}
+        version: {type: integer, format: int64}
+        createdAt: {type: string, format: date-time}

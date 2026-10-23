@@ -19,15 +19,21 @@ import {
   ShieldCheck,
   Sun,
   Wallet,
+  Users,
+  UserRound,
   X,
 } from "lucide-react";
 import { useSession } from "./auth";
 import { getCurrentSubject } from "./api";
+import { SignOut } from "./banking/SignOut";
+import { Banking, bankPages } from "./banking/Banking";
+import { Failure, Loading } from "./banking/Common";
 
 export function Portal({ mode }: { mode: "customer" | "admin" }) {
   const session = useSession();
   const cache = useQueryClient();
   const [dark, setDark] = useState(false);
+  const [signOut, setSignOut] = useState(false);
   const [menu, setMenu] = useState(false);
   const [page, setPage] = useState("Overview");
   const isCustomer = mode === "customer";
@@ -53,6 +59,9 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
     staleTime: 30_000,
   });
   const name = session.username ?? "there";
+  function navigate(label: string) {
+    setPage(label); setMenu(false); window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }
 
   return (
     <div className={`app ${dark ? "dark" : ""}`}>
@@ -74,37 +83,36 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
           {isCustomer ? "PERSONAL WORKSPACE" : "OPERATIONS WORKSPACE"}
         </div>
         <nav aria-label="Main navigation">
-          {["Overview", "Security"].map((label) => (
+          {(isCustomer && authenticated && permitted ? [...bankPages, "Security"] : ["Overview", "Security"]).map((label) => (
             <button
               key={label}
               className={`nav-item ${page === label ? "active" : ""}`}
-              onClick={() => {
-                setPage(label);
-                setMenu(false);
-              }}
+              onClick={() => navigate(label)}
               aria-current={page === label ? "page" : undefined}
             >
               {label === "Overview" ? (
                 <LayoutDashboard size={19} />
-              ) : (
-                <ShieldCheck size={19} />
-              )}
+              ) : label === "Accounts" ? <Wallet size={19} /> : label === "Transfers" ? <ArrowUpRight size={19} /> :
+                label === "History" ? <ArrowDownLeft size={19} /> : label === "Beneficiaries" ? <Users size={19} /> :
+                label === "Profile" ? <UserRound size={19} /> : <ShieldCheck size={19} /> }
               <span>{label}</span>
               {page === label && <span className="active-dot" />}
             </button>
           ))}
         </nav>
-        <div className="workspace-label upcoming-label">COMING TO FINCORE</div>
+        <div className="workspace-label upcoming-label">{isCustomer && !authenticated ? "YOUR BANKING WORKSPACE" : "COMING TO FINCORE"}</div>
+        {!(isCustomer && authenticated && permitted) && <>
         <div className="nav-item unavailable">
           <Wallet size={19} />
           <span>Accounts</span>
-          <span className="soon">Soon</span>
+          <span className="soon">{isCustomer ? "Sign in" : "Soon"}</span>
         </div>
         <div className="nav-item unavailable">
           <ArrowUpRight size={19} />
           <span>Transfers</span>
-          <span className="soon">Soon</span>
+          <span className="soon">{isCustomer ? "Sign in" : "Soon"}</span>
         </div>
+        </>}
         <div className="nav-item unavailable">
           <CreditCard size={19} />
           <span>Virtual cards</span>
@@ -121,7 +129,7 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
           </div>
           <a
             className="help-link"
-            href="https://github.com/ABDOUUisHERE/task-app-management#readme"
+            href="https://github.com/ABDOUUisHERE/FinCore-Bank#readme"
             target="_blank"
             rel="noreferrer"
           >
@@ -187,7 +195,7 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
               </p>
             </div>
             <span className="phase-tag">
-              <span /> Foundation release
+              <span /> {isCustomer && authenticated && permitted ? "Customer workspace" : "Foundation release"}
             </span>
           </div>
           {session.status === "loading" ? (
@@ -221,7 +229,7 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
               <ShieldCheck size={28} />
               <h2>Access denied</h2>
               <p>Your identity is not assigned a role for this workspace.</p>
-              <button className="button" onClick={() => void session.logout()}>
+              <button className="button" onClick={() => setSignOut(true)}>
                 Sign out
               </button>
             </div>
@@ -260,12 +268,16 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
               {authenticated && (
                 <button
                   className="button secondary"
-                  onClick={() => void session.logout()}
+                  onClick={() => setSignOut(true)}
                 >
                   <LogOut size={17} /> Sign out of this session
                 </button>
               )}
             </section>
+          ) : isCustomer && authenticated && permitted ? (
+            profile.isPending ? <Loading text="Verifying your customer identity..." /> : profile.error ?
+              <Failure error={profile.error} retry={() => void profile.refetch()} /> : profile.data ?
+              <Banking key={profile.data.subject} subject={profile.data.subject} section={page} navigate={navigate} /> : null
           ) : (
             <>
               <section className="hero">
@@ -439,11 +451,9 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
                       </span>
                       <span className="coming-pill">Coming next</span>
                     </div>
-                    <h3>A foundation for what’s next</h3>
-                    <p>
-                      Accounts, transfers and virtual cards are on the way. Each
-                      will be connected to a tested financial ledger.
-                    </p>
+                    <h3>{isCustomer ? "Your next chapter starts here" : "A foundation for the next phase"}</h3>
+                    <p>{isCustomer ? "Open accounts, send simulated money and follow every confirmed transaction in your personal workspace." :
+                      "Operations tools will be added gradually, with verified permissions and audit trails."}</p>
                     <div className="feature-row">
                       <span>
                         <Wallet size={16} /> Accounts
@@ -455,13 +465,14 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
                         <CreditCard size={16} /> Cards
                       </span>
                     </div>
+                    {isCustomer && <small>Virtual cards arrive in a future release.</small>}
                     <div className="empty-account">
                       <span className="dashed-icon">
                         <Plus size={20} />
                       </span>
                       <div>
                         <strong>Your first account starts here</strong>
-                        <span>Available in a future release</span>
+                        <span>{isCustomer ? "Sign in to open a simulated account" : "Available in a future release"}</span>
                       </div>
                     </div>
                   </article>
@@ -474,9 +485,8 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
                 <div>
                   <h3>Built with care. Growing with purpose.</h3>
                   <p>
-                    This foundation release connects identity and access.
-                    Banking features will arrive gradually, with simulated funds
-                    and verified accounting.
+                    {isCustomer ? "Your personal workspace connects accounts, transfers and confirmed ledger activity, using simulated funds." :
+                      "This foundation release connects identity and access. Operations features will arrive gradually."}
                   </p>
                 </div>
                 <span className="note-version">FINCORE / 0.1</span>
@@ -494,7 +504,7 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
             {authenticated && (
               <button
                 className="text-button"
-                onClick={() => void session.logout()}
+                onClick={() => setSignOut(true)}
               >
                 Sign out <LogOut size={14} />
               </button>
@@ -502,6 +512,7 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
           </footer>
         </main>
       </div>
+      {signOut && <SignOut close={() => setSignOut(false)} />}
     </div>
   );
 }
