@@ -110,4 +110,6 @@ Request an audited replay using its current version and an uppercase reason:
 
 Replay retains the original event ID/body. Unsupported schemas stay quarantined. The operator has no financial scopes and no Gateway route. SASL/PLAIN stays on the private local network; TLS and replication remain deployment work.
 
+For incident triage, replay conflicts and confirmation steps, use the [messaging recovery guide](../operations/messaging-recovery.md).
+
 For Windows Ubuntu-integration errors, first inspect WSL distribution state and Docker readiness. Stop Docker Desktop before releasing stopped WSL instances, then start Desktop and wait for its engine. Never reset data or unregister distributions as a routine restart. Stopping active WSL instances interrupts their workloads; inspect their state first.

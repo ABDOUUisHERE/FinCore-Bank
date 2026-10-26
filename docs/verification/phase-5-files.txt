@@ -9,6 +9,7 @@ docs/deployment/customer-demo.md
 docs/deployment/local-setup.md
 docs/evidence/phase-5-checks.json
 docs/fincore/adr/0008-durable-event-delivery-and-notifications.md
+docs/operations/messaging-recovery.md
 docs/testing.md
 docs/verification/phase-5-files.txt
 docs/verification/phase-5.md
