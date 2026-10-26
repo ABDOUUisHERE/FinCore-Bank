@@ -1,0 +1,503 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "FinCore Notification API",
+    "version": "1.0.0",
+    "description": "Synthetic owned inbox, local email and bearer-header SSE. Private operator routes bypass Gateway."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8280"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Notification": {
+        "type": "object",
+        "required": [
+          "notificationId",
+          "sequence",
+          "aggregateId",
+          "category",
+          "title",
+          "body",
+          "readAt",
+          "createdAt"
+        ],
+        "properties": {
+          "notificationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sequence": {
+            "type": "string",
+            "pattern": "^[0-9]+$"
+          },
+          "aggregateId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "category": {
+            "enum": [
+              "PAYMENTS",
+              "SECURITY"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "body": {
+            "type": "string"
+          },
+          "readAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Preferences": {
+        "type": "object",
+        "required": [
+          "inApp",
+          "email",
+          "payments",
+          "security",
+          "version"
+        ],
+        "properties": {
+          "inApp": {
+            "type": "boolean"
+          },
+          "email": {
+            "type": "boolean"
+          },
+          "payments": {
+            "type": "boolean"
+          },
+          "security": {
+            "type": "boolean"
+          },
+          "version": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/v1/notifications": {
+      "get": {
+        "summary": "List owned inbox, descending sequence, at most 50",
+        "description": "Required authority: CUSTOMER. Ownership comes from the signed JWT subject.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirmed read/update",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "nextCursor",
+                    "unreadCount"
+                  ],
+                  "properties": {
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Notification"
+                      }
+                    },
+                    "nextCursor": {
+                      "type": [
+                        "string",
+                        "null"
+                      ]
+                    },
+                    "unreadCount": {
+                      "type": "integer",
+                      "minimum": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Prohibited role"
+          },
+          "404": {
+            "description": "Owned resource unavailable"
+          },
+          "409": {
+            "description": "Version conflict"
+          }
+        },
+        "parameters": [
+          {
+            "name": "before",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "unread",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            }
+          }
+        ]
+      }
+    },
+    "/api/v1/notifications/{id}/read": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "put": {
+        "summary": "Idempotently mark owned notification read",
+        "description": "Required authority: CUSTOMER. Ownership comes from the signed JWT subject.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirmed read/update"
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Prohibited role"
+          },
+          "404": {
+            "description": "Owned resource unavailable"
+          },
+          "409": {
+            "description": "Version conflict"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false
+              },
+              "example": {}
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/preferences": {
+      "get": {
+        "summary": "Read owned channel/category preferences",
+        "description": "Required authority: CUSTOMER. Ownership comes from the signed JWT subject.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirmed read/update",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Prohibited role"
+          },
+          "404": {
+            "description": "Owned resource unavailable"
+          },
+          "409": {
+            "description": "Version conflict"
+          }
+        }
+      },
+      "put": {
+        "summary": "Update preferences for future messages using expectedVersion",
+        "description": "Required authority: CUSTOMER. Ownership comes from the signed JWT subject.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirmed read/update",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Preferences"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Prohibited role"
+          },
+          "404": {
+            "description": "Owned resource unavailable"
+          },
+          "409": {
+            "description": "Version conflict"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "inApp",
+                  "email",
+                  "payments",
+                  "security",
+                  "expectedVersion"
+                ],
+                "properties": {
+                  "inApp": {
+                    "type": "boolean"
+                  },
+                  "email": {
+                    "type": "boolean"
+                  },
+                  "payments": {
+                    "type": "boolean"
+                  },
+                  "security": {
+                    "type": "boolean"
+                  },
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/emails": {
+      "get": {
+        "summary": "Read owned local simulated email sink; no external sending",
+        "description": "Required authority: CUSTOMER. Ownership comes from the signed JWT subject.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirmed read/update"
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Prohibited role"
+          },
+          "404": {
+            "description": "Owned resource unavailable"
+          },
+          "409": {
+            "description": "Version conflict"
+          }
+        }
+      }
+    },
+    "/api/v1/notifications/stream": {
+      "get": {
+        "summary": "SSE notification.changed invalidations, comments, and initial cursor on reconnect",
+        "description": "Authorization header only, no query tokens. Lifetime at most 25 seconds and bounded by JWT expiry. Reconnect with fresh token; initial cursor covers gaps. Maximum five concurrent streams per subject. Data contains no balances or financial outcome claims.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "SSE invalidations",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Prohibited role"
+          },
+          "404": {
+            "description": "Owned resource unavailable"
+          },
+          "409": {
+            "description": "Version conflict"
+          },
+          "429": {
+            "description": "Concurrent subject stream limit"
+          }
+        }
+      }
+    },
+    "/internal/v1/notifications/dead-letters": {
+      "servers": [
+        {
+          "url": "http://notification-service:8080"
+        }
+      ],
+      "get": {
+        "summary": "List bounded metadata; no original payload",
+        "description": "Required authority: notification.inspect. Ownership comes from the signed JWT subject.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Confirmed read/update"
+          },
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Prohibited role"
+          },
+          "404": {
+            "description": "Owned resource unavailable"
+          },
+          "409": {
+            "description": "Version conflict"
+          }
+        }
+      }
+    },
+    "/internal/v1/notifications/dead-letters/{id}/replay": {
+      "servers": [
+        {
+          "url": "http://notification-service:8080"
+        }
+      ],
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "summary": "Audit and queue unchanged event on private replay topic",
+        "description": "Required authority: notification.replay. Ownership comes from the signed JWT subject.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "401": {
+            "description": "Invalid token"
+          },
+          "403": {
+            "description": "Prohibited role"
+          },
+          "404": {
+            "description": "Owned resource unavailable"
+          },
+          "409": {
+            "description": "Version conflict"
+          },
+          "202": {
+            "description": "Durable replay accepted; asynchronous broker delivery"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "expectedVersion",
+                  "reason"
+                ],
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "reason": {
+                    "type": "string",
+                    "pattern": "^[A-Z_]{3,100}$"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

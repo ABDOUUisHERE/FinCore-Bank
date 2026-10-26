@@ -57,10 +57,10 @@ public class SecurityConfiguration {
             .authorizeExchange(auth -> auth
                 .pathMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .pathMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me").hasRole("CUSTOMER")
-                .pathMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me/profile", "/api/v1/accounts", "/api/v1/accounts/*", "/api/v1/accounts/*/balance", "/api/v1/accounts/*/transactions", "/api/v1/accounts/*/activity", "/api/v1/beneficiaries", "/api/v1/beneficiaries/*", "/api/v1/beneficiaries/*/history", "/api/v1/transfers", "/api/v1/transfers/*", "/api/v1/transfers/*/history").hasRole("CUSTOMER")
+                .pathMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me/profile", "/api/v1/accounts", "/api/v1/accounts/*", "/api/v1/accounts/*/balance", "/api/v1/accounts/*/transactions", "/api/v1/accounts/*/activity", "/api/v1/beneficiaries", "/api/v1/beneficiaries/*", "/api/v1/beneficiaries/*/history", "/api/v1/transfers", "/api/v1/transfers/*", "/api/v1/transfers/*/history", "/api/v1/notifications", "/api/v1/notifications/stream", "/api/v1/notifications/preferences", "/api/v1/notifications/emails").hasRole("CUSTOMER")
                 .pathMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/customers/me/onboarding", "/api/v1/accounts", "/api/v1/transfers", "/api/v1/transfers/*/cancel", "/api/v1/beneficiaries").hasRole("CUSTOMER")
                 .pathMatchers(org.springframework.http.HttpMethod.PATCH, "/api/v1/customers/me/profile").hasRole("CUSTOMER")
-                .pathMatchers(org.springframework.http.HttpMethod.PUT, "/api/v1/accounts/*/guard", "/api/v1/beneficiaries/*").hasRole("CUSTOMER")
+                .pathMatchers(org.springframework.http.HttpMethod.PUT, "/api/v1/accounts/*/guard", "/api/v1/beneficiaries/*", "/api/v1/notifications/*/read", "/api/v1/notifications/preferences").hasRole("CUSTOMER")
                 .anyExchange().denyAll())
             .oauth2ResourceServer(resource -> resource.jwt(jwt -> jwt.jwtAuthenticationConverter(
                 new ReactiveJwtAuthenticationConverterAdapter(converter)))

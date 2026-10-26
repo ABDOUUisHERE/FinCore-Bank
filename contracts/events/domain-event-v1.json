@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FinCore domain event v1",
+  "type": "object",
+  "required": [
+    "eventId",
+    "eventType",
+    "schemaVersion",
+    "aggregateId",
+    "aggregateVersion",
+    "correlationId",
+    "occurredAt",
+    "payload"
+  ],
+  "properties": {
+    "eventId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "eventType": {
+      "type": "string",
+      "pattern": "^[a-z]+(\\.[a-z_]+){1,3}$"
+    },
+    "schemaVersion": {
+      "const": 1
+    },
+    "aggregateId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "aggregateVersion": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "correlationId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]{1,120}$"
+    },
+    "occurredAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "payload": {
+      "type": "object"
+    }
+  },
+  "description": "Topic fincore.<eventType>.v1; key aggregateId. Producer projections exclude names, email addresses, tokens and card data. Opaque subjects route owned notifications. Historical correlation falls back explicitly to the durable event ID."
+}

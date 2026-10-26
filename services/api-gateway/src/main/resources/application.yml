@@ -36,6 +36,18 @@ spring:
                 - name: RequestSize
                   args:
                     maxSize: 16KB
+            - id: notification-stream
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8086}
+              predicates: [Path=/api/v1/notifications/stream]
+              metadata:
+                response-timeout: -1
+            - id: notifications
+              uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8086}
+              predicates: ["Path=/api/v1/notifications,/api/v1/notifications/**"]
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: 16KB
             - id: transfers
               uri: ${PAYMENT_SERVICE_URL:http://localhost:8084}
               predicates:

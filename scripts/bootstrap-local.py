@@ -8,7 +8,7 @@ ROOT = Path(__file__).resolve().parents[1]
 LEDGER_KEYS = ("LEDGER_DB_PASSWORD", "LEDGER_MIGRATION_PASSWORD", "LEDGER_CLIENT_SECRET",
     "ACCOUNT_DB_PASSWORD", "ACCOUNT_MIGRATION_PASSWORD", "ACCOUNT_CLIENT_SECRET",
     "PAYMENT_DB_PASSWORD", "PAYMENT_MIGRATION_PASSWORD", "PAYMENT_CLIENT_SECRET", "PAYMENT_OPERATOR_SECRET", "RECIPIENT_PASSWORD",
-    "BENEFICIARY_DB_PASSWORD", "BENEFICIARY_MIGRATION_PASSWORD", "BENEFICIARY_CLIENT_SECRET")
+    "BENEFICIARY_DB_PASSWORD", "BENEFICIARY_MIGRATION_PASSWORD", "BENEFICIARY_CLIENT_SECRET", "NOTIFICATION_DB_PASSWORD", "NOTIFICATION_MIGRATION_PASSWORD", "NOTIFICATION_CLIENT_SECRET", "NOTIFICATION_OPERATOR_SECRET", "KAFKA_BROKER_PASSWORD", "KAFKA_ADMIN_PASSWORD", "KAFKA_CUSTOMER_PASSWORD", "KAFKA_ACCOUNT_PASSWORD", "KAFKA_LEDGER_PASSWORD", "KAFKA_PAYMENT_PASSWORD", "KAFKA_NOTIFICATION_PASSWORD")
 
 
 def write_private(path: Path, text: str) -> None:
@@ -16,6 +16,17 @@ def write_private(path: Path, text: str) -> None:
     path.write_text(text, encoding="utf-8", newline="\n")
     if os.name != "nt":
         path.chmod(0o600)
+
+
+def configure_kafka(env_path: Path) -> None:
+    values = dict(line.split("=", 1) for line in env_path.read_text(encoding="utf-8").splitlines() if "=" in line and not line.startswith("#"))
+    users = ("broker", "admin", "customer", "account", "ledger", "payment", "notification")
+    options = [f'username="broker"', f'password="{values["KAFKA_BROKER_PASSWORD"]}"']
+    options += [f'user_{user}="{values["KAFKA_"+user.upper()+"_PASSWORD"]}"' for user in users]
+    write_private(ROOT / ".local/kafka/server-jaas.conf", 'KafkaServer { org.apache.kafka.common.security.plain.PlainLoginModule required ' + " ".join(options) + '; };\n')
+    for user in users:
+        body = 'security.protocol=SASL_PLAINTEXT\nsasl.mechanism=PLAIN\nsasl.jaas.config=org.apache.kafka.common.security.plain.PlainLoginModule required username="' + user + '" password="' + values["KAFKA_"+user.upper()+"_PASSWORD"] + '";\n'
+        write_private(ROOT / (".local/kafka/"+user+".properties"),body)
 
 
 def main() -> None:
@@ -36,6 +47,7 @@ def main() -> None:
                 credentials["recipient"] = {"username": "recipient.demo", "password": env_values["RECIPIENT_PASSWORD"]}
                 write_private(credentials_path, json.dumps(credentials, indent=2) + "\n")
             print("Existing local configuration retained. Credentials: .local/credentials.json")
+            configure_kafka(env_path)
             return
         raise SystemExit("Incomplete local configuration. Restore its matching files; do not rotate secrets against an existing database volume.")
     values = {key: secrets.token_hex(24) for key in (
@@ -54,6 +66,7 @@ def main() -> None:
     write_private(env_path, "".join(f"{key}={value}\n" for key, value in values.items()))
     write_private(credentials_path, json.dumps(credentials, indent=2) + "\n")
     write_private(realm_path, json.dumps(template, indent=2) + "\n")
+    configure_kafka(env_path)
     print("Generated .env and local realm. Synthetic user credentials: .local/credentials.json")
 
 

@@ -26,6 +26,7 @@ jobs:
       - run: python3 scripts/check-foundation.py
       - run: docker compose run --rm ledger-check
       - run: npm run test:e2e
+      - run: python3 scripts/check-messaging.py
       - if: failure()
         run: python3 scripts/diagnostics.py
       - uses: actions/upload-artifact@v4

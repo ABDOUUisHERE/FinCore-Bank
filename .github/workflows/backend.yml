@@ -27,5 +27,7 @@ jobs:
         with:
           name: backend-test-reports
           path: |
+            libraries/*/target/surefire-reports/*.xml
+            libraries/*/target/failsafe-reports/*.xml
             services/*/target/surefire-reports/*.xml
             services/*/target/failsafe-reports/*.xml
