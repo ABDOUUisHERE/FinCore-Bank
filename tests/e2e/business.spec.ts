@@ -30,7 +30,7 @@ test("real PKCE identities complete the authoritative simulated payment journey"
   const recipient = await accessToken(browser, "recipient");
   const native = process.env.FINCORE_NATIVE_BUSINESS === "1";
   const result = spawnSync(native ? (process.platform === "win32" ? "python" : "python3") : "docker",
-    native ? ["scripts/check-business.py"] : ["compose", "run", "--rm", "-T", "business-check"],
+    native ? ["scripts/check-business.py"] : ["compose", "run", "--rm", "--no-deps", "-T", "business-check"],
     { input: JSON.stringify({ customer, recipient }), encoding: "utf8", timeout: 150_000, maxBuffer: 1024 * 1024 });
   // Only the runner's bounded safe diagnostics appear here; bearer values never enter arguments/artifacts.
   expect(result.status, result.stdout + result.stderr).toBe(0);

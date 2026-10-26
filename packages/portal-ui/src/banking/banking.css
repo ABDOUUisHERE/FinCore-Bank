@@ -114,3 +114,12 @@
 .bank-signout::backdrop { background: #11231c88; }
 .bank-signout h2 { margin-top: 0; font-size: 22px; }
 .bank-signout p { font-size: 13px; line-height: 1.7; color: var(--muted); }
+
+.bank-live { display:flex;align-items:center;gap:12px;color:var(--muted);font-size:.8rem;flex-wrap:wrap; }
+.bank-toggle { display:flex!important;align-items:center;gap:10px;margin:12px 0;min-height:44px; }
+.bank-toggle input { width:20px!important;min-height:20px!important;height:20px;accent-color:#4b9674; }
+.bank-notifications { list-style:none;margin:16px 0;padding:0; }
+.bank-notifications li { display:flex;justify-content:space-between;gap:20px;padding:20px 0;border-top:1px solid var(--line);overflow-wrap:anywhere; }
+.bank-notifications li.unread { border-left:3px solid #4b9674;padding-left:14px; }
+.bank-notifications small { color:var(--muted); }
+@media(max-width:600px){ .bank-notifications li{flex-direction:column;gap:8px;} }

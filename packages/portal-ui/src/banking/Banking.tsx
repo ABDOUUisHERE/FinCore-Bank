@@ -7,10 +7,11 @@ import { decimal, minor, money } from "./money";
 import { AccountSelect, Badge, Confirm, Empty, Failure, Loading } from "./Common";
 import { Beneficiaries } from "./Beneficiaries";
 import { Transfers } from "./Transfers";
+import { LiveNotifications, Notifications } from "./Notifications";
 import { History } from "./History";
 import "./banking.css";
 
-export const bankPages = ["Overview", "Accounts", "Transfers", "History", "Beneficiaries", "Profile"];
+export const bankPages = ["Overview", "Accounts", "Transfers", "History", "Beneficiaries", "Notifications", "Profile"];
 export function Banking({ subject, section, navigate }: { subject: string; section: string; navigate: (page: string) => void }) {
   const session = useSession();
   const cache = useQueryClient();
@@ -40,8 +41,9 @@ export function Banking({ subject, section, navigate }: { subject: string; secti
   return <section className="bank-workspace" aria-label="Customer banking">
     <div className="bank-toolbar"><span className="bank-verified">Identity verified by the customer service</span>
       <button className="text-button" onClick={refresh}><RefreshCw size={14} /> Refresh data</button></div>
+    <LiveNotifications subject={subject} />
     <Failure error={accounts.error} retry={() => void accounts.refetch()} />
-    {section === "Profile" ? <ProfileForm key={customer.data.version} subject={subject} current={customer.data} /> :
+    {section === "Notifications" ? <Notifications subject={subject} /> : section === "Profile" ? <ProfileForm key={customer.data.version} subject={subject} current={customer.data} /> :
       section === "Beneficiaries" ? <><Failure error={beneficiaries.error} retry={() => void beneficiaries.refetch()} />
         {beneficiaries.isPending ? <Loading /> : <Beneficiaries subject={subject} items={saved} search={beneficiarySearch} searchFor={setBeneficiarySearch} />}</> :
       section === "Transfers" ? <><Failure error={beneficiaries.error} retry={() => void beneficiaries.refetch()} />

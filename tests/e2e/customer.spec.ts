@@ -2,6 +2,14 @@ import { test, expect, type Browser, type Page } from "@playwright/test";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 
+let brokerStopped = false;
+test.afterEach(() => {
+  if (brokerStopped) {
+    const result = spawnSync("docker", ["compose", "start", "kafka"], { encoding: "utf8", timeout: 60_000 });
+    brokerStopped = false; expect(result.status, "Restore only the FinCore Kafka broker").toBe(0);
+  }
+});
+
 type Identity = { username: string; password: string };
 function fixture<T>(action: string, input?: object): T {
   const result = spawnSync("docker", ["compose", "run", "--rm", "--no-deps", "-T", "customer-fixture", action],
@@ -25,7 +33,14 @@ async function login(browser: Browser, identity: Identity) {
   expect(response.status()).toBe(200);
   const token = (await response.json()).access_token as string;
   await expect(page.getByText("Identity verified by the customer service")).toBeVisible();
-  return { context, page, token };
+  const active = { context, page, token };
+  page.on("request", request => {
+    if (request.url().startsWith("http://localhost:8280/api/")) {
+      const authorization = request.headers()["authorization"];
+      if (authorization?.startsWith("Bearer ")) active.token = authorization.slice(7);
+    }
+  });
+  return active;
 }
 async function onboardAndOpen(page: Page, name: string) {
   await page.getByLabel("Display name", { exact: true }).fill(name);
@@ -49,13 +64,22 @@ async function transferDraft(page: Page, destination: string, amount: string, re
   await page.getByRole("button", { name: "Review transfer", exact: true }).click();
 }
 test("customer screens onboard, save a beneficiary, recover a lost transfer response and confirm actual ledger money", async ({ browser }) => {
-  test.setTimeout(360_000);
+  test.setTimeout(480_000);
   const identities = fixture<{ sender: Identity; recipient: Identity }>("identities");
   const recipient = await login(browser, identities.recipient);
   const destination = await onboardAndOpen(recipient.page, "Synthetic UI Recipient");
   const sender = await login(browser, identities.sender);
   const source = await onboardAndOpen(sender.page, "Synthetic UI Customer");
   console.info("Customer UI: both fresh profiles and owned accounts confirmed.");
+  await sender.page.getByRole("button", { name: "Notifications", exact: true }).click();
+  await sender.page.getByLabel("Simulated emails", { exact: true }).check();
+  await sender.page.getByRole("button", { name: "Review notification preferences", exact: true }).click();
+  const preferencesSaved = sender.page.waitForResponse(response => response.url().endsWith("/notifications/preferences") && response.request().method() === "PUT");
+  await sender.page.getByRole("button", { name: "Confirm change", exact: true }).click();
+  expect((await preferencesSaved).status()).toBe(200);
+  await expect(sender.page.getByLabel("Simulated emails", { exact: true })).toBeChecked();
+  await recipient.page.getByRole("button", { name: "Notifications", exact: true }).click();
+  await expect(recipient.page.getByText("Live updates connected", { exact: true })).toBeVisible({ timeout: 30_000 });
   fixture("fund", { customer: sender.token, recipient: recipient.token, source, destination });
   console.info("Customer UI: private synthetic funding confirmed.");
   const page = sender.page;
@@ -68,6 +92,9 @@ test("customer screens onboard, save a beneficiary, recover a lost transfer resp
   await expect(page.getByRole("heading", { name: "UI Recipient", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Transfers", exact: true }).click();
   const reference = "Browser transfer " + crypto.randomUUID();
+  brokerStopped = true;
+  const stop = spawnSync("docker", ["compose", "stop", "-t", "15", "kafka"], { encoding: "utf8", timeout: 60_000 });
+  expect(stop.status, "Stop only the FinCore broker for the outage check").toBe(0);
   await transferDraft(page, destination, "100.00", reference);
   const submissions: { key: string | undefined; body: string | null }[] = [];
   await page.route("**/api/v1/transfers", async route => {
@@ -88,6 +115,32 @@ test("customer screens onboard, save a beneficiary, recover a lost transfer resp
   const result = page.getByRole("region", { name: "Transfer result" });
   const paymentId = (await result.getByText(/^Transfer reference:/).innerText()).split(": ")[1];
   fixture("assert", { customer: sender.token, recipient: recipient.token, source, destination, paymentId });
+  const beforeDelivery = await page.request.get("http://localhost:8280/api/v1/notifications", { headers: { Authorization: "Bearer " + sender.token } });
+  expect(beforeDelivery.status()).toBe(200);
+  expect((await beforeDelivery.json()).items.filter((item: { aggregateId: string }) => item.aggregateId === paymentId)).toHaveLength(0);
+  const restart = spawnSync("docker", ["compose", "start", "kafka"], { encoding: "utf8", timeout: 60_000 });
+  expect(restart.status, "Resume the same persistent FinCore broker").toBe(0); brokerStopped = false;
+  // Recipient stays on the same page: only authenticated SSE may trigger this refresh.
+  await expect(recipient.page.getByRole("heading", { name: "Payment received", exact: true })).toBeVisible({ timeout: 90_000 });
+  await page.getByRole("button", { name: "Notifications", exact: true }).click();
+  const delivered = page.locator(".bank-notifications").first().locator("li").filter({ hasText: paymentId });
+  await expect(delivered).toHaveCount(1, { timeout: 90_000 });
+  await expect(delivered.getByRole("heading", { name: "Transfer completed", exact: true })).toBeVisible();
+  await delivered.getByRole("button", { name: "Mark as read", exact: true }).click();
+  await expect(delivered.getByRole("button", { name: "Mark as read", exact: true })).toHaveCount(0);
+  const syntheticEmails = page.locator("section").filter({ has: page.getByRole("heading", { name: "Simulated email inbox", exact: true }) });
+  await expect(syntheticEmails.getByRole("heading", { name: "Transfer completed", exact: true })).toHaveCount(1, { timeout: 30_000 });
+  for (const width of [1440, 390, 320]) {
+    await page.setViewportSize({ width, height: 1000 });
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    if (process.env.FINCORE_VISUAL_QA === "1" && [1440, 390].includes(width)) {
+      mkdirSync(".local/visual", { recursive: true });
+      await page.screenshot({ path: ".local/visual/phase-5-notifications-" + width + ".png", fullPage: true, animations: "disabled" });
+    }
+  }
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  console.info("Messaging UI: broker outage preserved money; recovery delivered one inbox fact, synthetic email and live recipient update.");
+  await page.getByRole("button", { name: "Transfers", exact: true }).click();
   await page.unroute("**/api/v1/transfers");
   await page.getByRole("button", { name: "Start another transfer", exact: true }).click();
   await transferDraft(page, destination, "12000.00", "Synthetic review then cancellation");

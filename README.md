@@ -2,7 +2,7 @@
 
 Distributed digital banking and payment processing **simulation**, using synthetic customers and simulated money exclusively.
 
-**Status: Phase 4 - customer banking experience.** The customer portal connects profile onboarding, owned accounts and restrictions, exact balances by currency, monthly ledger activity, beneficiaries, transfer review/recovery/cancellation and filtered history to the actual services. Completion requires the recorded payment outcome and a journal reference. Cards, notifications, statements and operational dashboards remain later milestones. See the [Phase 4 verification report](docs/verification/phase-4.md) and [customer demo](docs/deployment/customer-demo.md).
+**Status: Phase 5 - Kafka and notifications.** The connected customer workspace includes owned accounts, beneficiaries, recoverable simulated transfers and confirmed history. Transactional facts now feed an owned notification inbox, local synthetic email and authenticated live updates through Kafka. Delivery is at least once with replay-safe effects. See the [Phase 5 verification report](docs/verification/phase-5.md) and [customer demo](docs/deployment/customer-demo.md).
 
 GitHub's canonical repository is `ABDOUUisHERE/FinCore-Bank`. Local Docker validation is recorded in the [workstation verification report](docs/verification/local-docker-2026-10-23.md).
 
@@ -15,8 +15,8 @@ git clone https://github.com/ABDOUUisHERE/FinCore-Bank.git
 cd FinCore-Bank
 git switch main
 python scripts/bootstrap-local.py
-docker compose up --build -d --wait --wait-timeout 300
-docker compose run --rm ledger-check
+docker compose up --build -d --wait --wait-timeout 600
+docker compose run --rm --no-deps ledger-check
 ```
 
 Open **http://localhost:5173** for the customer workspace or **http://localhost:5174** for operations. Sign in as `customer.demo` or `admin.demo` using their generated passwords in ignored `.local/credentials.json`. No shared passwords are committed. Use `localhost` exactly for OIDC redirect matching. [Setup and troubleshooting](docs/deployment/local-setup.md) explains startup, migration credentials, native development and persistent data.
@@ -48,6 +48,14 @@ flowchart LR
   Account --> Ledger[Authoritative ledger]
   Payment --> Ledger
   Ledger --> LDB[(Private ledger database)]
+  Gateway --> Notification[Notification service]
+  Notification --> NDB[(Private notification database)]
+  Service --> Kafka[Private Kafka and durable delivery]
+  Account --> Kafka
+  Payment --> Kafka
+  Ledger --> Kafka
+  Kafka --> Notification
+  Notification --> Account
   Operator[Private simulation operator] --> Payment
   Operator --> Keycloak
 ```
@@ -87,7 +95,7 @@ npm run build
 npm audit --audit-level=high
 ```
 
-Use `mvnw.cmd` on Windows. Maven integration tests use real PostgreSQL through Docker; `-DskipITs` explicitly omits them. Once the stack is running, `docker compose run --rm ledger-check` tests the private financial API with a real technical token. `python scripts/check-foundation.py` and `npm run test:e2e` check private Customer rejection and browser PKCE login (install Chromium with `npx playwright install chromium`). The browser suite also completes a two-customer financial API journey using real PKCE tokens and the private check runner. See the [test guide](docs/testing.md) and [current verification](docs/verification/phase-3.md) for actual outcomes. GitHub Actions runs backend, frontend and Compose/browser/ledger checks; no automatic deployment is configured.
+Use `mvnw.cmd` on Windows. Maven integration tests use real PostgreSQL through Docker; `-DskipITs` explicitly omits them. Once the stack is running, `docker compose run --rm --no-deps ledger-check` tests the private financial API with a real technical token. `python scripts/check-foundation.py` and `npm run test:e2e` check private Customer rejection and browser PKCE login (install Chromium with `npx playwright install chromium`). The browser suite also completes a two-customer financial API journey using real PKCE tokens and the private check runner. See the [test guide](docs/testing.md) and [current verification](docs/verification/phase-3.md) for actual outcomes. GitHub Actions runs backend, frontend and Compose/browser/ledger checks; no automatic deployment is configured.
 
 Do not use the Core5G simulator from the previously selected workspace as FinCore runtime or evidence: it is a separate project and repository.
 

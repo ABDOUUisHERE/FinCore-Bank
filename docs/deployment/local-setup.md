@@ -21,8 +21,8 @@ git clone https://github.com/ABDOUUisHERE/FinCore-Bank.git
 cd FinCore-Bank
 git switch main
 python scripts/bootstrap-local.py
-docker compose up --build -d --wait --wait-timeout 300
-docker compose run --rm ledger-check
+docker compose up --build -d --wait --wait-timeout 600
+docker compose run --rm --no-deps ledger-check
 ```
 
 On Linux/macOS, use `python3` if `python` is not available. Equivalent bootstrap entry points are `sh scripts/bootstrap-local.sh` and `powershell -ExecutionPolicy Bypass -File scripts/bootstrap-local.ps1`.
@@ -46,7 +46,7 @@ Keycloak imports the realm only when it does not already exist. The Phase 2 `led
 
 One local PostgreSQL container hosts separate `customer` and `keycloak` databases. PUBLIC cannot connect to either. Customer runtime can connect only to its own database and SELECT foundation metadata; it cannot create tables, modify metadata or access Keycloak. A one-shot `customer-migrations` container runs Flyway with `customer_migrator`; its successful exit is required before Customer starts. The runtime container has no migration password. An exited migration container with status 0 is expected.
 
-The same container now also hosts an isolated `ledger` database. `ledger_runtime` has SELECT and controlled function execution; `ledger_migrator` owns schema changes. The ledger runtime has no bootstrap or migration password. `ledger-bootstrap`, `ledger-migrations` and `ledger-identity` must exit 0 before it becomes ready. Neither PostgreSQL nor Ledger publishes a host port in Compose. The Gateway has no Ledger route. Run the synthetic HTTP journey from the private network with `docker compose run --rm ledger-check`; it obtains a token in memory and never prints credentials.
+The same container now also hosts an isolated `ledger` database. `ledger_runtime` has SELECT and controlled function execution; `ledger_migrator` owns schema changes. The ledger runtime has no bootstrap or migration password. `ledger-bootstrap`, `ledger-migrations` and `ledger-identity` must exit 0 before it becomes ready. Neither PostgreSQL nor Ledger publishes a host port in Compose. The Gateway has no Ledger route. Run the synthetic HTTP journey from the private network with `docker compose run --rm --no-deps ledger-check`; it obtains a token in memory and never prints credentials.
 
 The privileged local `fincore-ledger-operator` client is for this isolated technical journey. Do not distribute its secret to portals. Its tokens require the `ledger-service` audience and explicit client roles. The `KEYCLOAK_ADMIN_PASSWORD` is confined to identity configuration; it is never passed to the ledger runtime/check. See [ADR 0005](../fincore/adr/0005-ledger-write-boundary.md) for limitations and future narrower Payment/Account identities.
 
@@ -84,3 +84,19 @@ The Account runtime receives only its own DB password and Account client secret.
 To verify the financial journey, install Chromium and run `npm run test:e2e`. The new browser test signs in two customers with real Authorization Code + PKCE, passes their short-lived access tokens to `business-check` through stdin only and exercises the private network. No token is written to disk or command-line arguments. Running `business-check` by itself without those genuine tokens is not a browser-login substitute. The isolated native verification option is documented in the test guide.
 
 Accepted payment responses remain 202/CREATED on exact replay. Read the Location resource for its current state. Pending risk review reserves no funds. Cancellation is possible only before PROCESSING; a timeout after sending money keeps the payment PROCESSING until the ledger outcome is known. Account provisioning/guard intent can similarly remain pending through an outage and reconcile on recovery. All domain money is synthetic.
+
+## Phase 5 messaging upgrade
+
+Repeat bootstrap and normal Compose startup. Bootstrap appends missing Notification/Kafka secrets and writes ignored Kafka configuration while retaining identities, database roles, credentials and volumes. One-shot jobs configure broker storage/topics/ACLs and apply additive delivery/Notification migrations. Kafka exposes no host port. Named database and Kafka volumes survive normal shutdown.
+
+Inspect private DLQ metadata:
+
+    docker compose run --rm notification-operator list
+
+Request an audited replay using its current version and an uppercase reason:
+
+    docker compose run --rm notification-operator replay DEAD_LETTER_UUID CURRENT_VERSION DEPENDENCY_RECOVERED
+
+Replay retains the original event ID/body. Unsupported schemas stay quarantined. The operator has no financial scopes and no Gateway route. SASL/PLAIN stays on the private local network; TLS and replication remain deployment work.
+
+For Windows Ubuntu-integration errors, first inspect WSL distribution state and Docker readiness. Stop Docker Desktop before releasing stopped WSL instances, then start Desktop and wait for its engine. Never reset data or unregister distributions as a routine restart. Stopping active WSL instances interrupts their workloads; inspect their state first.

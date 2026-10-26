@@ -33,4 +33,10 @@ Refresh portal data afterward. A repeated key does not add money twice; a new ke
 7. History shows confirmed ledger entries separately from pending requests. Filter by UTC dates, exact amount, type, direction or reference. Compensation links preserve original entries. CSV includes the loaded filtered rows; load more for additional rows.
 8. Accounts support confirmed versioned freeze/unfreeze and permanent zero-balance closure. Profile and beneficiary edits require review/confirmation.
 
-Dashboard totals stay separate by currency and are withheld if data is incomplete. Monthly flows cover the whole selected UTC month, including funding and compensation. Cards, notifications, statements and operational review retain later phases. Self-registration is not claimed: generated demo users and test-created synthetic users use real hosted sign-in.
+Dashboard totals stay separate by currency and are withheld if data is incomplete. Monthly flows cover the whole selected UTC month, including funding and compensation. Cards, statements and operational review retain later phases. Self-registration is not claimed: generated demo users and test-created synthetic users use real hosted sign-in.
+
+## Notifications and live updates
+
+Open Notifications to view your own inbox, filter unread messages and mark entries read. Preferences apply to future channels and categories. Review and confirm changes; stale versions require refresh. The simulated email inbox contains local stored deliveries, without external email.
+
+The live connection uses a bearer header and refreshes owner APIs when a recorded notification arrives. Reconnecting does not determine a transfer outcome. Inspect the transfer resource and confirmed journal while notification delivery is delayed. Broker recovery can replay events without posting money again.

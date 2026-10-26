@@ -89,3 +89,13 @@ The complete reactor includes signed-RSA service tests and isolated actual Postg
 For a dedicated native lab, the new database fixtures accept `FINCORE_TEST_ADMIN_URL`, `FINCORE_TEST_ADMIN_USER`, `FINCORE_TEST_ADMIN_PASSWORD` and per-service `FINCORE_TEST_<LEDGER|ACCOUNT|PAYMENT>_<RUNTIME|MIGRATOR>_PASSWORD` environment values. They create/drop only uniquely named test databases and never rotate existing roles. PostgreSQL 16.9 native results are distinct from PostgreSQL 17.11 Linux-container results. `FINCORE_NATIVE_BUSINESS=1` runs the same Python journey on explicit loopback development endpoints rather than Compose; this flag is not enabled in CI.
 
 A focused native backend run is `mvnw.cmd -B -ntp -pl services/account-service,services/payment-service -am verify` with those isolated-lab settings. Default `./mvnw verify` still requires Docker for all Testcontainers checks. Do not run financial tests against unrelated service data or interpret simulated restart tests as proof of production disaster recovery.
+
+## Phase 5 messaging acceptance
+
+Default Maven verify also runs MessagingDeliveryIT with real Kafka 4.2.2 and PostgreSQL, plus Notification transaction/security checks. Pause/unpause affects only the dedicated test broker. Post-ack fault injection repeats the original event identity; rollback, concurrent claims and stale projections retain their assertions.
+
+The hosted-PKCE customer journey stops only the FinCore broker, confirms real ledger money during the outage, then restarts its persistent broker. It requires one sender notification, one local simulated email and a recipient update without reloading that page. A cleanup hook restores the broker after test failure. Other containers remain untouched.
+
+After browser checks, run `python scripts/check-messaging.py` for real producer ACL denial, bounded poison retry/DLQ persistence and versioned replay. The deliberately unsupported schema remains quarantined after unchanged replay. Operator credentials stay private. CI stores service/library test XML and anonymous screenshots only.
+
+Windows may run the complete frontend suite using `npm test -- --maxWorkers=1` to reduce worker startup contention. CI retains its normal command. The assertions are identical. Stream framing, bearer-header authentication and explicit preference confirmation are independently covered.

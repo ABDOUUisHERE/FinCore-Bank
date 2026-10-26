@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  Bell,
   ArrowDownLeft,
   ArrowRight,
   ArrowUpRight,
@@ -94,7 +95,7 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
                 <LayoutDashboard size={19} />
               ) : label === "Accounts" ? <Wallet size={19} /> : label === "Transfers" ? <ArrowUpRight size={19} /> :
                 label === "History" ? <ArrowDownLeft size={19} /> : label === "Beneficiaries" ? <Users size={19} /> :
-                label === "Profile" ? <UserRound size={19} /> : <ShieldCheck size={19} /> }
+                label === "Notifications" ? <Bell size={19} /> : label === "Profile" ? <UserRound size={19} /> : <ShieldCheck size={19} /> }
               <span>{label}</span>
               {page === label && <span className="active-dot" />}
             </button>
