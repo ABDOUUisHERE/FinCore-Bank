@@ -113,3 +113,5 @@ Replay retains the original event ID/body. Unsupported schemas stay quarantined.
 For incident triage, replay conflicts and confirmation steps, use the [messaging recovery guide](../operations/messaging-recovery.md).
 
 For Windows Ubuntu-integration errors, first inspect WSL distribution state and Docker readiness. Stop Docker Desktop before releasing stopped WSL instances, then start Desktop and wait for its engine. Never reset data or unregister distributions as a routine restart. Stopping active WSL instances interrupts their workloads; inspect their state first.
+
+The [Docker Desktop/WSL troubleshooting guide](../troubleshooting/docker-desktop-wsl.md) separates paused, stopped and blocked-proxy states and gives a staged recovery procedure that preserves the existing dataset.
