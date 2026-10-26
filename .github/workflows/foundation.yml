@@ -20,11 +20,11 @@ jobs:
           node-version: "24"
           cache: npm
       - run: python3 scripts/bootstrap-local.py
-      - run: docker compose up --build -d --wait --wait-timeout 300
+      - run: docker compose up --build -d --wait --wait-timeout 600
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: python3 scripts/check-foundation.py
-      - run: docker compose run --rm ledger-check
+      - run: docker compose run --rm --no-deps ledger-check
       - run: npm run test:e2e
       - run: python3 scripts/check-messaging.py
       - if: failure()
