@@ -28,9 +28,10 @@ public class NotificationStore {
             jdbc.update("insert into ledger_snapshot(account_id,version,payload) values(?,?,?::jsonb) on conflict(account_id) do update set version=excluded.version,payload=excluded.payload where ledger_snapshot.version<excluded.version",event.aggregateId(),event.aggregateVersion(),event.payload().toString());
             return true;
         }
-        var old=jdbc.query("select version from aggregate_watermark where aggregate_id=?",(rs,n)->rs.getLong(1),event.aggregateId());
+        var kind=event.eventType().substring(0,event.eventType().indexOf('.'));
+        var old=jdbc.query("select version from aggregate_watermark where aggregate_kind=? and aggregate_id=?",(rs,n)->rs.getLong(1),kind,event.aggregateId());
         if(!old.isEmpty() && old.getFirst()>=event.aggregateVersion())return false;
-        jdbc.update("insert into aggregate_watermark(aggregate_id,version,event_type) values(?,?,?) on conflict(aggregate_id) do update set version=excluded.version,event_type=excluded.event_type",event.aggregateId(),event.aggregateVersion(),event.eventType());
+        jdbc.update("insert into aggregate_watermark(aggregate_kind,aggregate_id,version,event_type) values(?,?,?,?) on conflict(aggregate_kind,aggregate_id) do update set version=excluded.version,event_type=excluded.event_type",kind,event.aggregateId(),event.aggregateVersion(),event.eventType());
         for(var notice:notices){
             var pref=preferences(notice.subject());
             if(!pref.path(notice.category().equals("PAYMENTS")?"payments":"security").asBoolean())continue;

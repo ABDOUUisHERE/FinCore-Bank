@@ -88,7 +88,10 @@ test("customer screens onboard, save a beneficiary, recover a lost transfer resp
   await page.getByLabel("Beneficiary name", { exact: true }).fill("UI Recipient");
   await page.getByLabel("Recipient account reference", { exact: true }).fill(destination);
   await page.getByRole("button", { name: "Review beneficiary", exact: true }).click();
+  const beneficiarySaved = page.waitForResponse(response => response.url().endsWith("/beneficiaries") && response.request().method() === "POST");
   await page.getByRole("button", { name: "Confirm change", exact: true }).click();
+  const beneficiaryResponse = await beneficiarySaved;
+  expect(beneficiaryResponse.status(), "Beneficiary creation must return a recorded result").toBe(201);
   await expect(page.getByRole("heading", { name: "UI Recipient", exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Transfers", exact: true }).click();
   const reference = "Browser transfer " + crypto.randomUUID();
@@ -128,7 +131,7 @@ test("customer screens onboard, save a beneficiary, recover a lost transfer resp
   await expect(delivered.getByRole("heading", { name: "Transfer completed", exact: true })).toBeVisible();
   await delivered.getByRole("button", { name: "Mark as read", exact: true }).click();
   await expect(delivered.getByRole("button", { name: "Mark as read", exact: true })).toHaveCount(0);
-  const syntheticEmails = page.locator("section").filter({ has: page.getByRole("heading", { name: "Simulated email inbox", exact: true }) });
+  const syntheticEmails = page.locator("section.surface").filter({ has: page.getByRole("heading", { name: "Simulated email inbox", exact: true }) });
   await expect(syntheticEmails.getByRole("heading", { name: "Transfer completed", exact: true })).toHaveCount(1, { timeout: 30_000 });
   for (const width of [1440, 390, 320]) {
     await page.setViewportSize({ width, height: 1000 });

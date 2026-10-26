@@ -72,4 +72,10 @@ class NotificationDatabaseIT {
   assertThat(jdbc.queryForObject("select count(*) from replay_audit where id=?",Long.class,replay)).isOne();
   assertThat(jdbc.queryForObject("select body->>'value' from replay_outbox where id=?",String.class,replay)).isEqualTo(body);
  }
+ @Test void unrelatedProducerVersionsCannotSuppressPaymentNotificationsWithTheSameOpaqueId(){
+  var id=UUID.randomUUID();var owner=UUID.randomUUID().toString();var customer=event(id,100,"customer.updated");
+  tx.execute(status->store.accept(customer,raw(customer),List.of()));
+  assertThat(accept(event(id,3,"payment.completed"),owner)).isTrue();
+  assertThat(store.list(owner,null,false).get("items")).asList().hasSize(1);
+ }
 }

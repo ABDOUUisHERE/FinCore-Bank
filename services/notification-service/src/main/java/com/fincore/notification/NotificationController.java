@@ -28,11 +28,11 @@ public class NotificationController {
  @GetMapping("/api/v1/notifications/emails") public Object emails(@AuthenticationPrincipal Jwt jwt){return Map.of("items",store.emails(jwt.getSubject()));}
  @GetMapping(value="/api/v1/notifications/stream",produces=MediaType.TEXT_EVENT_STREAM_VALUE)
  public ResponseEntity<SseEmitter> stream(@AuthenticationPrincipal Jwt jwt){
-  if(streams.stream().filter(s->s.subject.equals(jwt.getSubject())).count()>=5)throw new ApiFailure(429,"STREAM_LIMIT");
   var expiry=jwt.getExpiresAt();if(expiry==null || !expiry.isAfter(Instant.now().plusSeconds(2)))throw new ApiFailure(401,"SESSION_EXPIRED");
   var emitter=new SseEmitter(Math.min(25000,Math.max(1000,java.time.Duration.between(Instant.now(),expiry.minusSeconds(1)).toMillis())));
-  var stream=new Stream(jwt.getSubject(),expiry,emitter);streams.add(stream);
-  Runnable cleanup=()->streams.remove(stream);emitter.onCompletion(cleanup);emitter.onTimeout(cleanup);emitter.onError(e->cleanup.run());
+  var stream=new Stream(jwt.getSubject(),expiry,emitter);
+  synchronized(streams){if(streams.stream().filter(s->s.subject.equals(jwt.getSubject())).count()>=5)throw new ApiFailure(429,"STREAM_LIMIT");streams.add(stream);}
+  Runnable cleanup=()->streams.remove(stream);emitter.onCompletion(cleanup);emitter.onTimeout(()->{cleanup.run();emitter.complete();});emitter.onError(e->cleanup.run());
   return ResponseEntity.ok().cacheControl(CacheControl.noStore()).header("X-Accel-Buffering","no").body(emitter);
  }
  @Scheduled(fixedDelay=2000) public void updates(){for(var stream:streams){
