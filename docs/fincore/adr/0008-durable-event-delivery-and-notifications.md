@@ -14,6 +14,8 @@ Three bounded consumer retries lead to acknowledged DLQ publication. DLQ storage
 
 SSE uses an Authorization header and in-memory bearer, five streams per subject, keepalives and a lifetime bounded by token expiry and 25 seconds. The browser reconnects with a refreshed token. The initial cursor invalidates the inbox to cover reconnect gaps. Events invalidate owner APIs instead of announcing optimistic money. Query tokens and public operator routes are unsupported.
 
+Gateway API quotas allow 300 requests per minute per verified subject after JWT authentication. Anonymous requests share a transport-address bucket; identity and forwarding headers cannot select a bucket. At most 10,000 buckets are kept for the current minute. This replaces the original process-wide shared quota, which let one customer's live refreshes deny another customer's normal request. The limiter remains in-process for the single local gateway; distributed edge protection is later deployment work.
+
 Historical Payment facts without immutable routing metadata are published/consumed without inventing retroactive recipients. Customer/Account events carry minimal immutable identifiers. A new Payment migration captures routing/status/journal fields in the original transaction. Existing migrations remain unchanged. Correlation explicitly falls back to the durable event ID when no original request correlation was stored.
 
 Delivery is at least once. No end-to-end exactly-once, external email guarantee, cluster availability or benchmark claim is made.

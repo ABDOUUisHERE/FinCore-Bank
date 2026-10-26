@@ -54,6 +54,7 @@ public class SecurityConfiguration {
                     new SimpleGrantedAuthority("ROLE_" + role)).toList();
         });
         return http.csrf(csrf -> csrf.disable()).cors(c -> c.configurationSource(source))
+            .addFilterBefore(new ApiRateLimitFilter(), org.springframework.security.config.web.server.SecurityWebFiltersOrder.AUTHORIZATION)
             .authorizeExchange(auth -> auth
                 .pathMatchers("/actuator/health", "/actuator/health/**").permitAll()
                 .pathMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me").hasRole("CUSTOMER")
