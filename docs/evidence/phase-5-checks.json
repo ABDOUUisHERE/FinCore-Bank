@@ -1,0 +1,382 @@
+{
+  "milestone": "Phase 5: Kafka delivery and owned notifications",
+  "recorded_at_utc": "2026-10-26T12:33:15.449957+00:00",
+  "repository": {
+    "id": 1138747020,
+    "name": "ABDOUUisHERE/FinCore-Bank"
+  },
+  "branch": "feature/fincore-messaging",
+  "base_commit": "bf5ec14577337fdce5bc5fc0a4e11dcf66be281c",
+  "source_commit": "b0cca942ff91cd5efb862dbc8f071267133607d3",
+  "workflows": [
+    {
+      "id": 40322495002,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "b0cca942ff91cd5efb862dbc8f071267133607d3",
+      "head_branch": "feature/fincore-messaging",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40322495002",
+      "created_at": "2026-10-26T12:26:02Z",
+      "updated_at": "2026-10-26T12:26:32Z",
+      "jobs": [
+        {
+          "id": 121570683099,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40322495002/job/121570683099"
+        }
+      ]
+    },
+    {
+      "id": 40322494942,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "b0cca942ff91cd5efb862dbc8f071267133607d3",
+      "head_branch": "feature/fincore-messaging",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40322494942",
+      "created_at": "2026-10-26T12:26:02Z",
+      "updated_at": "2026-10-26T12:28:00Z",
+      "jobs": [
+        {
+          "id": 121570683240,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40322494942/job/121570683240"
+        }
+      ]
+    },
+    {
+      "id": 40322494911,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "b0cca942ff91cd5efb862dbc8f071267133607d3",
+      "head_branch": "feature/fincore-messaging",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40322494911",
+      "created_at": "2026-10-26T12:26:02Z",
+      "updated_at": "2026-10-26T12:31:42Z",
+      "jobs": [
+        {
+          "id": 121570682964,
+          "name": "compose",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40322494911/job/121570682964"
+        }
+      ]
+    }
+  ],
+  "remote_default_checks": {
+    "frontend": {
+      "typecheck": "PASS",
+      "lint": "PASS",
+      "component_tests": 20,
+      "build": "PASS",
+      "audit_vulnerabilities": 0
+    },
+    "backend": {
+      "command": "./mvnw -B -ntp verify",
+      "totals": {
+        "tests": 109,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "suites": 20
+    },
+    "integration": {
+      "compose_fresh_start": "PASS",
+      "independent_customer_auth": "PASS",
+      "private_ledger_journey": "PASS",
+      "browser_tests": 6,
+      "playwright_retries": 0,
+      "broker_outage_and_live_recovery": "PASS",
+      "private_kafka_acl_dlq_replay": "PASS"
+    }
+  },
+  "local_backend_reports": {
+    "provenance": "Latest local reports combined across the prior full reactor and successful focused messaging/notification and Gateway checks; not one successful full local reactor. GitHub full default verify on the final source is recorded separately.",
+    "reports": [
+      {
+        "suite": "com.fincore.messaging.MessagingDeliveryIT",
+        "report": "libraries/messaging/target/failsafe-reports/TEST-com.fincore.messaging.MessagingDeliveryIT.xml",
+        "report_modified_at_utc": "2026-10-26T12:06:33.531820+00:00",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.account.AccountRecoveryIT",
+        "report": "services/account-service/target/failsafe-reports/TEST-com.fincore.account.AccountRecoveryIT.xml",
+        "report_modified_at_utc": "2026-10-26T10:19:16.231638+00:00",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.account.AccountSecurityTest",
+        "report": "services/account-service/target/surefire-reports/TEST-com.fincore.account.AccountSecurityTest.xml",
+        "report_modified_at_utc": "2026-10-26T10:18:07.227304+00:00",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.gateway.configuration.ApiRateLimitFilterTest",
+        "report": "services/api-gateway/target/surefire-reports/TEST-com.fincore.gateway.configuration.ApiRateLimitFilterTest.xml",
+        "report_modified_at_utc": "2026-10-26T12:24:30.759349+00:00",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.gateway.configuration.GatewaySecurityTest",
+        "report": "services/api-gateway/target/surefire-reports/TEST-com.fincore.gateway.configuration.GatewaySecurityTest.xml",
+        "report_modified_at_utc": "2026-10-26T12:25:08.878430+00:00",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.beneficiary.BeneficiaryDatabaseIT",
+        "report": "services/beneficiary-service/target/failsafe-reports/TEST-com.fincore.beneficiary.BeneficiaryDatabaseIT.xml",
+        "report_modified_at_utc": "2026-10-26T10:22:56.605410+00:00",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.beneficiary.BeneficiarySecurityTest",
+        "report": "services/beneficiary-service/target/surefire-reports/TEST-com.fincore.beneficiary.BeneficiarySecurityTest.xml",
+        "report_modified_at_utc": "2026-10-26T10:21:54.884103+00:00",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.customer.configuration.DatabaseIsolationIT",
+        "report": "services/customer-service/target/failsafe-reports/TEST-com.fincore.customer.configuration.DatabaseIsolationIT.xml",
+        "report_modified_at_utc": "2026-10-26T10:15:39.409234+00:00",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.customer.configuration.CurrentSubjectSecurityTest",
+        "report": "services/customer-service/target/surefire-reports/TEST-com.fincore.customer.configuration.CurrentSubjectSecurityTest.xml",
+        "report_modified_at_utc": "2026-10-26T10:15:11.412349+00:00",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.ledger.LedgerDatabaseIT",
+        "report": "services/ledger-service/target/failsafe-reports/TEST-com.fincore.ledger.LedgerDatabaseIT.xml",
+        "report_modified_at_utc": "2026-10-26T10:17:41.610384+00:00",
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.ledger.InstructionSecurityTest",
+        "report": "services/ledger-service/target/surefire-reports/TEST-com.fincore.ledger.InstructionSecurityTest.xml",
+        "report_modified_at_utc": "2026-10-26T10:16:04.468803+00:00",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.ledger.LedgerSecurityTest",
+        "report": "services/ledger-service/target/surefire-reports/TEST-com.fincore.ledger.LedgerSecurityTest.xml",
+        "report_modified_at_utc": "2026-10-26T10:16:07.310603+00:00",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.ledger.MoneyTest",
+        "report": "services/ledger-service/target/surefire-reports/TEST-com.fincore.ledger.MoneyTest.xml",
+        "report_modified_at_utc": "2026-10-26T10:16:07.520283+00:00",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.notification.NotificationDatabaseIT",
+        "report": "services/notification-service/target/failsafe-reports/TEST-com.fincore.notification.NotificationDatabaseIT.xml",
+        "report_modified_at_utc": "2026-10-26T12:08:23.201705+00:00",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.notification.EventProcessorTest",
+        "report": "services/notification-service/target/surefire-reports/TEST-com.fincore.notification.EventProcessorTest.xml",
+        "report_modified_at_utc": "2026-10-26T12:07:02.655257+00:00",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.notification.NotificationSecurityTest",
+        "report": "services/notification-service/target/surefire-reports/TEST-com.fincore.notification.NotificationSecurityTest.xml",
+        "report_modified_at_utc": "2026-10-26T12:07:20.528874+00:00",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.payment.PaymentRecoveryIT",
+        "report": "services/payment-service/target/failsafe-reports/TEST-com.fincore.payment.PaymentRecoveryIT.xml",
+        "report_modified_at_utc": "2026-10-26T10:21:30.030953+00:00",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.payment.PaymentIdempotencyTest",
+        "report": "services/payment-service/target/surefire-reports/TEST-com.fincore.payment.PaymentIdempotencyTest.xml",
+        "report_modified_at_utc": "2026-10-26T10:19:33.542207+00:00",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.payment.PaymentSecurityTest",
+        "report": "services/payment-service/target/surefire-reports/TEST-com.fincore.payment.PaymentSecurityTest.xml",
+        "report_modified_at_utc": "2026-10-26T10:19:49.765263+00:00",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "suite": "com.fincore.payment.RiskPolicyTest",
+        "report": "services/payment-service/target/surefire-reports/TEST-com.fincore.payment.RiskPolicyTest.xml",
+        "report_modified_at_utc": "2026-10-26T10:19:49.889317+00:00",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "totals": {
+      "tests": 109,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "local_frontend": {
+    "component_tests": 20,
+    "worker_mode": "serial on Windows; normal default in GitHub",
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "audit_vulnerabilities": 0
+  },
+  "local_acceptance": {
+    "browser_tests": 6,
+    "playwright_retries": 0,
+    "broker_outage_confirmed_money_and_single_notification_email": "PASS",
+    "recipient_live_without_reload": "PASS",
+    "private_acl_dlq_replay": "PASS",
+    "notification_existing_schema_upgrade": "V1 to V2 applied successfully without reset",
+    "visual_review": "desktop 1440 and mobile 390; overflow assertions also 320",
+    "volumes_deleted": false,
+    "existing_credentials_rotated": false,
+    "unrelated_commerce_stack_modified": false
+  },
+  "runtime_services": [
+    {
+      "service": "account-service",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "admin-portal",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "api-gateway",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "beneficiary-service",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "customer-portal",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "customer-service",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "kafka",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "keycloak",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "ledger-service",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "notification-service",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "payment-service",
+      "state": "running",
+      "health": "healthy"
+    },
+    {
+      "service": "postgres",
+      "state": "running",
+      "health": "healthy"
+    }
+  ],
+  "limits": [
+    "Single persistent Kafka node, not high availability",
+    "SASL_PLAINTEXT on private local Docker network, not production TLS",
+    "Synthetic email stored in an owned local sink; no external mail delivery",
+    "At-least-once delivery with idempotent local effects, not end-to-end exactly-once",
+    "Historical facts without immutable routing metadata do not invent retroactive recipients",
+    "Gateway quota is bounded and per verified subject in one local process, not a distributed edge limiter",
+    "Phase 6 and later milestones remain outstanding"
+  ]
+}

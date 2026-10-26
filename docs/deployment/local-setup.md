@@ -89,13 +89,24 @@ Accepted payment responses remain 202/CREATED on exact replay. Read the Location
 
 Repeat bootstrap and normal Compose startup. Bootstrap appends missing Notification/Kafka secrets and writes ignored Kafka configuration while retaining identities, database roles, credentials and volumes. One-shot jobs configure broker storage/topics/ACLs and apply additive delivery/Notification migrations. Kafka exposes no host port. Named database and Kafka volumes survive normal shutdown.
 
+When upgrading an already running Phase 5 Notification schema V1 to V2, quiesce that service before changing the watermark primary key. With its dependencies already healthy, use:
+
+```sh
+docker compose build notification-service
+docker compose stop -t 20 notification-service
+docker compose run --rm --no-deps notification-migrations
+docker compose up --no-build --no-deps -d --wait --wait-timeout 240 notification-service
+```
+
+V2 retains existing watermark rows and scopes each version stream by producer kind and aggregate ID. A fresh deployment applies V1 and V2 before starting Notification.
+
 Inspect private DLQ metadata:
 
-    docker compose run --rm notification-operator list
+    docker compose run --rm --no-deps notification-operator list
 
 Request an audited replay using its current version and an uppercase reason:
 
-    docker compose run --rm notification-operator replay DEAD_LETTER_UUID CURRENT_VERSION DEPENDENCY_RECOVERED
+    docker compose run --rm --no-deps notification-operator replay DEAD_LETTER_UUID CURRENT_VERSION DEPENDENCY_RECOVERED
 
 Replay retains the original event ID/body. Unsupported schemas stay quarantined. The operator has no financial scopes and no Gateway route. SASL/PLAIN stays on the private local network; TLS and replication remain deployment work.
 

@@ -67,7 +67,7 @@ Phase 1 evidence makes no financial correctness claim. The Phase 2 ledger tests 
 
 ```sh
 ./mvnw -B -ntp -pl services/ledger-service -am verify
-docker compose run --rm ledger-check
+docker compose run --rm --no-deps ledger-check
 ```
 
 The Maven module runs Money precision/normalization/overflow tests, signed-RSA HTTP authorization tests and `LedgerDatabaseIT` on a real PostgreSQL 17.11 Testcontainer. The integration suite creates its own randomly named database, migrates with the owner and invokes financial commands with the restricted runtime role. It covers opposing/concurrent debits, duplicate keys and changed transport keys, definitive rejection replay after funding, restriction races, competing full reversals, forbidden SQL mutations, empty/unbalanced/late postings, reconciliation corruption detection, explicit rollback and an injected database failure after balances change. It fails if PostgreSQL cannot start; no automatic Docker-unavailable skip is configured.
@@ -99,3 +99,5 @@ The hosted-PKCE customer journey stops only the FinCore broker, confirms real le
 After browser checks, run `python scripts/check-messaging.py` for real producer ACL denial, bounded poison retry/DLQ persistence and versioned replay. The deliberately unsupported schema remains quarantined after unchanged replay. Operator credentials stay private. CI stores service/library test XML and anonymous screenshots only.
 
 Windows may run the complete frontend suite using `npm test -- --maxWorkers=1` to reduce worker startup contention. CI retains its normal command. The assertions are identical. Stream framing, bearer-header authentication and explicit preference confirmation are independently covered.
+
+Gateway quota tests preserve 300 accepted API requests per minute for each authenticated subject, isolation between subjects, rejection of forged identity/forwarding headers, bounded bucket storage and renewal. The security chain chooses the subject only after JWT validation. This prevents fast multi-customer live-update journeys from consuming one shared process-wide allowance.
