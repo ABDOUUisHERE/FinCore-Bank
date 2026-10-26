@@ -30,6 +30,8 @@ Local acceptance and all three GitHub workflows passed for source commit `b0cca9
 
 Machine-readable results: [phase-5-checks.json](../evidence/phase-5-checks.json). Exact changed-file list: [phase-5-files.txt](phase-5-files.txt). The source base is the completed Phase 4 commit `bf5ec14577337fdce5bc5fc0a4e11dcf66be281c`.
 
+After integration, GitHub independently repeated all three workflows on `main` commit `c710127e84e10ba85f5a8b0ec197c7228499641f`: [Backend](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40323715360), [Frontend](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40323715339) and [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40323715316) all completed successfully. This commit differs from the validated application source only in documentation. The evidence JSON retains these main-branch run IDs, exact SHA and job conclusions separately from the original feature-branch checks.
+
 ## G. Observed verification
 
 | Executed check | Result |

@@ -378,5 +378,71 @@
     "Historical facts without immutable routing metadata do not invent retroactive recipients",
     "Gateway quota is bounded and per verified subject in one local process, not a distributed edge limiter",
     "Phase 6 and later milestones remain outstanding"
-  ]
+  ],
+  "main_validation": {
+    "commit": "c710127e84e10ba85f5a8b0ec197c7228499641f",
+    "application_diff_from_source": "documentation only",
+    "workflows": [
+      {
+        "id": 40323715339,
+        "name": "Frontend quality",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "c710127e84e10ba85f5a8b0ec197c7228499641f",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40323715339",
+        "created_at": "2026-10-26T12:35:33Z",
+        "updated_at": "2026-10-26T12:36:04Z",
+        "jobs": [
+          {
+            "id": 121574880371,
+            "name": "verify",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40323715339/job/121574880371"
+          }
+        ]
+      },
+      {
+        "id": 40323715360,
+        "name": "Backend quality",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "c710127e84e10ba85f5a8b0ec197c7228499641f",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40323715360",
+        "created_at": "2026-10-26T12:35:33Z",
+        "updated_at": "2026-10-26T12:38:10Z",
+        "jobs": [
+          {
+            "id": 121574880140,
+            "name": "verify",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40323715360/job/121574880140"
+          }
+        ]
+      },
+      {
+        "id": 40323715316,
+        "name": "Foundation integration",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "c710127e84e10ba85f5a8b0ec197c7228499641f",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40323715316",
+        "created_at": "2026-10-26T12:35:33Z",
+        "updated_at": "2026-10-26T12:41:35Z",
+        "jobs": [
+          {
+            "id": 121574880086,
+            "name": "compose",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40323715316/job/121574880086"
+          }
+        ]
+      }
+    ]
+  }
 }
