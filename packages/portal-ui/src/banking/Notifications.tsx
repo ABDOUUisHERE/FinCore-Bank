@@ -54,7 +54,7 @@ export function Notifications({ subject }: { subject: string }) {
     {inbox.isPending ? <Loading /> : inbox.error ? <Failure error={inbox.error} retry={() => void inbox.refetch()} /> : !items.length ?
       <Empty title="No notifications to show"><p>Confirmed payment and account security updates appear here when enabled.</p></Empty> :
       <ul className="bank-notifications">{items.map(item => <li key={item.notificationId} className={item.readAt ? "" : "unread"}>
-        <div><small>{item.category.toLowerCase()} ? {new Date(item.createdAt).toLocaleString()}</small><h3>{item.title}</h3><p>{item.body}</p>
+        <div><small>{item.category.toLowerCase()} / {new Date(item.createdAt).toLocaleString()}</small><h3>{item.title}</h3><p>{item.body}</p>
         <small className="bank-reference">Reference: {item.aggregateId}</small></div>
         {!item.readAt && <button className="text-button" disabled={mark.isPending} onClick={() => mark.mutate(item.notificationId)}>Mark as read</button>}</li>)}</ul>}
     {inbox.hasNextPage && <button className="button secondary" disabled={inbox.isFetchingNextPage} onClick={() => void inbox.fetchNextPage()}>Load more notifications</button>}
