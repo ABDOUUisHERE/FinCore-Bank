@@ -301,5 +301,78 @@
     "Issued ALLOW expires after thirty seconds; no instantaneous distributed revocation",
     "Case feed is a mutable work queue; immutable initial alerts have a stable cursor",
     "Cards, reporting and Ledger holds remain Phase 7"
-  ]
+  ],
+  "main_verification": {
+    "commit": "04d1bd70c6f77b8f339405c079e0576e8fc0ed78",
+    "recorded_at_utc": "2026-10-27T10:54:53.428189+00:00",
+    "application_identical_to_source_commit": true,
+    "backend_tests": 144,
+    "backend_failures": 0,
+    "backend_errors": 0,
+    "backend_skipped": 0,
+    "frontend_component_tests": 24,
+    "browser_journeys": 7,
+    "workflows": [
+      {
+        "id": 40490986520,
+        "name": "Frontend quality",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "04d1bd70c6f77b8f339405c079e0576e8fc0ed78",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40490986520",
+        "created_at": "2026-10-27T10:45:49Z",
+        "updated_at": "2026-10-27T10:46:27Z",
+        "jobs": [
+          {
+            "id": 122144558132,
+            "name": "verify",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40490986520/job/122144558132"
+          }
+        ]
+      },
+      {
+        "id": 40490986546,
+        "name": "Backend quality",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "04d1bd70c6f77b8f339405c079e0576e8fc0ed78",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40490986546",
+        "created_at": "2026-10-27T10:45:49Z",
+        "updated_at": "2026-10-27T10:48:03Z",
+        "jobs": [
+          {
+            "id": 122144558167,
+            "name": "verify",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40490986546/job/122144558167"
+          }
+        ]
+      },
+      {
+        "id": 40490986445,
+        "name": "Foundation integration",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "04d1bd70c6f77b8f339405c079e0576e8fc0ed78",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40490986445",
+        "created_at": "2026-10-27T10:45:49Z",
+        "updated_at": "2026-10-27T10:53:17Z",
+        "jobs": [
+          {
+            "id": 122144557947,
+            "name": "compose",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40490986445/job/122144557947"
+          }
+        ]
+      }
+    ]
+  }
 }

@@ -42,6 +42,8 @@ Phase 6 acceptance passed for application source `194e046c7346509f207cc78632310e
 - [Frontend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40488435254): typecheck, lint, 24 component cases, both portal builds and zero npm audit vulnerabilities.
 - [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40488434943): fresh Compose, independent authentication, private Ledger acceptance, all seven browser journeys in one command, and Kafka ACL/DLQ/replay.
 
+After integration, GitHub independently repeated all three workflows on `main` commit `04d1bd70c6f77b8f339405c079e0576e8fc0ed78`: [Frontend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40490986520), [Backend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40490986546), [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40490986445) all succeeded. The main logs confirm 144 backend cases with zero failures/errors/skips, 24 frontend cases and seven browser journeys. This commit differs from the accepted application source only in documentation. The follow-up evidence commit changes documentation only.
+
 Sanitized machine-readable results: [phase-6-checks.json](../evidence/phase-6-checks.json). Local and remote provenance are deliberately recorded separately.
 
 ## G. Observed verification
