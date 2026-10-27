@@ -40,6 +40,12 @@ In progress on `feature/fincore-cards-reports`, based on `a1a91cc755d18e0fd3686d
 
 Pending implementation and execution. Record exact commands, source SHA, pass/fail/skip counts, local/CI provenance, migration evidence, changed-file list and limitations. Commits are grouped by real implementation changes and pushed regularly.
 
+### Ledger implementation checkpoint (2026-10-27 UTC)
+
+The additive V4 migration and private card/report boundaries are implemented. The current local Ledger unit suite passes 36 tests. The targeted PostgreSQL suites pass 33 tests (22 existing financial regressions and 11 card/reservation/statement cases), with zero failures, errors or skips. Command: `mvnw.cmd -B -ntp -pl services/ledger-service -am verify -Dit.test=CardReservationsIT,LedgerDatabaseIT -Dfailsafe.failIfNoSpecifiedTests=false`, followed by `mvnw.cmd -B -ntp -pl services/ledger-service -am test` after the private HTTP security additions. This targeted command does not claim to rerun Messaging integration; the preceding full dependency run passed Messaging but initially failed to compile two new test assertions, which were corrected. No persistent local database was migrated at this checkpoint.
+
+Policy clarified: freezing blocks new holds; an already established, unexpired merchant hold can still be captured. Termination requires release or expiry of all live holds. A posting-point deadline trigger rolls an expired capture back in full. Historical statements exclude holds from booked month-end totals and expose current reserved/available balances separately.
+
 ## H. Next milestone
 
 Phase 8: operational administration, dedicated Audit and observed telemetry dashboards.

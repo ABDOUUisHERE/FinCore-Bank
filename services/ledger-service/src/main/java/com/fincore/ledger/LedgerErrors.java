@@ -17,7 +17,8 @@ public class LedgerErrors {
     @ExceptionHandler(DataAccessException.class) ProblemDetail database(DataAccessException error, HttpServletRequest request) {
         var cause = error.getMostSpecificCause();
         var message = cause.getMessage() == null ? "" : cause.getMessage();
-        var conflicts = Set.of("IDEMPOTENCY_CONFLICT", "BUSINESS_REFERENCE_CONFLICT", "ACCOUNT_REFERENCE_CONFLICT", "GUARD_CONFLICT", "ACCOUNT_NOT_EMPTY", "ASSESSMENT_EXPIRED");
+        if(message.contains("CARD_NOT_FOUND"))return problem(404,"NOT_FOUND",request);
+        var conflicts = Set.of("IDEMPOTENCY_CONFLICT", "BUSINESS_REFERENCE_CONFLICT", "ACCOUNT_REFERENCE_CONFLICT", "GUARD_CONFLICT", "ACCOUNT_NOT_EMPTY", "ASSESSMENT_EXPIRED", "CARD_VERSION_CONFLICT", "CARD_STATE_CONFLICT", "CARD_HAS_RESERVATIONS", "CARD_RESTRICTED");
         for (var code : conflicts) if (message.contains(code)) return problem(409, code, request);
         if (cause instanceof java.sql.SQLException sql && Set.of("55P03", "40P01", "57014", "40001").contains(sql.getSQLState())) {
             return problem(503, "RETRY_SAME_IDENTITY", request);

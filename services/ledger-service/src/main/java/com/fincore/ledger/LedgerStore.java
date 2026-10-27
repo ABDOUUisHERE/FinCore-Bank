@@ -48,7 +48,7 @@ public class LedgerStore {
         return post(issuer, actor, key, Map.of("kind", "REVERSAL", "businessReference", reference, "currency", original.get("currency").asText(), "entries", original.get("entries"), "reversalOf", journal));
     }
     public JsonNode balance(UUID id) {
-        return query("select jsonb_build_object('accountId',account_id,'currency',currency,'booked',booked::text,'available',booked::text,'version',version) from ledger.balance where account_id=?", id);
+        return query("select jsonb_build_object('accountId',account_id,'currency',currency,'booked',booked::text,'reserved',ledger.reserved(account_id)::text,'available',(booked-ledger.reserved(account_id))::text,'version',version) from ledger.balance where account_id=?", id);
     }
     public JsonNode operation(String issuer, String actor, String reference) {
         return query("select response from ledger.operation where issuer=? and actor=? and business_reference=?", issuer, actor, reference);
