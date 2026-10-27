@@ -123,3 +123,11 @@
 .bank-notifications li.unread { border-left:3px solid #4b9674;padding-left:14px; }
 .bank-notifications small { color:var(--muted); }
 @media(max-width:600px){ .bank-notifications li{flex-direction:column;gap:8px;} }
+.card-authorization-list { display: grid; gap: 14px; }
+.card-authorization { padding: 18px 0; border-top: 1px solid var(--border, #dce6e2); }
+.card-authorization .bank-reference { display: block; overflow-wrap: anywhere; }
+.bank-table-wrap { overflow-x: auto; }
+.bank-table td small { display: block; overflow-wrap: anywhere; max-width: 350px; }
+.status-held, .status-authorizing { color: #805a00; background: #fff2c7; }
+.status-captured, .status-refunded { color: #086d51; background: #def6ec; }
+.status-declined, .status-terminated { color: #9c263d; background: #ffe9ed; }

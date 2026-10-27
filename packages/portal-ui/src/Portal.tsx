@@ -29,6 +29,7 @@ import { getCurrentSubject } from "./api";
 import { SignOut } from "./banking/SignOut";
 import { Banking, bankPages } from "./banking/Banking";
 import { FraudWorkspace } from "./fraud/FraudWorkspace";
+import { FinanceReports } from "./banking/FinanceReports";
 import { Failure, Loading } from "./banking/Common";
 
 export function Portal({ mode }: { mode: "customer" | "admin" }) {
@@ -40,6 +41,7 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
   const [page, setPage] = useState("Overview");
   const isCustomer = mode === "customer";
   const isAnalyst = !isCustomer && session.roles.includes("FRAUD_ANALYST");
+  const isFinance = !isCustomer && session.roles.includes("FINANCE_OPERATOR");
   const permitted = isCustomer
     ? session.roles.includes("CUSTOMER")
     : session.roles.some((role) =>
@@ -86,7 +88,7 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
           {isCustomer ? "PERSONAL WORKSPACE" : "OPERATIONS WORKSPACE"}
         </div>
         <nav aria-label="Main navigation">
-          {(isCustomer && authenticated && permitted ? [...bankPages, "Security"] : isAnalyst && authenticated ? ["Overview", "Fraud cases", "Fraud rules", "Security"] : ["Overview", "Security"]).map((label) => (
+          {(isCustomer && authenticated && permitted ? [...bankPages, "Security"] : isAnalyst && authenticated ? ["Overview", "Fraud cases", "Fraud rules", ...(isFinance ? ["Reconciliation"] : []), "Security"] : isFinance && authenticated ? ["Overview", "Reconciliation", "Security"] : ["Overview", "Security"]).map((label) => (
             <button
               key={label}
               className={`nav-item ${page === label ? "active" : ""}`}
@@ -277,7 +279,7 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
                 </button>
               )}
             </section>
-          ) : isAnalyst && authenticated ? <FraudWorkspace section={page} /> : isCustomer && authenticated && permitted ? (
+          ) : isFinance && authenticated && (page === "Reconciliation" || !isAnalyst && page === "Overview") ? <FinanceReports /> : isAnalyst && authenticated ? <FraudWorkspace section={page} /> : isCustomer && authenticated && permitted ? (
             profile.isPending ? <Loading text="Verifying your customer identity..." /> : profile.error ?
               <Failure error={profile.error} retry={() => void profile.refetch()} /> : profile.data ?
               <Banking key={profile.data.subject} subject={profile.data.subject} section={page} navigate={navigate} /> : null

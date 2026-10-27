@@ -9,9 +9,11 @@ import { Beneficiaries } from "./Beneficiaries";
 import { Transfers } from "./Transfers";
 import { LiveNotifications, Notifications } from "./Notifications";
 import { History } from "./History";
+import { Cards } from "./Cards";
+import { Statements } from "./Statements";
 import "./banking.css";
 
-export const bankPages = ["Overview", "Accounts", "Transfers", "History", "Beneficiaries", "Notifications", "Profile"];
+export const bankPages = ["Overview", "Accounts", "Cards", "Transfers", "History", "Statements", "Beneficiaries", "Notifications", "Profile"];
 export function Banking({ subject, section, navigate }: { subject: string; section: string; navigate: (page: string) => void }) {
   const session = useSession();
   const cache = useQueryClient();
@@ -49,6 +51,8 @@ export function Banking({ subject, section, navigate }: { subject: string; secti
       section === "Transfers" ? <><Failure error={beneficiaries.error} retry={() => void beneficiaries.refetch()} />
         {beneficiaries.isPending || accounts.isPending ? <Loading /> : <Transfers subject={subject} accounts={items} beneficiaries={saved} navigate={navigate} />}</> :
       section === "History" ? <History subject={subject} account={selected} accounts={items} select={setSelected} /> :
+      section === "Cards" ? accounts.isPending ? <Loading /> : <Cards subject={subject} accounts={items} /> :
+      section === "Statements" ? accounts.isPending ? <Loading /> : <Statements subject={subject} accounts={items} /> :
       accounts.isPending ? <Loading /> : accounts.isError && !accounts.data ? <Failure error={accounts.error} retry={() => void accounts.refetch()} /> :
       section === "Accounts" ? <Accounts subject={subject} items={items} selected={selected} select={setSelected} /> :
       <Overview subject={subject} customer={customer.data} accounts={items} complete={!accounts.hasNextPage && !accounts.isError}

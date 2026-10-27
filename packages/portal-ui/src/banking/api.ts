@@ -2,7 +2,7 @@ export type Currency = "MAD" | "EUR" | "USD";
 export type Page<T> = { items: T[]; nextCursor: string | null };
 export type Profile = { customerId: string; subject: string; displayName: string; countryCode: string; status: string; version: number };
 export type Account = { accountId: string; customerId: string; currency: Currency; status: string; version: number; pendingStatus: string | null; guardError: string | null };
-export type Balance = { booked: string; available: string; currency: Currency; version: number };
+export type Balance = { booked: string; reserved?: string; available: string; currency: Currency; version: number };
 export type Beneficiary = { beneficiaryId: string; destinationAccountId: string; label: string; currency: Currency; status: "ACTIVE" | "DISABLED"; version: number };
 export type TransferBody = { sourceAccountId: string; destinationAccountId: string; amount: string; currency: Currency; reference: string };
 export type Payment = { paymentId: string; kind?: string; status: string; version: number; amount: string; currency: Currency; reference?: string; journalId?: string | null; code?: string | null; sourceAccountId?: string; destinationAccountId?: string; createdAt?: string };
@@ -11,7 +11,12 @@ export type Activity = { month: string; days: { date: string; incoming: string; 
 export const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const messages: Record<string, string> = {
   INSUFFICIENT_FUNDS: "There are not enough available funds.",
-  ACCOUNT_NOT_EMPTY: "This account must have a zero balance before it can be closed.",
+  ACCOUNT_NOT_EMPTY: "This account must have a zero balance and no live reservations before it can be closed.",
+  CARD_HAS_RESERVATIONS: "Release live reservations before terminating this card.",
+  CARD_VERSION_CONFLICT: "The card controls changed. Refresh the card before trying again.",
+  CARD_LIMIT_EXCEEDED: "This authorization exceeds the card payment or UTC daily limit.",
+  CARD_RESTRICTED: "The card or its account does not allow new authorizations.",
+  REPORT_TOO_LARGE: "This month exceeds the 1,000-entry export limit. No truncated statement was saved.",
   ACCOUNT_VERSION_CONFLICT: "This account changed. Refresh its latest status before trying again.",
   BENEFICIARY_VERSION_CONFLICT: "This beneficiary changed. Refresh the list before making another change.",
   PROFILE_VERSION_CONFLICT: "Your profile changed. Refresh it before saving again.",
