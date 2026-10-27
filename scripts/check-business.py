@@ -107,7 +107,7 @@ def main():
     result = api("POST", f"/api/v1/transfers/{cancelled['paymentId']}/cancel", customer, {"expectedVersion": pending["version"]})
     assert result["status"] == "REJECTED" and result["code"] == "CANCELLED"
     blocked, _ = transfer("100000.01")
-    assert poll(blocked["paymentId"], customer, {"REJECTED"})["code"] == "DEMO_HARD_LIMIT"
+    assert poll(blocked["paymentId"], customer, {"REJECTED"})["code"] == "HARD_AMOUNT_LIMIT"
     frozen = api("PUT", f"/api/v1/accounts/{sender_id}/guard", customer, {"status": "FROZEN", "expectedVersion": sender["version"]})
     assert frozen["status"] == "FROZEN"
     assert api("POST", "/api/v1/transfers", customer, body, key, expected=202) == accepted

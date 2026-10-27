@@ -4,9 +4,16 @@ import { mkdirSync, readFileSync } from "node:fs";
 
 type Identity = { username: string; password: string };
 let fraudStopped = false;
+function startFraud() {
+  // Compose start also traverses bootstrap dependencies. Resume only the existing service container.
+  const selected = spawnSync("docker", ["compose", "ps", "--all", "--quiet", "fraud-service"], { encoding: "utf8", timeout: 30_000 });
+  expect(selected.status, "Resolve the existing FinCore Fraud container").toBe(0);
+  const id = selected.stdout.trim(); expect(id).toMatch(/^[a-f0-9]{12,64}$/);
+  return spawnSync("docker", ["start", id], { encoding: "utf8", timeout: 60_000 });
+}
 test.afterEach(() => {
   if (fraudStopped) {
-    const result = spawnSync("docker", ["compose", "start", "fraud-service"], { encoding: "utf8", timeout: 60_000 });
+    const result = startFraud();
     fraudStopped = false; expect(result.status, "Restore only FinCore Fraud after the outage acceptance check").toBe(0);
   }
 });
@@ -85,7 +92,7 @@ test("fraud analyst investigates a real customer review, strict blocks and a fai
   const withheld = await start("1.00");
   await expect.poll(async () => (await inspected(withheld.paymentId)).code, { timeout: 45_000 }).toBe("DEPENDENCY_UNAVAILABLE");
   verify(withheld.paymentId, "VALIDATING", "10000.00", "6000.00", 0);
-  const restarted = spawnSync("docker", ["compose", "start", "fraud-service"], { encoding: "utf8", timeout: 60_000 }); expect(restarted.status).toBe(0); fraudStopped = false;
+  const restarted = startFraud(); expect(restarted.status).toBe(0); fraudStopped = false;
   await expect.poll(async () => (await inspected(withheld.paymentId)).status, { timeout: 180_000, intervals: [1000, 2000, 4000] }).toBe("COMPLETED");
   verify(withheld.paymentId, "COMPLETED", "9999.00", "6001.00", 1, "1.00");
   console.info("Fraud outage: no debit before assessment; the same durable payment recovered exactly one journal after service restart.");
