@@ -28,4 +28,8 @@ class EventProcessorTest {
   processor.process("fincore.fraud.alert.created.v1",id.toString(),raw);
   verify(store).accept(any(),eq(raw),argThat(n->n.size()==1 && n.getFirst().subject().equals("verified-owner") && n.getFirst().category().equals("SECURITY") && !n.getFirst().body().contains("completed")));verifyNoInteractions(remote);
  }
+ @Test void frozenCardNoticeUsesTheCommittedOwnerAndNeverClaimsItsCurrentState(){
+  var id=UUID.randomUUID();var raw=Json.text(Map.of("eventId",UUID.randomUUID(),"eventType","card.frozen","schemaVersion",1,"aggregateId",id,"aggregateVersion",1,"correlationId",id.toString(),"occurredAt","2026-10-27T10:00:00Z","payload",Map.of("cardId",id,"accountId",UUID.randomUUID(),"actorSubject","verified-owner","status","FROZEN","version",1)));
+  processor.process("fincore.card.frozen.v1",id.toString(),raw);verify(store).accept(any(),eq(raw),argThat(n->n.size()==1 && n.getFirst().subject().equals("verified-owner") && n.getFirst().category().equals("SECURITY") && n.getFirst().body().contains("current controls")));verifyNoInteractions(remote);
+ }
 }

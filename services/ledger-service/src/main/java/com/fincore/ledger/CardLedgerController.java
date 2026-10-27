@@ -17,6 +17,7 @@ public class CardLedgerController {
  public record Configure(String key,Long expectedVersion,String status,String transactionLimit,String dailyLimit){}
  public record Prepare(UUID id,UUID cardId,String key,UUID merchantId,String amount,String currency){}
  public record Reserve(UUID assessmentId){}
+ public record Recover(java.time.Instant lastGrantExpiresAt){}
  public record Settle(String key,String action){}
  @GetMapping("/cards") public Object cards(@RequestParam(required=false)UUID after,@AuthenticationPrincipal Jwt jwt){issuer(jwt);return store.scan("cards",after);}
  @GetMapping("/card-controls") public Object controls(@RequestParam(required=false)UUID after,@AuthenticationPrincipal Jwt jwt){issuer(jwt);return store.controls(after);}
@@ -35,6 +36,7 @@ public class CardLedgerController {
   var expires=risk.verify(body.assessmentId(),id,receipt.path("fingerprint").asText());return store.reserve(id,body.assessmentId(),expires);
  }
  @PostMapping("/card-authorizations/{id}/settle") public Object settle(@PathVariable UUID id,@RequestBody Settle body,@AuthenticationPrincipal Jwt jwt){owner(jwt);Identifiers.key(body.key());return store.settle(id,jwt.getSubject(),body.key(),body.action());}
+ @PostMapping("/card-authorizations/{id}/recover") public Object recover(@PathVariable UUID id,@RequestBody Recover body,@AuthenticationPrincipal Jwt jwt){issuer(jwt);if(body.lastGrantExpiresAt()==null)throw new ApiFailure(400,"GRANT_DEADLINE_REQUIRED");return store.recover(id,body.lastGrantExpiresAt());}
  static String money(String value){if(value==null || !value.matches("(0|[1-9][0-9]{0,17})(\\.[0-9]{1,2})?") || new java.math.BigDecimal(value).signum()<=0)throw new ApiFailure(400,"INVALID_MONEY");return new java.math.BigDecimal(value).setScale(2).toPlainString();}
  private static void issuer(Jwt jwt){if(!"fincore-card".equals(jwt.getClaimAsString("azp")))throw new AccessDeniedException("Card issuer required");}
  private static void owner(Jwt jwt){issuer(jwt);var realm=jwt.getClaimAsMap("realm_access");if(realm==null || !(realm.get("roles") instanceof List<?> roles) || !roles.contains("CUSTOMER"))throw new AccessDeniedException("Signed customer required");}

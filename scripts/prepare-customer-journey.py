@@ -61,11 +61,12 @@ def main():
     first = call("GET", gateway + "/api/v1/accounts/" + source, customer)
     second = call("GET", gateway + "/api/v1/accounts/" + destination, recipient)
     assert first["currency"] == second["currency"] == "MAD"
-    if action == "fund":
+    if action in ("fund", "card-fund"):
         operator = grant("fincore-payment-operator", os.environ["PAYMENT_OPERATOR_SECRET"])
-        for _ in range(2):
+        amount = "10000.00" if action == "card-fund" else "8000.00"
+        for _ in range(1 if action == "card-fund" else 2):
             accepted = call("POST", payments + "/internal/v1/payments/funding", operator,
-                            {"destinationAccountId": source, "amount": "8000.00", "currency": "MAD", "reference": "Synthetic browser fixture"}, str(uuid.uuid4()))
+                            {"destinationAccountId": source, "amount": amount, "currency": "MAD", "reference": "Synthetic browser fixture"}, str(uuid.uuid4()))
             deadline = time.monotonic() + 90
             while time.monotonic() < deadline:
                 result = call("GET", payments + "/internal/v1/payments/" + accepted["paymentId"], operator)
@@ -75,8 +76,23 @@ def main():
                 time.sleep(0.5)
             else:
                 raise AssertionError("Funding did not confirm")
-        assert call("GET", gateway + "/api/v1/accounts/" + source + "/balance", customer)["booked"] == "16000.00"
+        assert call("GET", gateway + "/api/v1/accounts/" + source + "/balance", customer)["booked"] == ("10000.00" if action == "card-fund" else "16000.00")
         print(json.dumps({"funded": True}))
+    elif action == "card-assert":
+        result = call("GET", gateway + "/api/v1/card-authorizations/" + data["authorizationId"], customer)
+        assert result["status"] == data["expectedStatus"]
+        balance = call("GET", gateway + "/api/v1/accounts/" + source + "/balance", customer)
+        assert balance["booked"] == data["booked"] and balance["reserved"] == data["reserved"] and balance["available"] == data["available"]
+        inspector = grant("fincore-ledger-operator", os.environ["LEDGER_CLIENT_SECRET"])
+        for field in ("journalId", "refundJournalId"):
+            if result.get(field):
+                journal = call("GET", ledger + "/internal/v1/ledger/journals/" + result[field], inspector)
+                assert len(journal["entries"]) == 2 and {r["side"] for r in journal["entries"]} == {"DEBIT", "CREDIT"}
+                assert all(r["amount"] == data["amount"] for r in journal["entries"])
+                if field == "refundJournalId":
+                    assert journal["reversalOf"] == result["journalId"]
+        assert call("GET", ledger + "/internal/v1/ledger/reconciliation", inspector) == {"balanceDiscrepancies": [], "invalidJournals": []}
+        print(json.dumps({"verified": True}))
     elif action == "fraud-assert":
         result = call("GET", gateway + "/api/v1/transfers/" + data["paymentId"], customer)
         assert result["status"] == data["expectedStatus"]

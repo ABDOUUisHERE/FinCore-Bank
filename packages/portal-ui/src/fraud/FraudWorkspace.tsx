@@ -8,7 +8,7 @@ import { FraudRules } from "./FraudRules";
 import "./fraud.css";
 
 export type Explanation = { code: string; score: number; observed: string; threshold: string };
-type Context = { actor: string; amount: string; currency: Currency; countryCode: string; recentFailures: number; beneficiary: { saved: boolean; createdAt: string | null } };
+type Context = { kind?: string; actor: string; amount: string; currency: Currency; countryCode: string; recentFailures: number; beneficiary: { saved: boolean; createdAt: string | null } };
 type CaseItem = { caseId: string; paymentId: string; version: number; status: string; createdAt: string; sequence: string; context: Context; assessment: { verdict: string; score: number; reasons: Explanation[] } };
 type CaseDetail = CaseItem & { rulesVersion: number; alerts?: { alertId: string; verdict: string; score: number; rulesVersion: number; createdAt: string }[]; payment?: { status: string; version: number; journalId: string | null; riskAssessmentId: string | null } | null; paymentUnavailable?: boolean; decisions: { decisionId: string; actor: string; approve: boolean; reason: string; createdAt: string }[] };
 export function FraudWorkspace({ section }: { section: string }) {
@@ -16,7 +16,7 @@ export function FraudWorkspace({ section }: { section: string }) {
   // Rendering is gated as well as Gateway and Fraud authorization; ADMIN alone grants no investigation access.
   if (!session.roles.includes("FRAUD_ANALYST")) return <Empty title="Fraud analyst access required" />;
   return <div className="bank-workspace fraud-workspace"><div className="fraud-heading"><div><span className="small-label">SYNTHETIC PAYMENT MONITORING</span><h2>Fraud investigation</h2>
-    <p>Inspect recorded risk signals and review transfer cases. Decisions are audited and payments are checked again before execution.</p></div></div>
+    <p>Inspect recorded risk signals for transfers and merchant authorizations. Decisions are audited and payments are checked again before execution.</p></div></div>
     {section === "Fraud rules" ? <FraudRules /> : <FraudCases />}</div>;
 }
 function FraudCases() {

@@ -41,7 +41,7 @@ public class SecurityConfiguration {
         cors.setAllowedOrigins(origins);
         cors.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "OPTIONS"));
         cors.setAllowedHeaders(List.of("Authorization", "Content-Type", "X-Correlation-ID", "Idempotency-Key"));
-        cors.setExposedHeaders(List.of("X-Correlation-ID", "Location", "Retry-After"));
+        cors.setExposedHeaders(List.of("X-Correlation-ID", "Location", "Retry-After", "Content-Disposition"));
         var source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/api/**", cors);
         var converter = new JwtAuthenticationConverter();
@@ -57,6 +57,10 @@ public class SecurityConfiguration {
             .addFilterBefore(new ApiRateLimitFilter(), org.springframework.security.config.web.server.SecurityWebFiltersOrder.AUTHORIZATION)
             .authorizeExchange(auth -> auth
                 .pathMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .pathMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/reports/reconciliation").hasRole("FINANCE_OPERATOR")
+                .pathMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/cards","/api/v1/cards/*","/api/v1/cards/*/authorizations","/api/v1/card-merchants","/api/v1/card-authorizations/*","/api/v1/statements","/api/v1/statements/*","/api/v1/statements/*/csv","/api/v1/statements/*/pdf").hasRole("CUSTOMER")
+                .pathMatchers(org.springframework.http.HttpMethod.POST,"/api/v1/cards","/api/v1/cards/*/authorizations","/api/v1/card-authorizations/*/settle","/api/v1/statements").hasRole("CUSTOMER")
+                .pathMatchers(org.springframework.http.HttpMethod.PUT,"/api/v1/cards/*").hasRole("CUSTOMER")
                 .pathMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/fraud-alerts","/api/v1/admin/fraud-cases","/api/v1/admin/fraud-cases/*","/api/v1/admin/fraud-rules").hasRole("FRAUD_ANALYST")
                 .pathMatchers(org.springframework.http.HttpMethod.POST,"/api/v1/admin/fraud-cases/*/decisions").hasRole("FRAUD_ANALYST")
                 .pathMatchers(org.springframework.http.HttpMethod.PUT,"/api/v1/admin/fraud-rules").hasRole("FRAUD_ANALYST")

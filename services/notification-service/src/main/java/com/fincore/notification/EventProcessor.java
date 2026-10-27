@@ -33,11 +33,15 @@ public class EventProcessor {
                     }
                 }
             }
+        }else if(Set.of("card.created","card.frozen","card.state.changed").contains(e.eventType())){
+            String owner=p.path("actorSubject").asText();if(!p.path("cardId").asText().equals(e.aggregateId().toString()) || p.path("version").asLong(-1)!=e.aggregateVersion() || owner.isBlank() || owner.length()>200 || !Set.of("ACTIVE","FROZEN","TERMINATED").contains(p.path("status").asText()) || e.eventType().equals("card.frozen") && !p.path("status").asText().equals("FROZEN"))throw new IllegalArgumentException("INVALID_CARD_EVENT");
+            UUID.fromString(p.path("accountId").asText());
+            if(e.eventType().equals("card.frozen"))notices.add(new NotificationStore.Notice(owner,"SECURITY","Card freeze recorded","A card freeze has been recorded. Open Cards for its current controls and authorizations.","card:"+e.aggregateId()+":"+e.aggregateVersion()));
         }else if(e.eventType().equals("fraud.alert.created")){
             if(!e.aggregateId().toString().equals(p.path("paymentId").asText()) || !Set.of("REVIEW","BLOCK").contains(p.path("verdict").asText()))throw new IllegalArgumentException("INVALID_FRAUD_ALERT");
             UUID.fromString(p.path("caseId").asText());UUID.fromString(p.path("alertId").asText());String owner=p.path("actorSubject").asText();
             if(owner.isBlank() || owner.length()>200)throw new IllegalArgumentException("INVALID_NOTIFICATION_OWNER");
-            notices.add(new NotificationStore.Notice(owner,"SECURITY","Transfer security check","A security check requires attention. Open the recorded transfer for its current outcome.","fraud:"+e.aggregateId()));
+            boolean card=p.path("kind").asText().equals("MERCHANT_PAYMENT");notices.add(new NotificationStore.Notice(owner,"SECURITY",card?"Card security check":"Transfer security check",card?"A security check requires attention. Open Cards for the current authorization outcome.":"A security check requires attention. Open the recorded transfer for its current outcome.","fraud:"+e.aggregateId()));
         }else if(e.eventType().equals("account.restriction.applied")){
             String owner=p.path("ownerSubject").asText();
             if(!owner.isEmpty())notices.add(new NotificationStore.Notice(owner,"SECURITY","Account restriction updated","Your account restriction has been confirmed. Open Accounts for its current status.",e.eventId().toString()));

@@ -212,6 +212,9 @@ services:
       NOTIFICATION_OPERATOR_SECRET: ${NOTIFICATION_OPERATOR_SECRET:?Run local bootstrap first}
       FRAUD_CLIENT_SECRET: ${FRAUD_CLIENT_SECRET:?Run local bootstrap first}
       FRAUD_ANALYST_PASSWORD: ${FRAUD_ANALYST_PASSWORD:?Run local bootstrap first}
+      CARD_CLIENT_SECRET: ${CARD_CLIENT_SECRET:?Run local bootstrap first}
+      REPORTING_CLIENT_SECRET: ${REPORTING_CLIENT_SECRET:?Run local bootstrap first}
+      FINANCE_PASSWORD: ${FINANCE_PASSWORD:?Run local bootstrap first}
       LEDGER_RISK_CLIENT_SECRET: ${LEDGER_RISK_CLIENT_SECRET:?Run local bootstrap first}
     volumes: ["./scripts/configure-business-clients.py:/scripts/configure-business-clients.py:ro"]
     read_only: true
@@ -410,6 +413,110 @@ services:
       start_period: 90s
       retries: 12
     networks: [backend]
+  card-bootstrap:
+    image: postgres:17.11-alpine
+    entrypoint: [/bin/sh, /bootstrap/init-card.sh]
+    environment:
+      PGHOST: postgres
+      PGUSER: fincore_bootstrap
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Run local bootstrap first}
+      CARD_DB_PASSWORD: ${CARD_DB_PASSWORD:?Run local bootstrap first}
+      CARD_MIGRATION_PASSWORD: ${CARD_MIGRATION_PASSWORD:?Run local bootstrap first}
+    volumes: ["./infrastructure/docker/postgres/init-card.sh:/bootstrap/init-card.sh:ro"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]
+  card-migrations:
+    image: fincore/card-service:local
+    build: { context: ., dockerfile: services/card-service/Dockerfile }
+    command: [--migrate-only]
+    environment:
+      CARD_DATABASE_URL: jdbc:postgresql://postgres:5432/card
+      CARD_MIGRATION_PASSWORD: ${CARD_MIGRATION_PASSWORD:?Run local bootstrap first}
+    healthcheck: { disable: true }
+    depends_on:
+      card-bootstrap: { condition: service_completed_successfully }
+    networks: [backend]
+  card-service:
+    image: fincore/card-service:local
+    build: { context: ., dockerfile: services/card-service/Dockerfile }
+    environment:
+      MESSAGING_ENABLED: 'true'
+      SPRING_TASK_SCHEDULING_POOL_SIZE: '4'
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_USER: card
+      KAFKA_PASSWORD: ${KAFKA_CARD_PASSWORD:?Run local bootstrap first}
+      FRAUD_URL: http://fraud-service:8080
+      SERVER_PORT: '8080'
+      CARD_DATABASE_URL: jdbc:postgresql://postgres:5432/card
+      CARD_DB_PASSWORD: ${CARD_DB_PASSWORD:?Run local bootstrap first}
+      CARD_CLIENT_SECRET: ${CARD_CLIENT_SECRET:?Run local bootstrap first}
+      TOKEN_ENDPOINT: http://keycloak:8180/realms/fincore/protocol/openid-connect/token
+      ACCOUNT_URL: http://account-service:8080
+      LEDGER_URL: http://ledger-service:8080
+      OIDC_ISSUER: http://localhost:8180/realms/fincore
+      OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
+    depends_on:
+      card-migrations: { condition: service_completed_successfully }
+      business-identity: { condition: service_completed_successfully }
+      account-service: { condition: service_healthy }
+      fraud-service: { condition: service_healthy }
+      kafka-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1:8080/actuator/health/readiness || exit 1']
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 12
+    networks: [backend]
+  reporting-bootstrap:
+    image: postgres:17.11-alpine
+    entrypoint: [/bin/sh, /bootstrap/init-reporting.sh]
+    environment:
+      PGHOST: postgres
+      PGUSER: fincore_bootstrap
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Run local bootstrap first}
+      REPORTING_DB_PASSWORD: ${REPORTING_DB_PASSWORD:?Run local bootstrap first}
+      REPORTING_MIGRATION_PASSWORD: ${REPORTING_MIGRATION_PASSWORD:?Run local bootstrap first}
+    volumes: ["./infrastructure/docker/postgres/init-reporting.sh:/bootstrap/init-reporting.sh:ro"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]
+  reporting-migrations:
+    image: fincore/reporting-service:local
+    build: { context: ., dockerfile: services/reporting-service/Dockerfile }
+    command: [--migrate-only]
+    environment:
+      REPORTING_DATABASE_URL: jdbc:postgresql://postgres:5432/reporting
+      REPORTING_MIGRATION_PASSWORD: ${REPORTING_MIGRATION_PASSWORD:?Run local bootstrap first}
+    healthcheck: { disable: true }
+    depends_on:
+      reporting-bootstrap: { condition: service_completed_successfully }
+    networks: [backend]
+  reporting-service:
+    image: fincore/reporting-service:local
+    build: { context: ., dockerfile: services/reporting-service/Dockerfile }
+    environment:
+      SERVER_PORT: '8080'
+      REPORTING_DATABASE_URL: jdbc:postgresql://postgres:5432/reporting
+      REPORTING_DB_PASSWORD: ${REPORTING_DB_PASSWORD:?Run local bootstrap first}
+      REPORTING_CLIENT_SECRET: ${REPORTING_CLIENT_SECRET:?Run local bootstrap first}
+      TOKEN_ENDPOINT: http://keycloak:8180/realms/fincore/protocol/openid-connect/token
+      ACCOUNT_URL: http://account-service:8080
+      LEDGER_URL: http://ledger-service:8080
+      OIDC_ISSUER: http://localhost:8180/realms/fincore
+      OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
+    depends_on:
+      reporting-migrations: { condition: service_completed_successfully }
+      business-identity: { condition: service_completed_successfully }
+      account-service: { condition: service_healthy }
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1:8080/actuator/health/readiness || exit 1']
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 12
+    networks: [backend]
   kafka-config:
     image: python:3.14.2-alpine
     user: '0:0'
@@ -562,6 +669,7 @@ services:
       FRAUD_DB_PASSWORD: ${FRAUD_DB_PASSWORD:?Run local bootstrap first}
       FRAUD_CLIENT_SECRET: ${FRAUD_CLIENT_SECRET:?Run local bootstrap first}
       TOKEN_ENDPOINT: http://keycloak:8180/realms/fincore/protocol/openid-connect/token
+      CARD_URL: http://card-service:8080
       PAYMENT_URL: http://payment-service:8080
       CUSTOMER_URL: http://customer-service:8080
       BENEFICIARY_URL: http://beneficiary-service:8080
@@ -595,6 +703,8 @@ services:
       PAYMENT_SERVICE_URL: http://payment-service:8080
       BENEFICIARY_SERVICE_URL: http://beneficiary-service:8080
       NOTIFICATION_SERVICE_URL: http://notification-service:8080
+      CARD_SERVICE_URL: http://card-service:8080
+      REPORTING_SERVICE_URL: http://reporting-service:8080
       FRAUD_SERVICE_URL: http://fraud-service:8080
       OIDC_ISSUER: http://localhost:8180/realms/fincore
       OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
@@ -606,6 +716,8 @@ services:
       beneficiary-service: { condition: service_healthy }
       notification-service: { condition: service_healthy }
       fraud-service: { condition: service_healthy }
+      card-service: { condition: service_healthy }
+      reporting-service: { condition: service_healthy }
     healthcheck:
       test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1:8080/actuator/health/readiness || exit 1']
       interval: 10s

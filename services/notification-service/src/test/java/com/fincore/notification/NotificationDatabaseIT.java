@@ -53,6 +53,10 @@ class NotificationDatabaseIT {
   var owner=UUID.randomUUID().toString();var payment=UUID.randomUUID();accept(event(payment,5,"payment.reversed"),owner);
   assertThat(accept(event(payment,3,"payment.completed"),owner)).isFalse();
  }
+ @Test void recoveredHistoricalCardFreezeNotifiesOnceWithoutRegressingTheUnfreezeWatermark(){
+  String owner=UUID.randomUUID().toString();var card=UUID.randomUUID();var active=event(card,2,"card.state.changed");tx.execute(s->store.accept(active,raw(active),List.of()));var frozen=event(card,1,"card.frozen");var notices=List.of(new NotificationStore.Notice(owner,"SECURITY","Card freeze recorded","Open Cards for current controls.","card:"+card+":1"));
+  boolean first=tx.execute(s->store.accept(frozen,raw(frozen),notices));boolean replay=tx.execute(s->store.accept(frozen,raw(frozen),notices));assertThat(first).isTrue();assertThat(replay).isFalse();assertThat(store.list(owner,null,false).get("items")).asList().hasSize(1);assertThat(jdbc.queryForObject("select version from aggregate_watermark where aggregate_kind='card' and aggregate_id=?",Long.class,card)).isEqualTo(2);
+ }
  @Test void preferencesOwnershipReadIdempotencyAndPermissionsAreEnforced(){
   var owner=UUID.randomUUID().toString();var e=event(UUID.randomUUID(),3,"payment.completed");accept(e,owner);
   var rows=jdbc.queryForList("select id from notification where subject=?",UUID.class,owner);var id=rows.getFirst();

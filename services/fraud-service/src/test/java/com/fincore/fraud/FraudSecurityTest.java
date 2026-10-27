@@ -37,6 +37,10 @@ class FraudSecurityTest {
   http.perform(post("/internal/v1/risk-assessments").header("Authorization","Bearer "+technical("fraud.assess")).contentType("application/json").content("{\"paymentId\":\""+payment+"\",\"actor\":\"forged\",\"reviewed\":true}")).andExpect(status().isBadRequest());
   verifyNoMoreInteractions(store,context);
  }
+ @Test void cardAssessmentsCannotUsePaymentContextOrPaymentScope()throws Exception{
+  var id=UUID.randomUUID();String body=Json.text(Map.of("paymentId",id));http.perform(post("/internal/v1/card-risk-assessments").header("Authorization","Bearer "+technical("fraud.assess")).contentType("application/json").content(body)).andExpect(status().isForbidden());
+  var facts=Json.read("{\"kind\":\"MERCHANT_PAYMENT\"}");when(context.cardContext(id)).thenReturn(facts);when(store.assess(facts)).thenReturn(Json.read("{\"verdict\":\"REVIEW\"}"));var token=SignedTokens.token("fraud-service","card-worker","fincore-card",List.of(),Map.of("fraud-service",Map.of("roles",List.of("fraud.card.assess"))));http.perform(post("/internal/v1/card-risk-assessments").header("Authorization","Bearer "+token).contentType("application/json").content(body)).andExpect(status().isOk());verify(context).cardContext(id);verify(context,never()).context(any());verify(context,never()).payment(any());
+ }
  @Test void technicalAssessorCannotInvestigateAndAnalystCannotImpersonateWorker()throws Exception{
   http.perform(post("/internal/v1/risk-assessments").header("Authorization","Bearer "+analyst()).contentType("application/json").content("{\"paymentId\":\""+UUID.randomUUID()+"\"}")).andExpect(status().isForbidden());
   http.perform(get("/api/v1/admin/fraud-cases").header("Authorization","Bearer "+technical("fraud.assess"))).andExpect(status().isForbidden());

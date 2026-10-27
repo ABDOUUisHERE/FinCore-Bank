@@ -42,7 +42,7 @@ def main():
         if not any(item["name"] == name for item in existing):
             api("POST", f"/clients/{target}/roles", {"name": name})
         return api("GET", f"/clients/{target}/roles/{name}")
-    ledger_roles = {name: ensure_role(resource, name) for name in ("ledger.prepare", "ledger.prepare.fund", "ledger.prepare.reverse", "ledger.execute", "ledger.instructions.read", "ledger.provision", "ledger.guard", "ledger.read")}
+    ledger_roles = {name: ensure_role(resource, name) for name in ("ledger.prepare", "ledger.prepare.fund", "ledger.prepare.reverse", "ledger.execute", "ledger.instructions.read", "ledger.provision", "ledger.guard", "ledger.read", "ledger.card.manage", "ledger.card.inspect", "ledger.card.reserve", "ledger.statement.read", "ledger.reconcile.read")}
     account_resource = client("account-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
     account_lookup = ensure_role(account_resource, "account.lookup")
     payment_resource = client("payment-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
@@ -122,6 +122,36 @@ def main():
     audience(operator, "fraud-service")
     role_claim(operator, "fraud-service")
     fraud_client = machine("fincore-fraud", "FRAUD_CLIENT_SECRET")
+    card_resource = client("card-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
+    card_risk = ensure_role(card_resource, "card.risk.read")
+    assign(fraud_client, card_resource, [card_risk])
+    audience(fraud_client, "card-service")
+    role_claim(fraud_client, "card-service")
+    for name, secret, worker_roles, delegated in [
+            ("card", "CARD_CLIENT_SECRET", ["ledger.card.inspect", "ledger.card.reserve"], "ledger.card.manage"),
+            ("reporting", "REPORTING_CLIENT_SECRET", ["ledger.reconcile.read"], "ledger.statement.read")]:
+        target = machine("fincore-" + name, secret, exchange=True)
+        assign(target, resource, [ledger_roles[r] for r in worker_roles])
+        assign(target, account_resource, [account_lookup])
+        api("POST", "/roles/CUSTOMER/composites", [ledger_roles[delegated]])
+        api("POST", f"/clients/{target}/scope-mappings/clients/{resource}", [ledger_roles[delegated]])
+        api("POST", f"/clients/{target}/scope-mappings/realm", [api("GET", "/roles/CUSTOMER")])
+        for resource_name in ("ledger-service", "account-service"):
+            audience(target, resource_name)
+            role_claim(target, resource_name)
+        for browser in ("fincore-customer", "fincore-admin"):
+            audience(api("GET", "/clients?clientId=" + browser)[0]["id"], "fincore-" + name)
+        if name == "card":
+            assign(target, fraud_resource, [ensure_role(fraud_resource, "fraud.card.assess")])
+            audience(target, "fraud-service")
+            role_claim(target, "fraud-service")
+    finance_users = api("GET", "/users?username=finance.demo&exact=true")
+    if not finance_users:
+        api("POST", "/users", {"username": "finance.demo", "enabled": True, "emailVerified": True,
+            "email": "finance@example.invalid", "firstName": "Synthetic", "lastName": "Finance",
+            "credentials": [{"type": "password", "value": values["FINANCE_PASSWORD"], "temporary": False}]})
+        finance_users = api("GET", "/users?username=finance.demo&exact=true")
+    api("POST", f"/users/{finance_users[0]['id']}/role-mappings/realm", [api("GET", "/roles/FINANCE_OPERATOR")])
     customer_resource = client("customer-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
     beneficiary_resource = client("beneficiary-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
     for target, client_id, scope in [(payment_resource, "payment-service", "payment.risk.read"),
@@ -144,7 +174,7 @@ def main():
             "credentials": [{"type": "password", "value": values["RECIPIENT_PASSWORD"], "temporary": False}]})
         users = api("GET", "/users?username=recipient.demo&exact=true")
     api("POST", f"/users/{users[0]['id']}/role-mappings/realm", [api("GET", "/roles/CUSTOMER")])
-    print("Account/Payment/Beneficiary identities, bounded scopes and standard token exchange configured.")
+    print("Business identities, Card/Reporting delegation and bounded service scopes configured.")
 
 
 if __name__ == "__main__":

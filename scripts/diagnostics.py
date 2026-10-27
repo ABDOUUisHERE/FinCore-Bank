@@ -12,7 +12,7 @@ credentials_path = root / ".local/credentials.json"
 if credentials_path.exists():
     secret_values.extend(user["password"] for user in json.loads(credentials_path.read_text()).values())
 
-for arguments in [["ps", "-a"], ["logs", "--no-color", "--tail", "100", "realm-config", "keycloak", "postgres", "customer-migrations", "customer-service", "api-gateway", "ledger-bootstrap", "ledger-migrations", "ledger-identity", "ledger-service", "business-bootstrap", "business-identity", "account-migrations", "account-service", "payment-migrations", "payment-service", "beneficiary-bootstrap", "beneficiary-migrations", "beneficiary-service", "notification-bootstrap", "notification-migrations", "notification-service", "fraud-bootstrap", "fraud-migrations", "fraud-service", "kafka", "kafka-init"]]:
+for arguments in [["ps", "-a"], ["logs", "--no-color", "--tail", "100", "realm-config", "keycloak", "postgres", "customer-migrations", "customer-service", "api-gateway", "ledger-bootstrap", "ledger-migrations", "ledger-identity", "ledger-service", "business-bootstrap", "business-identity", "account-migrations", "account-service", "payment-migrations", "payment-service", "beneficiary-bootstrap", "beneficiary-migrations", "beneficiary-service", "notification-bootstrap", "notification-migrations", "notification-service", "fraud-bootstrap", "fraud-migrations", "fraud-service", "card-bootstrap", "card-migrations", "card-service", "reporting-bootstrap", "reporting-migrations", "reporting-service", "kafka", "kafka-init"]]:
     result = subprocess.run(["docker", "compose", *arguments], cwd=root, capture_output=True, text=True, timeout=30)
     output = result.stdout + result.stderr
     for secret in secret_values:

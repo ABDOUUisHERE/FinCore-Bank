@@ -128,4 +128,34 @@ class CardReservationsIT {
   assertThatThrownBy(()->tx.execute(s->statements.statement(account,"other-owner",month))).isInstanceOf(com.fincore.support.ApiFailure.class).extracting("status").isEqualTo(404);
   var previous=tx.execute(s->statements.statement(account,ACTOR,YearMonth.now(ZoneOffset.UTC).minusMonths(1).toString()));assertThat(previous.path("entries")).isEmpty();assertThat(previous.path("closing").asText()).isEqualTo("0.00");assertThat(previous.path("currentBooked").asText()).isEqualTo("100.00");
  }
+ @Test void lostAdmissionBarrierWaitsForTheActualFinancialTransaction()throws Exception{
+  var account=account("100.00");var card=card(account,"100.00","1000.00");var id=prepare(card,"60.00");var admitted=new CountDownLatch(1);var commit=new CountDownLatch(1);
+  try(var pool=Executors.newFixedThreadPool(2)){
+   var posting=pool.submit(()->tx.execute(s->{var result=sql("select ledger.card_reserve(?,?,clock_timestamp()+interval '30 seconds')",id,UUID.randomUUID());admitted.countDown();try{if(!commit.await(10,TimeUnit.SECONDS))throw new IllegalStateException("TEST_TIMEOUT");}catch(InterruptedException e){Thread.currentThread().interrupt();throw new IllegalStateException(e);}return result;}));
+   assertThat(admitted.await(10,TimeUnit.SECONDS)).isTrue();var recovering=pool.submit(()->tx.execute(s->sql("select ledger.card_recover(?,clock_timestamp()-interval '1 second')",id)));
+   try{assertThatThrownBy(()->recovering.get(150,TimeUnit.MILLISECONDS)).isInstanceOf(TimeoutException.class);}finally{commit.countDown();}
+   assertThat(posting.get().path("status").asText()).isEqualTo("HELD");assertThat(recovering.get().path("status").asText()).isEqualTo("HELD");
+  }
+  assertThatThrownBy(()->tx.execute(s->sql("select ledger.card_recover(?,clock_timestamp()+interval '30 seconds')",id))).hasMessageContaining("ASSESSMENT_EXPIRED");
+ }
+ @Test void failedFullRefundRemainsVisibleAndCannotManufactureASecondFinancialIdentity(){
+  var account=account("100.00");var card=card(account,"100.00","1000.00");var id=prepare(card,"60.00");reserve(id);var captured=settle(id,key(),"CAPTURE");var merchant=UUID.fromString(captured.path("merchantId").asText());long revision=db.queryForObject("select guard_revision from ledger.account where id=?",Long.class,merchant);
+  tx.execute(s->ledger.guard(merchant,"FROZEN",revision));
+  try{var failed=settle(id,key(),"REFUND");assertThat(failed.path("status").asText()).isEqualTo("CAPTURED");assertThat(failed.path("operationOutcome").path("status").asText()).isEqualTo("REJECTED");assertThat(ledger.balance(account).path("booked").asText()).isEqualTo("40.00");assertThat(sql("select ledger.card_authorization(?)",id).path("refundOutcome").path("status").asText()).isEqualTo("REJECTED");}finally{tx.execute(s->ledger.guard(merchant,"ACTIVE",revision+1));}
+  assertThat(settle(id,key(),"REFUND").path("operationOutcome").path("status").asText()).isEqualTo("REJECTED");assertThat(ledger.balance(account).path("booked").asText()).isEqualTo("40.00");
+ }
+ @Test void statementRepeatableSnapshotDoesNotMixBalancesWithConcurrentPostings()throws Exception{
+  var account=account("100.00");var dest=UUID.fromString(ledger.provision(key(),"MAD","CUSTOMER_LIABILITY",ACTOR).path("id").asText());var established=new CountDownLatch(1);var posted=new CountDownLatch(1);var repeatable=new TransactionTemplate(tx.getTransactionManager());repeatable.setIsolationLevel(org.springframework.transaction.TransactionDefinition.ISOLATION_REPEATABLE_READ);repeatable.setReadOnly(true);String month=YearMonth.now(ZoneOffset.UTC).toString();
+  try(var pool=Executors.newSingleThreadExecutor()){
+   var snapshot=pool.submit(()->repeatable.execute(s->{ledger.balance(account);established.countDown();try{if(!posted.await(10,TimeUnit.SECONDS))throw new IllegalStateException("TEST_TIMEOUT");}catch(InterruptedException e){Thread.currentThread().interrupt();throw new IllegalStateException(e);}return new StatementStore(db).statement(account,ACTOR,month);}));
+   try{assertThat(established.await(10,TimeUnit.SECONDS)).isTrue();tx.execute(s->ledger.post("lab",ACTOR,key(),command("TRANSFER",key(),account,dest,"10.00")));}finally{posted.countDown();}
+   var old=snapshot.get();assertThat(old.path("currentBooked").asText()).isEqualTo("100.00");assertThat(old.path("closing").asText()).isEqualTo("100.00");assertThat(old.path("entries")).hasSize(1);
+  }
+  var current=tx.execute(s->new StatementStore(db).statement(account,ACTOR,month));assertThat(current.path("closing").asText()).isEqualTo("90.00");assertThat(current.path("entries")).hasSize(2);
+ }
+ @Test void oversizedMonthlyStatementIsRefusedWithoutSilentTruncation(){
+  var account=account("100.00");var dest=UUID.fromString(ledger.provision(key(),"MAD","CUSTOMER_LIABILITY",ACTOR).path("id").asText());
+  tx.execute(s->{db.execute("do $$ declare n int;begin for n in 1..1000 loop perform ledger.post('lab','"+ACTOR+"',gen_random_uuid()::text,jsonb_build_object('kind','TRANSFER','businessReference',gen_random_uuid(),'currency','MAD','entries',jsonb_build_array(jsonb_build_object('accountId','"+account+"','side','DEBIT','amount','0.01'),jsonb_build_object('accountId','"+dest+"','side','CREDIT','amount','0.01'))));end loop;end $$");return null;});
+  assertThatThrownBy(()->tx.execute(s->new StatementStore(db).statement(account,ACTOR,YearMonth.now(ZoneOffset.UTC).toString()))).isInstanceOf(com.fincore.support.ApiFailure.class).extracting("code").isEqualTo("REPORT_TOO_LARGE");
+ }
 }

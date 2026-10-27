@@ -56,7 +56,7 @@ public class SecurityConfiguration {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/internal/v1/ledger/reports/accounts/*/statement").hasAuthority("ledger.statement.read")
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/internal/v1/ledger/reports/reconciliation").hasAuthority("ledger.reconcile.read")
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/internal/v1/ledger/cards", "/internal/v1/ledger/cards/*", "/internal/v1/ledger/card-controls", "/internal/v1/ledger/card-merchants", "/internal/v1/ledger/card-authorizations", "/internal/v1/ledger/card-authorizations/*").hasAuthority("ledger.card.inspect")
-                .requestMatchers(org.springframework.http.HttpMethod.POST, "/internal/v1/ledger/card-authorizations/*/reserve").hasAuthority("ledger.card.reserve")
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/internal/v1/ledger/card-authorizations/*/reserve", "/internal/v1/ledger/card-authorizations/*/recover").hasAuthority("ledger.card.reserve")
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/internal/v1/ledger/cards", "/internal/v1/ledger/card-authorizations", "/internal/v1/ledger/card-authorizations/*/settle").hasAuthority("ledger.card.manage")
                 .requestMatchers(org.springframework.http.HttpMethod.PUT, "/internal/v1/ledger/cards/*").hasAuthority("ledger.card.manage")
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/internal/v1/ledger/instructions").hasAnyAuthority("ledger.prepare", "ledger.prepare.fund", "ledger.prepare.reverse")

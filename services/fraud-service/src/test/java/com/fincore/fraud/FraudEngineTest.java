@@ -43,4 +43,9 @@ class FraudEngineTest {
   assertThat(result.verdict()).isEqualTo("ALLOW");assertThat(result.reasons()).isEmpty();
   assertThatThrownBy(()->new FraudRules(rules().reviewAmounts(),rules().blockAmounts(),rules().newBeneficiaryAmounts(),null,60,12,15,5,24,java.util.List.of("ZZ")).validated()).hasMessage("INVALID_FRAUD_RULES");
  }
+ @Test void merchantSpendingReceivesFinancialRulesInsteadOfTechnicalFundingExemption(){
+  var normal=new FraudEngine.Context("MERCHANT_PAYMENT",new BigDecimal("100.00"),"MAD","MA",null,0);assertThat(FraudEngine.evaluate(normal,quiet(),rules(),NOW).verdict()).isEqualTo("ALLOW");
+  var review=new FraudEngine.Context("MERCHANT_PAYMENT",new BigDecimal("6000.00"),"MAD","MA",null,0);var reviewed=FraudEngine.evaluate(review,quiet(),rules(),NOW);assertThat(reviewed.verdict()).isEqualTo("REVIEW");assertThat(reviewed.reasons()).extracting(FraudEngine.Reason::code).contains("NEW_MERCHANT_HIGH_VALUE");
+  assertThat(FraudEngine.evaluate(new FraudEngine.Context("MERCHANT_PAYMENT",new BigDecimal("100000.01"),"MAD","MA",null,0),quiet(),rules(),NOW).verdict()).isEqualTo("BLOCK");
+ }
 }

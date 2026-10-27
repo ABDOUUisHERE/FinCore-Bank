@@ -30,5 +30,6 @@ public class CardLedgerStore {
  @Transactional public JsonNode configure(UUID id,String actor,String key,long version,String status,String per,String daily){bounded();return one("select ledger.card_configure(?,?,?,?,?,?::numeric,?::numeric)",id,actor,key,version,status,per,daily);}
  @Transactional public JsonNode prepare(UUID id,UUID card,String actor,String key,UUID merchant,String amount,String currency){bounded();return one("select ledger.card_prepare(?,?,?,?,?,?::numeric,?)",id,card,actor,key,merchant,amount,currency);}
  @Transactional public JsonNode reserve(UUID id,UUID assessment,Instant expiry){bounded();return one("select ledger.card_reserve(?,?,?::timestamptz)",id,assessment,expiry.toString());}
+ @Transactional public JsonNode recover(UUID id,Instant expiry){bounded();return one("select ledger.card_recover(?,?::timestamptz)",id,expiry.toString());}
  @Transactional public JsonNode settle(UUID id,String actor,String key,String action){bounded();return one("select ledger.card_settle(?,?,?,?)",id,actor,key,action);}
 }

@@ -30,8 +30,9 @@ public class NotificationStore {
         }
         var kind=event.eventType().substring(0,event.eventType().indexOf('.'));
         var old=jdbc.query("select version from aggregate_watermark where aggregate_kind=? and aggregate_id=?",(rs,n)->rs.getLong(1),kind,event.aggregateId());
-        if(!old.isEmpty() && old.getFirst()>=event.aggregateVersion())return false;
-        jdbc.update("insert into aggregate_watermark(aggregate_kind,aggregate_id,version,event_type) values(?,?,?,?) on conflict(aggregate_kind,aggregate_id) do update set version=excluded.version,event_type=excluded.event_type",kind,event.aggregateId(),event.aggregateVersion(),event.eventType());
+        // A historical freeze remains a security fact even when recovery discovers it after an unfreeze.
+        if(!old.isEmpty() && old.getFirst()>=event.aggregateVersion() && !event.eventType().equals("card.frozen"))return false;
+        jdbc.update("insert into aggregate_watermark(aggregate_kind,aggregate_id,version,event_type) values(?,?,?,?) on conflict(aggregate_kind,aggregate_id) do update set version=excluded.version,event_type=excluded.event_type where aggregate_watermark.version<excluded.version",kind,event.aggregateId(),event.aggregateVersion(),event.eventType());
         for(var notice:notices){
             var pref=preferences(notice.subject());
             if(!pref.path(notice.category().equals("PAYMENTS")?"payments":"security").asBoolean())continue;

@@ -12,14 +12,14 @@ public final class FraudEngine {
     public record Reason(String code,int score,String observed,String threshold){}
     public record Result(String verdict,int score,List<Reason> reasons){}
     public static Result evaluate(Context c,Velocity v,FraudRules r,Instant now) {
-        if(!c.kind().equals("TRANSFER"))return new Result("ALLOW",0,List.of(new Reason(c.kind().equals("REVERSAL")?"CONFIRMED_COMPENSATION":"PRIVATE_SIMULATION_FUNDING",0,c.kind(),"technical authorization required")));
+        if(!Set.of("TRANSFER","MERCHANT_PAYMENT").contains(c.kind()))return new Result("ALLOW",0,List.of(new Reason(c.kind().equals("REVERSAL")?"CONFIRMED_COMPENSATION":"PRIVATE_SIMULATION_FUNDING",0,c.kind(),"technical authorization required")));
         var reasons=new ArrayList<Reason>();
         var amount=c.amount();var currency=c.currency();
         if(amount.compareTo(new BigDecimal(r.blockAmounts().get(currency)))>0)add(reasons,"HARD_AMOUNT_LIMIT",100,amount.toPlainString(),r.blockAmounts().get(currency));
         else if(amount.compareTo(new BigDecimal(r.reviewAmounts().get(currency)))>0)add(reasons,"HIGH_VALUE",50,amount.toPlainString(),r.reviewAmounts().get(currency));
         if((c.beneficiaryCreatedAt()==null || c.beneficiaryCreatedAt().isAfter(now.minus(Duration.ofHours(r.newBeneficiaryHours()))))
                 && amount.compareTo(new BigDecimal(r.newBeneficiaryAmounts().get(currency)))>0)
-            add(reasons,"NEW_BENEFICIARY_HIGH_VALUE",50,amount.toPlainString(),r.newBeneficiaryAmounts().get(currency));
+            add(reasons,c.kind().equals("MERCHANT_PAYMENT")?"NEW_MERCHANT_HIGH_VALUE":"NEW_BENEFICIARY_HIGH_VALUE",50,amount.toPlainString(),r.newBeneficiaryAmounts().get(currency));
         if(v.currentMinute()>=r.frequencyBlock())add(reasons,"EXCESSIVE_FREQUENCY",100,""+v.currentMinute(),""+r.frequencyBlock());
         else if(v.currentMinute()>=r.frequencyReview())add(reasons,"FREQUENCY_REVIEW",50,""+v.currentMinute(),""+r.frequencyReview());
         if(v.rapidDestination()>=r.rapidCount())add(reasons,"RAPID_REPEAT",50,""+v.rapidDestination(),""+r.rapidCount());

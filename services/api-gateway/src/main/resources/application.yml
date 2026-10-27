@@ -12,6 +12,20 @@ spring:
             connect-timeout: 3000
             response-timeout: 5s
           routes:
+            - id: cards
+              uri: ${CARD_SERVICE_URL:http://localhost:8088}
+              predicates: ["Path=/api/v1/cards,/api/v1/cards/**,/api/v1/card-authorizations,/api/v1/card-authorizations/**,/api/v1/card-merchants"]
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: 16KB
+            - id: statements
+              uri: ${REPORTING_SERVICE_URL:http://localhost:8089}
+              predicates: ["Path=/api/v1/statements,/api/v1/statements/**,/api/v1/admin/reports/reconciliation"]
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: 16KB
             - id: customer-me
               uri: ${CUSTOMER_SERVICE_URL:http://localhost:8081}
               predicates:

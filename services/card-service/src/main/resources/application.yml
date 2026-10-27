@@ -1,0 +1,46 @@
+spring:
+  application:
+    name: card-service
+  datasource:
+    url: ${CARD_DATABASE_URL:jdbc:postgresql://localhost:5432/card}
+    username: card_runtime
+    password: ${CARD_DB_PASSWORD}
+    hikari:
+      connection-init-sql: SET TIME ZONE 'UTC'
+      maximum-pool-size: 5
+      connection-timeout: 5000
+  flyway:
+    enabled: false
+  mvc:
+    problemdetails:
+      enabled: true
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+server:
+  port: ${SERVER_PORT:8088}
+  max-http-request-header-size: 16KB
+fincore:
+  messaging:
+    enabled: ${MESSAGING_ENABLED:false}
+  security:
+    issuer: ${OIDC_ISSUER:http://localhost:8180/realms/fincore}
+    jwk-set-uri: ${OIDC_JWKS:http://localhost:8180/realms/fincore/protocol/openid-connect/certs}
+    audience: fincore-api
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+      group:
+        readiness:
+          include: readinessState,db
+logging:
+  structured:
+    format:
+      console: ecs
