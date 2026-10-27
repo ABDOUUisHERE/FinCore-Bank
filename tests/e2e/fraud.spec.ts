@@ -86,6 +86,7 @@ test("fraud analyst investigates a real customer review, strict blocks and a fai
     await analyst.page.setViewportSize({ width, height: 1000 }); expect(await analyst.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     if (process.env.FINCORE_VISUAL_QA === "1" && width !== 320) { mkdirSync(".local/visual", { recursive: true }); await analyst.page.screenshot({ path: ".local/visual/phase-6-fraud-" + width + ".png", fullPage: true, animations: "disabled" }); }
   }
+  await analyst.page.setViewportSize({ width: 1440, height: 1000 });
   const blocked = await start("100000.01"); await expect.poll(async () => (await inspected(blocked.paymentId)).status, { timeout: 90_000 }).toBe("REJECTED");
   verify(blocked.paymentId, "REJECTED", "10000.00", "6000.00", 0);
   fraudStopped = true; const stopped = spawnSync("docker", ["compose", "stop", "-t", "15", "fraud-service"], { encoding: "utf8", timeout: 60_000 }); expect(stopped.status).toBe(0);
