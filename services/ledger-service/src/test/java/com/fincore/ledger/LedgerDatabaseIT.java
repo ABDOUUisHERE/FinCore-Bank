@@ -267,8 +267,24 @@ class LedgerDatabaseIT {
         UUID a=customer(),b=customer(),instruction=UUID.randomUUID();fund(a,"100");authorize(instruction,ACTOR,id(),a,b,"10");
         try(var blocker=DriverManager.getConnection(url,"ledger_migrator",MIGRATOR);var executor=Executors.newVirtualThreadPerTaskExecutor()){
             blocker.setAutoCommit(false);try(var lock=blocker.prepareStatement("select 1 from ledger.account where id=? for update")){lock.setObject(1,a);lock.executeQuery().close();}
-            var future=executor.submit(()->execute(instruction,java.time.Instant.now().plusMillis(150)));
-            Thread.sleep(400);blocker.commit();assertThatThrownBy(()->future.get(10,TimeUnit.SECONDS)).hasStackTraceContaining("ASSESSMENT_EXPIRED");
+            var pid=new java.util.concurrent.atomic.AtomicInteger();
+            var observer=new JdbcTemplate(new DriverManagerDataSource(adminUrl,adminUser,adminPassword));
+            var tx=new TransactionTemplate(new DataSourceTransactionManager(Objects.requireNonNull(runtime.getDataSource())));
+            var future=executor.submit(()->tx.execute(s->{
+                pid.set(runtime.queryForObject("select pg_backend_pid()",Integer.class));
+                // The grant clock starts inside PostgreSQL when this worker actually executes.
+                return runtime.queryForObject("select ledger.execute_instruction('fincore-payment',?,clock_timestamp()+interval '1 second')::text",String.class,instruction);
+            }));
+            try{
+                boolean waiting=false;long until=System.nanoTime()+TimeUnit.SECONDS.toNanos(10);
+                while(!future.isDone() && System.nanoTime()<until){
+                    if(pid.get()!=0 && Boolean.TRUE.equals(observer.queryForObject("select exists(select from pg_stat_activity where pid=? and wait_event_type='Lock')",Boolean.class,pid.get()))){waiting=true;break;}
+                    Thread.sleep(25);
+                }
+                assertThat(waiting).as("The actual posting connection must be blocked by the account lock").isTrue();
+                Thread.sleep(1200);
+            }finally{blocker.commit();}
+            assertThatThrownBy(()->future.get(10,TimeUnit.SECONDS)).hasStackTraceContaining("ASSESSMENT_EXPIRED");
         }
         assertThat(balance(a)).isEqualTo("100.00");assertThat(balance(b)).isEqualTo("0.00");
         assertThat(execute(instruction,java.time.Instant.now().plusSeconds(30)).path("status").asText()).isEqualTo("POSTED");cleanReconciliation();
