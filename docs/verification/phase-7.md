@@ -42,6 +42,8 @@ Phase 7 acceptance passed for application source `998ac020b039c10676e827b2e96462
 
 Sanitized machine-readable evidence: [phase-7-checks.json](../evidence/phase-7-checks.json). Exact [changed-file list](phase-7-files.txt) is relative to the Phase 6 base. See [contracts](../fincore/cards-and-reporting.md), [ADR 0010](../fincore/adr/0010-card-reservations-and-statement-snapshots.md) and [upgrade/demo](../deployment/cards-phase-7.md).
 
+After fast-forward integration, GitHub independently repeated all three workflows on `main` commit `a3936d91c33a1ca7650d471def797745a3b8fa93`: [Frontend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40541124216), [Backend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40541124310), [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40541124225), all successful. Logs confirm 191 backend tests with zero failures/errors/skips, 26 frontend cases and eight browser journeys together plus Card ACL/DLQ/replay. This integration commit differs from the accepted feature source only in documentation. The follow-up evidence commit also changes documentation only.
+
 ## G. Observed verification
 
 | Executed check | Result |
