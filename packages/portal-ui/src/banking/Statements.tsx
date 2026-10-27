@@ -17,7 +17,7 @@ export function Statements({ subject, accounts }: { subject: string; accounts: A
   const detail = useQuery({ queryKey: ["bank", subject, "statement", selected], enabled: !!selected, retry: false, queryFn: ({ signal }) => request<Statement>(session.token, "/statements/" + selected, { signal }) });
   async function download(format: "csv" | "pdf") {
     setDownloading(true); setDownloadError(null);
-    try { const bearer = await session.token(); const response = await fetch((import.meta.env.VITE_API_URL ?? "http://localhost:8280") + "/api/v1/statements/" + selected + "/" + format, { headers: { Authorization: "Bearer " + bearer }, cache: "no-store", credentials: "omit", signal: AbortSignal.timeout(20_000) });
+    try { const bearer = await session.token(); const response = await fetch((import.meta.env.VITE_API_URL ?? "http://localhost:8280") + "/api/v1/statements/" + selected + "/" + format, { headers: { Authorization: "Bearer " + bearer }, cache: "no-store", credentials: "omit", signal: AbortSignal.timeout(25_000) });
       if (!response.ok) throw new ApiError(response.status); const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement("a"); link.href = url; link.download = `fincore-${selected}.${format}`; link.click(); setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) { setDownloadError(e instanceof Error ? e : new Error("The export could not be downloaded.")); } finally { setDownloading(false); }
   }

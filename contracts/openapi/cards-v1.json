@@ -3,7 +3,7 @@
   "info": {
     "title": "FinCore synthetic cards and merchant authorizations",
     "version": "0.7.0",
-    "description": "Synthetic money only. Gateway and each owner service independently validate JWT roles. Subject ownership is never a body/header field. Phase 7 acceptance remains in progress."
+    "description": "Synthetic money only. Gateway and each owner service independently validate JWT roles. Subject ownership is never a body/header field. Acceptance evidence is recorded in docs/verification/phase-7.md."
   },
   "servers": [
     {

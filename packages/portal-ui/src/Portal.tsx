@@ -10,6 +10,7 @@ import {
   CircleHelp,
   CreditCard,
   Fingerprint,
+  FileText,
   Globe2,
   LayoutDashboard,
   LockKeyhole,
@@ -97,7 +98,7 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
             >
               {label === "Overview" ? (
                 <LayoutDashboard size={19} />
-              ) : label === "Accounts" ? <Wallet size={19} /> : label === "Transfers" ? <ArrowUpRight size={19} /> :
+              ) : label === "Accounts" ? <Wallet size={19} /> : label === "Cards" ? <CreditCard size={19} /> : label === "Statements" ? <FileText size={19} /> : label === "Transfers" ? <ArrowUpRight size={19} /> :
                 label === "History" ? <ArrowDownLeft size={19} /> : label === "Beneficiaries" ? <Users size={19} /> :
                 label === "Notifications" ? <Bell size={19} /> : label === "Profile" ? <UserRound size={19} /> : <ShieldCheck size={19} /> }
               <span>{label}</span>
@@ -105,8 +106,8 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
             </button>
           ))}
         </nav>
-        <div className="workspace-label upcoming-label">{isCustomer && !authenticated ? "YOUR BANKING WORKSPACE" : "COMING TO FINCORE"}</div>
         {!(isCustomer && authenticated && permitted) && <>
+        <div className="workspace-label upcoming-label">{isCustomer ? "YOUR BANKING WORKSPACE" : "COMING TO FINCORE"}</div>
         <div className="nav-item unavailable">
           <Wallet size={19} />
           <span>Accounts</span>
@@ -117,12 +118,12 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
           <span>Transfers</span>
           <span className="soon">{isCustomer ? "Sign in" : "Soon"}</span>
         </div>
-        </>}
-        <div className="nav-item unavailable">
+        {isCustomer && <div className="nav-item unavailable">
           <CreditCard size={19} />
-          <span>Virtual cards</span>
-          <span className="soon">Soon</span>
-        </div>
+          <span>Cards</span>
+          <span className="soon">Sign in</span>
+        </div>}
+        </>}
         <div className="sidebar-bottom">
           <div className="simulation-card">
             <span className="simulation-icon">
@@ -454,7 +455,7 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
                       <span className="tile-icon lavender">
                         <Wallet size={22} />
                       </span>
-                      <span className="coming-pill">Coming next</span>
+                      <span className="coming-pill">{isCustomer ? "Sign in to explore" : "Coming next"}</span>
                     </div>
                     <h3>{isCustomer ? "Your next chapter starts here" : "A foundation for the next phase"}</h3>
                     <p>{isCustomer ? "Open accounts, send simulated money and follow every confirmed transaction in your personal workspace." :
@@ -470,7 +471,7 @@ export function Portal({ mode }: { mode: "customer" | "admin" }) {
                         <CreditCard size={16} /> Cards
                       </span>
                     </div>
-                    {isCustomer && <small>Virtual cards arrive in a future release.</small>}
+                    {isCustomer && <small>Synthetic cards use simulated money and cannot be used on real payment networks.</small>}
                     <div className="empty-account">
                       <span className="dashed-icon">
                         <Plus size={20} />

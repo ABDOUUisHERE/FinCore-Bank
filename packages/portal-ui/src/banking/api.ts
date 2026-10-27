@@ -46,7 +46,9 @@ export function query(values: Record<string, string | undefined>) {
 }
 export async function request<T>(token: () => Promise<string>, path: string, options: { method?: string; body?: unknown; key?: string; signal?: AbortSignal } = {}): Promise<T> {
   const bearer = await token();
-  const signals = [AbortSignal.timeout(15_000), ...(options.signal ? [options.signal] : [])];
+  // New delegated Card/Reporting routes allow a bounded chain of 5s owner calls.
+  const delegated = ["/cards", "/card-authorizations", "/card-merchants", "/statements", "/admin/reports"].some(prefix => path === prefix || path.startsWith(prefix + "/") || path.startsWith(prefix + "?"));
+  const signals = [AbortSignal.timeout(delegated ? 25_000 : 15_000), ...(options.signal ? [options.signal] : [])];
   let response: Response;
   try {
     response = await fetch((import.meta.env.VITE_API_URL ?? "http://localhost:8280") + "/api/v1" + path, {

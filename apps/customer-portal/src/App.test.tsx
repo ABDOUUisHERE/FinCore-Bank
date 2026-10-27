@@ -30,13 +30,13 @@ beforeEach(() => {
 });
 
 describe("customer workspace", () => {
-  it("offers hosted login and describes unimplemented banking features accurately", async () => {
+  it("offers hosted login and explains synthetic card limits", async () => {
     open();
     await userEvent.click(
       screen.getByRole("button", { name: /sign in securely/i }),
     );
     expect(mocks.session.login).toHaveBeenCalledOnce();
-    expect(screen.getByText("Virtual cards arrive in a future release.")).toBeVisible();
+    expect(screen.getByText("Synthetic cards use simulated money and cannot be used on real payment networks.")).toBeVisible();
   });
   it("shows expiration with an explicit sign-in action", () => {
     mocks.session.status = "expired";
