@@ -11,6 +11,12 @@ function startFraud() {
   const id = selected.stdout.trim(); expect(id).toMatch(/^[a-f0-9]{12,64}$/);
   return spawnSync("docker", ["start", id], { encoding: "utf8", timeout: 60_000 });
 }
+function fraudAddress() {
+  const selected = spawnSync("docker", ["compose", "ps", "--all", "--quiet", "fraud-service"], { encoding: "utf8", timeout: 30_000 });
+  expect(selected.status).toBe(0); const id = selected.stdout.trim(); expect(id).toMatch(/^[a-f0-9]{12,64}$/);
+  const address = spawnSync("docker", ["inspect", "--format", "{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}", id], { encoding: "utf8", timeout: 30_000 });
+  expect(address.status).toBe(0); return address.stdout.trim();
+}
 test.afterEach(() => {
   if (fraudStopped) {
     const result = startFraud();
@@ -81,6 +87,7 @@ test("fraud analyst investigates a real customer review, strict blocks and a fai
   expect(caseState.status()).toBe(200); const recordedCase = await caseState.json();
   expect(recordedCase.payment.status).toBe("COMPLETED"); expect(recordedCase.payment.journalId).toBe((await inspected(reviewed.paymentId)).journalId);
   expect(recordedCase.payment.riskAssessmentId).toBe(recordedCase.assessment.assessmentId);
+  await expect(analyst.page.getByRole("region", { name: "Fraud case investigation" }).getByText(recordedCase.payment.journalId, { exact: true })).toBeVisible({ timeout: 30_000 });
   console.info("Fraud UI: genuine analyst review approved; actual ledger has one balanced transfer and durable assessment reference.");
   for (const width of [1440, 390, 320]) {
     await analyst.page.setViewportSize({ width, height: 1000 }); expect(await analyst.page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -89,11 +96,13 @@ test("fraud analyst investigates a real customer review, strict blocks and a fai
   await analyst.page.setViewportSize({ width: 1440, height: 1000 });
   const blocked = await start("100000.01"); await expect.poll(async () => (await inspected(blocked.paymentId)).status, { timeout: 90_000 }).toBe("REJECTED");
   verify(blocked.paymentId, "REJECTED", "10000.00", "6000.00", 0);
+  const originalAddress = fraudAddress();
   fraudStopped = true; const stopped = spawnSync("docker", ["compose", "stop", "-t", "15", "fraud-service"], { encoding: "utf8", timeout: 60_000 }); expect(stopped.status).toBe(0);
   const withheld = await start("1.00");
   await expect.poll(async () => (await inspected(withheld.paymentId)).code, { timeout: 45_000 }).toBe("DEPENDENCY_UNAVAILABLE");
   verify(withheld.paymentId, "VALIDATING", "10000.00", "6000.00", 0);
   const restarted = startFraud(); expect(restarted.status).toBe(0); fraudStopped = false;
+  console.info("Fraud service address changed after restart:", fraudAddress() !== originalAddress);
   await expect.poll(async () => (await inspected(withheld.paymentId)).status, { timeout: 180_000, intervals: [1000, 2000, 4000] }).toBe("COMPLETED");
   verify(withheld.paymentId, "COMPLETED", "9999.00", "6001.00", 1, "1.00");
   console.info("Fraud outage: no debit before assessment; the same durable payment recovered exactly one journal after service restart.");
