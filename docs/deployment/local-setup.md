@@ -85,6 +85,10 @@ To verify the financial journey, install Chromium and run `npm run test:e2e`. Th
 
 Accepted payment responses remain 202/CREATED on exact replay. Read the Location resource for its current state. Pending risk review reserves no funds. Cancellation is possible only before PROCESSING; a timeout after sending money keeps the payment PROCESSING until the ledger outcome is known. Account provisioning/guard intent can similarly remain pending through an outage and reconcile on recovery. All domain money is synthetic.
 
+## Phase 6 fraud upgrade
+
+Follow the [Phase 6 upgrade and analyst demo](fraud-phase-6.md) when upgrading persisted Phase 5 data. It adds an independently authorized Fraud service, a verification-only Ledger client, narrowly scoped owner contexts and generated `analyst.demo` credentials. No existing secret rotation or volume reset is needed.
+
 ## Phase 5 messaging upgrade
 
 Repeat bootstrap and normal Compose startup. Bootstrap appends missing Notification/Kafka secrets and writes ignored Kafka configuration while retaining identities, database roles, credentials and volumes. One-shot jobs configure broker storage/topics/ACLs and apply additive delivery/Notification migrations. Kafka exposes no host port. Named database and Kafka volumes survive normal shutdown.

@@ -18,6 +18,7 @@ Analyst approval is recorded by Fraud and does not replace a fresh rules/velocit
 
 - `services/fraud-service/`: Java resource server, independent migration/runtime roles, rule evaluation/store, velocity admission, investigation API, event publication, PostgreSQL/security/unit checks and non-root image.
 - `services/payment-service/`: replace the production local policy bean with a synchronous Fraud adapter; canonical risk-context endpoint, durable assessment references, pending-review recovery and private review bridge; additive migration only.
+- Ledger: independently bind the Fraud assessment ID to the immutable instruction fingerprint before opening the posting transaction, using a verification-only client. Keep the SQL posting-point expiry check; return an existing outcome before consulting Fraud during replay.
 - Customer and Beneficiary services: narrowly scoped private read models for declared country, beneficiary age and status; independent authorization checks.
 - `packages/portal-ui/src/fraud/` and portal navigation: analyst-only alert/case/rule screens, recorded explanations, versioned confirmation and actual loading/error states; component checks.
 - Gateway: explicit FRAUD_ANALYST routes, with no implicit ADMIN/customer access to investigation mutations.
