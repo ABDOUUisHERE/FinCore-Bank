@@ -8,6 +8,31 @@ The runtime adds private `card-service` and `reporting-service` containers. Thei
 
 For persisted Phase 6 data, retain the matching `.env`, `.local/credentials.json`, realm/Kafka configuration and named volumes. Re-run bootstrap, rebuild changed service images and run the Card/Reporting bootstrap and migration jobs. Ledger V4-V6 and Fraud V2 are additive upgrades; no earlier migration or journal is rewritten. Re-run business identity setup. The generated Kafka configuration must be copied through `kafka-config`, then the existing FinCore broker restarted and its topics/ACL job rerun so the new Card producer identity is accepted. Recreate only the changed FinCore application containers after their migrations. Do not reset WSL, prune Docker or remove volumes for this upgrade. The final verification report records the exact executed upgrade sequence.
 
+After bootstrap and successful builds, the tested upgrade order is:
+
+```sh
+docker compose run --rm --no-deps -T card-bootstrap
+docker compose run --rm --no-deps -T reporting-bootstrap
+docker compose run --rm --no-deps -T ledger-migrations
+docker compose run --rm --no-deps -T fraud-migrations
+docker compose run --rm --no-deps -T card-migrations
+docker compose run --rm --no-deps -T reporting-migrations
+docker compose run --rm --no-deps -T business-identity
+docker compose run --rm --no-deps -T kafka-config
+docker compose restart -t 20 kafka
+```
+
+Wait for the existing FinCore broker to become healthy before the remaining commands:
+
+```sh
+docker compose run --rm --no-deps -T kafka-init
+docker compose up --no-build --no-deps -d --wait --wait-timeout 360 ledger-service fraud-service notification-service card-service reporting-service api-gateway customer-portal admin-portal
+```
+
+This sequence upgraded Ledger V3 to V6 and Fraud V1 to V2 on the retained workstation volume, created the two new schemas at V1 and ended with fifteen healthy runtime services. Hashes of `.env` and `.local/credentials.json` matched before/after this cutover; unrelated Commerce container identities also matched. Normal health is a startup check; the separate acceptance report records financial/browser results.
+
+Card V2 subsequently replaces the shared identity trigger with explicit table-specific branches. This avoids cached PostgreSQL trigger record shapes reading another table's columns on a reused connection. It changes no identity, journal or saved receipt. Rebuild the Card image and rerun `card-migrations` to apply it on a Card V1 volume before acceptance.
+
 Sign in again after identity configuration so new delegated scopes are present. The generated `finance.demo` user has FINANCE_OPERATOR; ordinary `admin.demo` does not acquire this role. Passwords remain in ignored local configuration.
 
 Customer demo:
