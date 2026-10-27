@@ -2,7 +2,7 @@
 
 Distributed digital banking and payment processing **simulation**, using synthetic customers and simulated money exclusively.
 
-**Status: Phase 6 - fraud authorization and investigation.** The customer workspace includes owned accounts, beneficiaries, recoverable simulated transfers, confirmed history and Kafka-backed notifications. Fraud now owns synchronous explainable assessments, atomic velocity admission and versioned analyst decisions/rules. Ledger independently verifies Fraud grants before executing Payment instructions. See the [Phase 6 verification report](docs/verification/phase-6.md), [analyst demo and upgrade](docs/deployment/fraud-phase-6.md) and [customer demo](docs/deployment/customer-demo.md).
+**Status: Phase 7 - cards, reservations and reconciled statements.** The connected customer workspace now supports synthetic cards, merchant authorization with explainable Fraud review, Ledger-owned holds, full capture/release/refund and immutable monthly CSV/PDF statements. Finance reconciliation requires an explicit role. Existing account, transfer, notification and analyst journeys remain covered. See the [Phase 7 verification report](docs/verification/phase-7.md), [Card/Reporting demo and upgrade](docs/deployment/cards-phase-7.md) and [customer demo](docs/deployment/customer-demo.md).
 
 GitHub's canonical repository is `ABDOUUisHERE/FinCore-Bank`. Local Docker validation is recorded in the [workstation verification report](docs/verification/local-docker-2026-10-23.md).
 
@@ -19,7 +19,7 @@ docker compose up --build -d --wait --wait-timeout 600
 docker compose run --rm --no-deps ledger-check
 ```
 
-Open **http://localhost:5173** for the customer workspace or **http://localhost:5174** for operations. Sign in as `customer.demo`, `admin.demo` or `analyst.demo` using their generated passwords in ignored `.local/credentials.json`. Only the analyst role opens Fraud cases/rules. No shared passwords are committed. Use `localhost` exactly for OIDC redirect matching. [Setup and troubleshooting](docs/deployment/local-setup.md) explains startup, migration credentials, native development and persistent data.
+Open **http://localhost:5173** for the customer workspace or **http://localhost:5174** for operations. Sign in as `customer.demo`, `admin.demo`, `analyst.demo` or `finance.demo` using their generated passwords in ignored `.local/credentials.json`. Only the analyst role opens Fraud cases/rules; explicit FINANCE_OPERATOR opens reconciliation. No shared passwords are committed. Use `localhost` exactly for OIDC redirect matching. [Setup and troubleshooting](docs/deployment/local-setup.md) explains startup, migration credentials, native development and persistent data. Persisted-volume upgrades for cards/statements use the [Phase 7 guide](docs/deployment/cards-phase-7.md).
 
 Stop with `docker compose down`. The named PostgreSQL volume survives normal shutdown. This loopback-only environment uses simulated identities and development HTTP; external deployment is outside this milestone.
 
@@ -53,6 +53,14 @@ flowchart LR
   Fraud --> FDB[(Private fraud database)]
   Fraud --> Service
   Fraud --> Beneficiary
+  Gateway --> Card[Card service]
+  Card --> CardDB[(Private card database)]
+  Card -->|Signed owner commands and reservations| Ledger
+  Card --> Fraud
+  Fraud -->|Canonical merchant context| Card
+  Gateway --> Reporting[Reporting service]
+  Reporting --> RDB[(Immutable statement snapshots)]
+  Reporting -->|Owner snapshots and finance reconciliation| Ledger
   Ledger --> LDB[(Private ledger database)]
   Gateway --> Notification[Notification service]
   Notification --> NDB[(Private notification database)]
@@ -61,6 +69,7 @@ flowchart LR
   Payment --> Kafka
   Ledger --> Kafka
   Fraud --> Kafka
+  Card --> Kafka
   Kafka --> Notification
   Notification --> Account
   Operator[Private simulation operator] --> Payment
@@ -68,6 +77,8 @@ flowchart LR
 ```
 
 Gateway and each business resource server independently validate signed JWTs, issuer, audience, expiry and roles. Customer APIs derive identity from the token; administrator privileges do not imply customer or fraud analyst privileges. Portal tokens stay in memory. The analyst workspace uses independently authorized [Fraud APIs](contracts/openapi/fraud-v1.json). [Customer API contract](contracts/openapi/customer-v1.yaml): `GET /api/v1/customers/me` returns the authorized subject and recognized roles only.
+
+Ledger also owns card controls and live reservations. All existing debits subtract those holds; capture removes its hold and books one balanced journal atomically. Full refunds compensate exactly once and retain daily usage. Card labels cannot function as payment credentials. Reporting stores immutable owner-authorized monthly snapshots with reconciled CSV/PDF exports; historical closing balances remain separate from currently available funds. See the [Card API](contracts/openapi/cards-v1.json), [Reporting API](contracts/openapi/reporting-v1.json) and [boundary ADR](docs/fincore/adr/0010-card-reservations-and-statement-snapshots.md).
 
 ## Architecture review
 
@@ -102,11 +113,11 @@ npm run build
 npm audit --audit-level=high
 ```
 
-Use `mvnw.cmd` on Windows. Maven integration tests use real PostgreSQL through Docker; `-DskipITs` explicitly omits them. Once the stack is running, `docker compose run --rm --no-deps ledger-check` tests the private financial API with a real technical token. `python scripts/check-foundation.py` and `npm run test:e2e` check private Customer rejection and browser PKCE login (install Chromium with `npx playwright install chromium`). The browser suite also completes a two-customer financial API journey using real PKCE tokens and the private check runner. See the [test guide](docs/testing.md) and [current verification](docs/verification/phase-3.md) for actual outcomes. GitHub Actions runs backend, frontend and Compose/browser/ledger checks; no automatic deployment is configured.
+Use `mvnw.cmd` on Windows. Maven integration tests use real PostgreSQL through Docker; `-DskipITs` explicitly omits them. Once the stack is running, `docker compose run --rm --no-deps ledger-check` tests the private financial API with a real technical token. `python scripts/check-foundation.py` and `npm run test:e2e` check private Customer rejection and browser PKCE login (install Chromium with `npx playwright install chromium`). The browser suite also completes a two-customer financial API journey using real PKCE tokens and the private check runner. See the [test guide](docs/testing.md) and [current verification](docs/verification/phase-7.md) for actual outcomes. GitHub Actions runs backend, frontend and Compose/browser/ledger checks; no automatic deployment is configured.
 
 Do not use the Core5G simulator from the previously selected workspace as FinCore runtime or evidence: it is a separate project and repository.
 
 ## GitHub workflow
 
-Use a dedicated branch for each milestone and cohesive Conventional Commits. Push reviewed changes to this repository, open a pull request when requested, and retain verification evidence with the milestone. Architecture approval is required before application implementation. Push authorization does not imply permission to merge or deploy.
+Use a dedicated branch for each milestone and cohesive Conventional Commits. Push meaningful changes and retain measured verification evidence. Merge validated milestones when authorized by the repository owner; production deployment requires its own authorization. Documentation-only evidence commits identify the tested application source and do not invent extra implementation contributions.
 

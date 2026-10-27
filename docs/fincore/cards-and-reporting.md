@@ -1,6 +1,6 @@
 # Cards and reporting contract
 
-Phase 7 remains under validation. All money is synthetic. Amounts are decimal strings; opaque references are UUIDs. Customer routes require a signed CUSTOMER JWT and independently enforce ownership. `Idempotency-Key` is required for every card mutation. Unknown responses retain the same key and body.
+Phase 7 acceptance is recorded in the [verification report](../verification/phase-7.md). All money is synthetic. Amounts are decimal strings; opaque references are UUIDs. Customer routes require a signed CUSTOMER JWT and independently enforce ownership. `Idempotency-Key` is required for every card mutation. Unknown responses retain the same key and body.
 
 | Method and public route | Request / result |
 | --- | --- |

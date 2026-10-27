@@ -1,6 +1,6 @@
 # Phase 7 cards and statements
 
-Milestone validation is still in progress; final evidence belongs in [Phase 7 verification](../verification/phase-7.md).
+Milestone acceptance passed; measured evidence belongs in [Phase 7 verification](../verification/phase-7.md).
 
 For a fresh checkout, run the normal bootstrap and Compose startup from the repository root. Bootstrap generates all new Card/Reporting database and client secrets, a Card Kafka identity and the finance demo password. It retains existing secrets on subsequent runs. Business identity configuration supports both fresh and persisted realms.
 

@@ -1,6 +1,6 @@
 # ADR 0010: Ledger reservations and immutable statement snapshots
 
-Status: implemented on the Phase 7 feature branch; milestone acceptance pending.
+Status: accepted and implemented; [Phase 7 acceptance evidence](../../verification/phase-7.md).
 
 Card is an independent workflow and projection service. Its synthetic `SIM` label cannot function as a payment credential. Ledger owns the card spending guards, immutable canonical authorization receipts, live reservations, action audit and capture/refund journals. No Card database balance authorizes spending.
 

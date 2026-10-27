@@ -1,0 +1,513 @@
+{
+  "milestone": "Phase 7: synthetic cards, Ledger reservations and reconciled reports",
+  "recorded_at_utc": "2026-10-27T16:26:26.962647+00:00",
+  "repository": {
+    "id": 1138747020,
+    "name": "ABDOUUisHERE/FinCore-Bank"
+  },
+  "branch": "feature/fincore-cards-reports",
+  "base_commit": "a1a91cc755d18e0fd3686d2271ef27aa16508662",
+  "source_commit": "998ac020b039c10676e827b2e96462fd87066ae3",
+  "workflows": [
+    {
+      "id": 40538581340,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "998ac020b039c10676e827b2e96462fd87066ae3",
+      "head_branch": "feature/fincore-cards-reports",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40538581340",
+      "created_at": "2026-10-27T16:12:14Z",
+      "updated_at": "2026-10-27T16:15:05Z",
+      "jobs": [
+        {
+          "id": 122310447757,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40538581340/job/122310447757"
+        }
+      ]
+    },
+    {
+      "id": 40538581056,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "998ac020b039c10676e827b2e96462fd87066ae3",
+      "head_branch": "feature/fincore-cards-reports",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40538581056",
+      "created_at": "2026-10-27T16:12:14Z",
+      "updated_at": "2026-10-27T16:12:48Z",
+      "jobs": [
+        {
+          "id": 122310446738,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40538581056/job/122310446738"
+        }
+      ]
+    },
+    {
+      "id": 40538581055,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "998ac020b039c10676e827b2e96462fd87066ae3",
+      "head_branch": "feature/fincore-cards-reports",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40538581055",
+      "created_at": "2026-10-27T16:12:14Z",
+      "updated_at": "2026-10-27T16:25:16Z",
+      "jobs": [
+        {
+          "id": 122310447967,
+          "name": "compose",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40538581055/job/122310447967"
+        }
+      ]
+    }
+  ],
+  "ci_backend": {
+    "command": "./mvnw -B -ntp verify",
+    "tests": 191,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "name": "com.fincore.messaging.MessagingDeliveryIT",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.gateway.configuration.GatewaySecurityTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.gateway.configuration.ApiRateLimitFilterTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.customer.configuration.CurrentSubjectSecurityTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.customer.configuration.CustomerRiskSecurityTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.customer.configuration.DatabaseIsolationIT",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.ledger.InstructionSecurityTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.ledger.LedgerRiskVerifierTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.ledger.LedgerSecurityTest",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.ledger.MoneyTest",
+        "tests": 11,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.ledger.CardLedgerSecurityTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.ledger.CardReservationsIT",
+        "tests": 15,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.ledger.LedgerDatabaseIT",
+        "tests": 22,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.account.AccountSecurityTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.account.AccountRecoveryIT",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.payment.RiskPolicyTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.payment.PaymentSecurityTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.payment.FraudRiskPolicyTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.payment.PaymentIdempotencyTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.payment.PaymentRecoveryIT",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.beneficiary.BeneficiaryRiskSecurityTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.beneficiary.BeneficiarySecurityTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.beneficiary.BeneficiaryDatabaseIT",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.notification.EventProcessorTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.notification.NotificationSecurityTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.notification.NotificationDatabaseIT",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.fraud.FraudSecurityTest",
+        "tests": 7,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.fraud.FraudCardContextTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.fraud.FraudEngineTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.fraud.FraudDatabaseIT",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.card.CardSecurityTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.card.CardWorkerTest",
+        "tests": 6,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.card.CardDatabaseIT",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.reporting.ReportingSecurityTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.reporting.StatementExportsTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "com.fincore.reporting.ReportingDatabaseIT",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ]
+  },
+  "ci_frontend": {
+    "tests": 26,
+    "typecheck": true,
+    "lint": true,
+    "both_portal_builds": true,
+    "audit": "see successful Frontend quality run"
+  },
+  "ci_foundation": {
+    "fresh_compose": true,
+    "independent_authentication": true,
+    "private_ledger": true,
+    "browser_journeys": 8,
+    "retries": 0,
+    "card_foreign_topic_denied": true,
+    "durable_dlq_and_unchanged_replay": true
+  },
+  "local": {
+    "ledger_focused": {
+      "command": "mvnw.cmd -B -ntp -pl services/ledger-service -am verify -Dit.test=CardReservationsIT,LedgerDatabaseIT -Dfailsafe.failIfNoSpecifiedTests=false",
+      "unit_security": 36,
+      "postgresql": 37,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "card_focused": {
+      "command": "mvnw.cmd -B -ntp -pl services/card-service -am verify -Dit.test=CardDatabaseIT -Dfailsafe.failIfNoSpecifiedTests=false",
+      "unit_security": 9,
+      "postgresql": 3,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "evidence": "BUILD SUCCESS and Failsafe XML; Windows PowerShell redirected native stderr can report NativeCommandError independently of the successful Maven result"
+    },
+    "frontend": {
+      "typecheck": true,
+      "lint": true,
+      "component_command": "npm test -- --pool=threads --maxWorkers=1",
+      "component_tests": 26,
+      "both_portal_images_built": true
+    },
+    "retained_volume_upgrade": {
+      "services": [
+        {
+          "service": "account-service",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "admin-portal",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "api-gateway",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "beneficiary-service",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "card-service",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "customer-portal",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "customer-service",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "fraud-service",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "kafka",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "keycloak",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "ledger-service",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "notification-service",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "payment-service",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "postgres",
+          "state": "running",
+          "health": "healthy"
+        },
+        {
+          "service": "reporting-service",
+          "state": "running",
+          "health": "healthy"
+        }
+      ],
+      "secret_files_unchanged": true,
+      "commerce_container_ids_unchanged": true,
+      "ledger": "V3 to V6",
+      "fraud": "V1 to V2",
+      "card": "new V1, then additive V2",
+      "reporting": "new V1",
+      "card_v2_runtime_healthy": true
+    },
+    "foundation_and_private_ledger": "PASS",
+    "browser": {
+      "command": "npm run test:e2e",
+      "source_commit": "eb4bed9fd558d3d98e81b5901d502f386ce563ec",
+      "passed": 7,
+      "failed": 1,
+      "retries": 0,
+      "one_fully_successful_command": false,
+      "failure": "sender notification UI count; real sender/recipient records and one synthetic email independently confirmed"
+    },
+    "focused_customer": {
+      "command": "npx playwright test tests/e2e/customer.spec.ts",
+      "passed": 1,
+      "failed": 0,
+      "retries": 0,
+      "assertions_unchanged": true
+    },
+    "messaging": {
+      "command": "python scripts/check-messaging.py",
+      "after_browser_completion": true,
+      "result": "PASS"
+    },
+    "visual": {
+      "cards_and_statements_widths": [
+        1440,
+        390
+      ],
+      "overflow_assertion_widths": [
+        1440,
+        390,
+        320
+      ],
+      "pdf": "three-page PDFBox test export; first and last pages rendered and inspected; exact journal references and reconciliation retained",
+      "authenticated_captures": "ignored local-only files; no CI upload"
+    }
+  },
+  "observations": [
+    "No full final local Maven reactor is claimed: earlier attempts found a refund fixture expectation and an unsynchronized existing expiry-contention test; focused final financial suites passed and exact-source CI supplies the full-reactor gate.",
+    "Expiry contention now observes the actual PostgreSQL backend waiting for the account lock before letting its database deadline expire; financial assertions remain strict.",
+    "Early Card browser failures found an Account currency selector and a route handler that was removed before its replay response finished; both test synchronization issues were corrected.",
+    "The first local Card creation returned Gateway 504 before the injected response loss. A later unchanged run passed creation. The first full local browser command then passed seven journeys but received 504 during statement generation. Card/Reporting now use bounded 20s Gateway and 25s browser budgets for their sequential 5s owner calls; no cold-start performance guarantee is claimed.",
+    "Local and GitHub acceptance then reproduced a shared PostgreSQL trigger record-shape error on reused connections. Additive Card V2 uses explicit table branches; the new single-connection regression and complete browser acceptance pass.",
+    "A Windows fork worker failed to start in one component attempt; the same 26 assertions passed using a single thread worker.",
+    "The Phase 6 historical local inbox display miss recurred in the latest full Phase 7 local command: seven pass, one sender inbox assertion fails, while the Card/Reporting journey passes and PostgreSQL contains both owner effects and the synthetic email. The unchanged focused customer rerun passes. No independent root cause is claimed.",
+    "The complete local browser command ran on eb4bed9. A subsequent presentation-only change stacks statement total labels above amounts. Final native PKCE visual review and exact-source CI cover that final change; no extra fully successful final local eight-journey command is claimed."
+  ],
+  "limits": [
+    "Synthetic money, identities and merchants only; no PAN/CVV/network",
+    "Full capture/release/refund only; daily usage uses UTC and refunds do not reset it",
+    "Statements fail explicitly over 1000 entries; no pagination claim for a single oversized snapshot",
+    "No production deployment, restore/performance certification, dedicated Audit or Phase 8 telemetry"
+  ]
+}

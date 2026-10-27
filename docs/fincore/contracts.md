@@ -1,6 +1,6 @@
 # Proposed API and event contracts
 
-Status: design only. OpenAPI/JSON Schema files are written and tested in their implementation milestone; these examples are not running endpoints.
+This page preserves the original architecture proposal. Implemented APIs are defined by the versioned contracts: [Account/Payment](../../contracts/openapi/business-v1.yaml), [Fraud](../../contracts/openapi/fraud-v1.json), [Card](../../contracts/openapi/cards-v1.json) and [Reporting](../../contracts/openapi/reporting-v1.json). [Card/Reporting boundaries](cards-and-reporting.md) describe the Phase 7 behavior, including versioned `PUT /cards/{id}` controls rather than the originally proposed freeze/unfreeze routes below. Milestone verification reports establish which implementations have passed acceptance; unimplemented proposal examples are not available endpoints.
 
 ## Public API
 

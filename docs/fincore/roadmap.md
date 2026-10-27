@@ -1,6 +1,8 @@
 # Prioritized implementation roadmap
 
-Status: proposed. Architecture approval precedes all application code. Each milestone must explain its file/module changes before work, remain runnable, report actual commands/results, and document remaining limitations. No milestone is done solely because a container starts.
+Implementation checkpoint: Phase 7 cards, reservations and statements passed acceptance; see the [verification report](../verification/phase-7.md). Phase 8 is the next milestone and has not started.
+
+The original proposal and acceptance gates are preserved below. Status of the original proposal: approved before implementation. Architecture approval precedes all application code. Each milestone must explain its file/module changes before work, remain runnable, report actual commands/results, and document remaining limitations. No milestone is done solely because a container starts.
 
 ## Dependency order and acceptance gates
 

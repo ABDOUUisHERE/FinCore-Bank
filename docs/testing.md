@@ -1,6 +1,20 @@
 # FinCore test guide
 
-Run from the repository root. Java 21 and Node 24 are the reference toolchains. Milestone outcomes are reported in [Phase 1](verification/phase-1.md), [Phase 2](verification/phase-2.md), [Phase 3](verification/phase-3.md) and [Phase 4](verification/phase-4.md).
+Run from the repository root. Java 21 and Node 24 are the reference toolchains. Historical outcomes are preserved in the verification reports. Current Card/Reporting evidence belongs in [Phase 7](verification/phase-7.md); [Phase 6](verification/phase-6.md) retains the earlier Fraud results and its local inbox observation.
+
+## Cards, reservations and reporting
+
+The Phase 7 backend reactor contains 191 cases. New real-PostgreSQL checks exercise reservations against other holds and existing debits, capture/release/expiry, exact full refunds, posting-point deadlines, unknown admission recovery, immutable receipts, reused trigger connections and statement snapshots. Security tests independently verify signed owner delegation and narrow worker scopes. Run the normal full `verify` gate; a focused financial regression command is:
+
+```sh
+./mvnw -B -ntp -pl services/ledger-service -am verify -Dit.test=CardReservationsIT,LedgerDatabaseIT -Dfailsafe.failIfNoSpecifiedTests=false
+```
+
+The UI suite contains 26 cases. On a Windows host where fork startup times out, `npm test -- --pool=threads --maxWorkers=1` runs the same assertions serially. Component stubs do not establish financial correctness.
+
+The full browser command now contains eight journeys. `npx playwright test tests/e2e/cards.spec.ts` focuses the genuine hosted-PKCE Card/Reporting acceptance: lost-response creation replay across reload, merchant risk review, a held balance blocking an ordinary transfer, capture/refund journal identity, retained daily usage, release/freeze, a fail-closed Fraud outage, owner-only CSV/PDF buttons and finance-only reconciliation. It uses private fixtures to independently check real Ledger funds and journals. Retries remain disabled. Run the Kafka ACL/DLQ checker only after browser outage probes have finished.
+
+`FINCORE_VISUAL_QA=1` additionally captures test-owned Card/Statement screens at desktop/mobile widths under ignored `.local/visual`. No identity form, token, authenticated screenshot or raw diagnostics is uploaded by CI. Reporting export tests generate a multi-page PDF under the module's ignored `target` directory; render and inspect its first and last pages after layout changes. See the [Card/Reporting demo and upgrade](deployment/cards-phase-7.md).
 
 ## Phase 4 customer acceptance
 

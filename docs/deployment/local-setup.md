@@ -1,5 +1,7 @@
 # Local FinCore setup
 
+Phase 7 adds private Card and Reporting services, customer card controls and monthly statements, and an explicitly authorized finance reconciliation screen. Follow the [Card/Reporting upgrade and demo](cards-phase-7.md) for persisted-volume migration and generated `finance.demo` access. The [Phase 7 verification](../verification/phase-7.md) records acceptance separately from service startup.
+
 Phase 4 adds the connected customer workspace; follow the [customer demo](customer-demo.md) for profile, accounts, private simulated funding, beneficiaries, transfer confirmation, history and restrictions.
 
 The new `beneficiary-bootstrap` creates its separate database/roles on existing volumes without rotating passwords. `beneficiary-migrations` owns schema changes; the non-root runtime has only its own DB/client secrets. Bootstrap appends missing beneficiary secrets and business identity setup configures its narrow Account lookup client. It has no ledger posting role. Gateway adds public CUSTOMER beneficiary routes and owner-checked account activity. Funding and ledger APIs remain private.
