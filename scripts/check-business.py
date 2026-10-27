@@ -95,7 +95,8 @@ def main():
     history = api("GET", f"/api/v1/accounts/{sender_id}/transactions", customer)
     assert len(history["items"]) == 2
     original = api("GET", "/internal/v1/ledger/journals/" + completed["journalId"], inspector, host=ledger)
-    insufficient, _ = transfer("9999.00")
+    # Keep this an insufficient-funds check below the new-beneficiary review threshold.
+    insufficient, _ = transfer("4999.00")
     assert poll(insufficient["paymentId"], customer, {"FAILED"})["code"] == "INSUFFICIENT_FUNDS"
     review, _ = transfer("20000.00")
     pending = poll(review["paymentId"], customer, {"PENDING_RISK_REVIEW"})

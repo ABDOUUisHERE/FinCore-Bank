@@ -16,13 +16,14 @@ import org.springframework.security.web.SecurityFilterChain;
 public class BeneficiaryConfiguration {
     @Bean JwtDecoder jwtDecoder(@Value("${fincore.security.jwk-set-uri}") String jwks,
                                 @Value("${fincore.security.issuer}") String issuer) {
-        return ServiceSecurity.decoder(jwks, issuer, Set.of("fincore-api"));
+        return ServiceSecurity.decoder(jwks, issuer, Set.of("fincore-api","beneficiary-service"));
     }
     @Bean SecurityFilterChain security(HttpSecurity http) throws Exception {
         var converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(jwt -> ServiceSecurity.authorities(jwt, "beneficiary-service"));
         return http.csrf(c -> c.disable()).sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a -> a.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .requestMatchers(HttpMethod.POST,"/internal/v1/beneficiaries/risk-context").hasAuthority("beneficiary.risk.read")
                 .requestMatchers(HttpMethod.GET, "/api/v1/beneficiaries", "/api/v1/beneficiaries/*", "/api/v1/beneficiaries/*/history").hasRole("CUSTOMER")
                 .requestMatchers(HttpMethod.POST, "/api/v1/beneficiaries").hasRole("CUSTOMER")
                 .requestMatchers(HttpMethod.PUT, "/api/v1/beneficiaries/*").hasRole("CUSTOMER").anyRequest().denyAll())

@@ -33,6 +33,11 @@ public class EventProcessor {
                     }
                 }
             }
+        }else if(e.eventType().equals("fraud.alert.created")){
+            if(!e.aggregateId().toString().equals(p.path("paymentId").asText()) || !Set.of("REVIEW","BLOCK").contains(p.path("verdict").asText()))throw new IllegalArgumentException("INVALID_FRAUD_ALERT");
+            UUID.fromString(p.path("caseId").asText());UUID.fromString(p.path("alertId").asText());String owner=p.path("actorSubject").asText();
+            if(owner.isBlank() || owner.length()>200)throw new IllegalArgumentException("INVALID_NOTIFICATION_OWNER");
+            notices.add(new NotificationStore.Notice(owner,"SECURITY","Transfer security check","A security check requires attention. Open the recorded transfer for its current outcome.","fraud:"+e.aggregateId()));
         }else if(e.eventType().equals("account.restriction.applied")){
             String owner=p.path("ownerSubject").asText();
             if(!owner.isEmpty())notices.add(new NotificationStore.Notice(owner,"SECURITY","Account restriction updated","Your account restriction has been confirmed. Open Accounts for its current status.",e.eventId().toString()));

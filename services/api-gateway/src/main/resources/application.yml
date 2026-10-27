@@ -48,6 +48,13 @@ spring:
                 - name: RequestSize
                   args:
                     maxSize: 16KB
+            - id: fraud
+              uri: ${FRAUD_SERVICE_URL:http://localhost:8087}
+              predicates: ["Path=/api/v1/admin/fraud-alerts,/api/v1/admin/fraud-cases,/api/v1/admin/fraud-cases/**,/api/v1/admin/fraud-rules"]
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: 16KB
             - id: transfers
               uri: ${PAYMENT_SERVICE_URL:http://localhost:8084}
               predicates:

@@ -43,6 +43,13 @@ class FraudSecurityTest {
   http.perform(post("/internal/v1/fraud/payments/"+UUID.randomUUID()+"/decision").header("Authorization","Bearer "+technical("fraud.assess")).contentType("application/json").content("{\"expectedVersion\":1,\"approve\":true,\"reason\":\"FORGED_APPROVAL\"}")).andExpect(status().isForbidden());
   verifyNoInteractions(store,context);
  }
+ @Test void onlyLedgerVerificationScopeCanValidateAnIssuedGrant()throws Exception{
+  var id=UUID.randomUUID();var payment=UUID.randomUUID();String body="{\"paymentId\":\""+payment+"\",\"fingerprint\":\""+"f".repeat(64)+"\"}";
+  http.perform(post("/internal/v1/risk-assessments/"+id+"/validate").header("Authorization","Bearer "+technical("fraud.assess")).contentType("application/json").content(body)).andExpect(status().isForbidden());
+  when(store.validate(id,payment,"f".repeat(64))).thenReturn(Json.read("{\"verified\":true}"));
+  var token=SignedTokens.token("fraud-service","ledger-risk","fincore-ledger-risk",List.of(),Map.of("fraud-service",Map.of("roles",List.of("fraud.validate"))));
+  http.perform(post("/internal/v1/risk-assessments/"+id+"/validate").header("Authorization","Bearer "+token).contentType("application/json").content(body)).andExpect(status().isOk());verify(store).validate(id,payment,"f".repeat(64));verifyNoInteractions(context);
+ }
  @Test void recordedDecisionReplayDoesNotNeedAnAvailablePaymentDependency()throws Exception{
   var id=UUID.randomUUID();var response=Json.read("{\"status\":\"APPROVED\"}");
   when(store.decisionReplay(id,"stable-request",1L,true,"REVIEW_CONFIRMED","signed-analyst")).thenReturn(response);

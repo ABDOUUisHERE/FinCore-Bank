@@ -142,6 +142,23 @@ paths:
                 $ref: '#/components/schemas/Profile'
         '409':
           description: Onboarding payload or profile version conflict
+  /internal/v1/customers/risk-context:
+    servers: [{url: 'http://customer-service:8080'}]
+    post:
+      summary: customer.risk.read only; signed Fraud client reads declared synthetic country
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subject]
+              properties:
+                subject: {type: string}
+      responses:
+        '200': {description: countryCode and profileVersion only}
+        '403': {description: Missing technical context-read scope}
+        '404': {description: No active profile; authorization fails closed}
 components:
   securitySchemes:
     bearerAuth:

@@ -57,6 +57,9 @@ public class SecurityConfiguration {
             .addFilterBefore(new ApiRateLimitFilter(), org.springframework.security.config.web.server.SecurityWebFiltersOrder.AUTHORIZATION)
             .authorizeExchange(auth -> auth
                 .pathMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .pathMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/fraud-alerts","/api/v1/admin/fraud-cases","/api/v1/admin/fraud-cases/*","/api/v1/admin/fraud-rules").hasRole("FRAUD_ANALYST")
+                .pathMatchers(org.springframework.http.HttpMethod.POST,"/api/v1/admin/fraud-cases/*/decisions").hasRole("FRAUD_ANALYST")
+                .pathMatchers(org.springframework.http.HttpMethod.PUT,"/api/v1/admin/fraud-rules").hasRole("FRAUD_ANALYST")
                 .pathMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me").hasRole("CUSTOMER")
                 .pathMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me/profile", "/api/v1/accounts", "/api/v1/accounts/*", "/api/v1/accounts/*/balance", "/api/v1/accounts/*/transactions", "/api/v1/accounts/*/activity", "/api/v1/beneficiaries", "/api/v1/beneficiaries/*", "/api/v1/beneficiaries/*/history", "/api/v1/transfers", "/api/v1/transfers/*", "/api/v1/transfers/*/history", "/api/v1/notifications", "/api/v1/notifications/stream", "/api/v1/notifications/preferences", "/api/v1/notifications/emails").hasRole("CUSTOMER")
                 .pathMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/customers/me/onboarding", "/api/v1/accounts", "/api/v1/transfers", "/api/v1/transfers/*/cancel", "/api/v1/beneficiaries").hasRole("CUSTOMER")

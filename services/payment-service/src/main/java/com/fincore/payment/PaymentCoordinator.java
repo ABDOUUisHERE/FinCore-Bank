@@ -10,8 +10,10 @@ import org.springframework.stereotype.Service;
 @Service
 public class PaymentCoordinator {
     private final Remote remote;private final PaymentStore store;private final String ledger,account;
+    @Value("${FRAUD_URL:http://localhost:8087}") private String fraud;
     public PaymentCoordinator(Remote remote,PaymentStore store,@Value("${LEDGER_URL:http://localhost:8082}")String ledger,@Value("${ACCOUNT_URL:http://localhost:8083}")String account){this.remote=remote;this.store=store;this.ledger=ledger+"/internal/v1/ledger";this.account=account;}
     public JsonNode ledger(String method,String path,Object body){return remote.call(method,ledger+path,remote.serviceToken(),body);}
+    public void reviewFraud(UUID id,String bearer,Object decision){remote.call("POST",fraud+"/internal/v1/fraud/payments/"+id+"/decision",bearer,decision);}
     public record Transfer(UUID sourceAccountId,UUID destinationAccountId,String amount,String currency,String reference) {}
     public record Funding(UUID destinationAccountId,String amount,String currency,String reference) {}
     public JsonNode transfer(String actor,String bearer,String key,Transfer body){

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
 public class LedgerErrors {
+    @ExceptionHandler(com.fincore.support.ApiFailure.class) ProblemDetail risk(com.fincore.support.ApiFailure error,HttpServletRequest request){return problem(error.status,error.code,request);}
     @ExceptionHandler(IllegalArgumentException.class) ProblemDetail invalid(IllegalArgumentException ignored, HttpServletRequest request) {
         return problem(400, "INVALID_COMMAND", request);
     }

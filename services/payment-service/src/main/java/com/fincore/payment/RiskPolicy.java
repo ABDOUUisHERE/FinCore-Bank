@@ -2,14 +2,17 @@ package com.fincore.payment;
 
 import java.math.BigDecimal;
 import java.time.*;
-import org.springframework.stereotype.Component;
+import com.fasterxml.jackson.databind.JsonNode;
 
-/** Explicit local policy port; no claim of production fraud or velocity analysis. */
+/** Synchronous risk port. The local implementation is an explicit isolated test fixture only. */
 public interface RiskPolicy {
     enum Verdict {ALLOW, REVIEW, BLOCK}
-    record Assessment(Verdict verdict,String reason,String ruleset,Instant expiresAt) {}
+    record Assessment(Verdict verdict,String reason,String ruleset,Instant expiresAt,java.util.UUID reference) {
+        public Assessment(Verdict verdict,String reason,String ruleset,Instant expiresAt){this(verdict,reason,ruleset,expiresAt,null);}
+    }
     Assessment assess(String kind,BigDecimal amount,String currency,boolean reviewed);
-    @Component final class Local implements RiskPolicy {
+    default Assessment assess(JsonNode payment){return assess(payment.path("kind").asText(),new BigDecimal(payment.path("amount").asText()),payment.path("currency").asText(),payment.path("approved").asBoolean());}
+    final class Local implements RiskPolicy {
         private final Clock clock;
         public Local(){this(Clock.systemUTC());}
         public Local(Clock clock){this.clock=clock;}

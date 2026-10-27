@@ -12,6 +12,10 @@ public class BeneficiaryStore {
     private final JdbcTemplate jdbc;
     private static final org.springframework.jdbc.core.RowMapper<JsonNode> ROW = (rs,n) -> Json.read(rs.getString(1));
     public BeneficiaryStore(JdbcTemplate jdbc) { this.jdbc = jdbc; }
+    public JsonNode riskContext(String subject,UUID destination){
+        var rows=jdbc.query("select jsonb_build_object('saved',true,'createdAt',created_at,'status',status)::text from beneficiary where owner_subject=? and destination_account_id=?",ROW,subject,destination);
+        return rows.isEmpty()?Json.read("{\"saved\":false,\"createdAt\":null}"):rows.getFirst();
+    }
     public static String label(String value) {
         if (value == null || value.isBlank() || value.strip().length() > 80 || value.chars().anyMatch(Character::isISOControl))
             throw new ApiFailure(400, "INVALID_BENEFICIARY_LABEL");

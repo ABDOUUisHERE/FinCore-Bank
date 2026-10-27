@@ -23,4 +23,9 @@ class EventProcessorTest {
   var id=UUID.randomUUID();var raw=Json.text(Map.of("eventId",UUID.randomUUID(),"eventType","ledger.journal.posted","schemaVersion",1,"aggregateId",id,"aggregateVersion",1,"correlationId",id.toString(),"occurredAt","2026-10-26T10:00:00Z","payload",Map.of("journalId",UUID.randomUUID())));
   processor.process("fincore.ledger.journal.posted.v1",id.toString(),raw);verify(store).accept(any(),eq(raw),eq(List.of()));verifyNoInteractions(remote);
  }
+ @Test void fraudAlertIsAnOwnedSecurityNoticeAndNeverAPaymentSuccess(){
+  var id=UUID.randomUUID();var raw=Json.text(Map.of("eventId",UUID.randomUUID(),"eventType","fraud.alert.created","schemaVersion",1,"aggregateId",id,"aggregateVersion",1,"correlationId",id.toString(),"occurredAt","2026-10-26T10:00:00Z","payload",Map.of("paymentId",id,"caseId",UUID.randomUUID(),"alertId",UUID.randomUUID(),"actorSubject","verified-owner","verdict","REVIEW")));
+  processor.process("fincore.fraud.alert.created.v1",id.toString(),raw);
+  verify(store).accept(any(),eq(raw),argThat(n->n.size()==1 && n.getFirst().subject().equals("verified-owner") && n.getFirst().category().equals("SECURITY") && !n.getFirst().body().contains("completed")));verifyNoInteractions(remote);
+ }
 }

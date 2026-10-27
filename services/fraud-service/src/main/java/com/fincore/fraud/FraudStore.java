@@ -48,7 +48,7 @@ public class FraudStore {
   var cases=jdbc.query("select to_jsonb(c)::text from fraud_case c where payment_id=? for update",ROW,payment);
   JsonNode existing=cases.isEmpty()?null:cases.getFirst();long caseVersion=existing==null?0:existing.path("version").asLong();
   // Workflow status/version can advance without changing the risk facts or the authorized command.
-  var canonical=context.deepCopy();((com.fasterxml.jackson.databind.node.ObjectNode)canonical).remove(List.of("paymentVersion","paymentStatus"));String contextHash=hash(canonical.toString());
+  var canonical=context.deepCopy();((com.fasterxml.jackson.databind.node.ObjectNode)canonical).remove(List.of("paymentVersion","paymentStatus","journalId","riskAssessmentId","riskRuleset"));String contextHash=hash(canonical.toString());
   var cache=jdbc.query("select to_jsonb(a)::text from risk_assessment a where payment_id=? and rules_version=? and case_version=? and context_hash=? and expires_at>clock_timestamp() order by sequence desc limit 1",ROW,payment,version,caseVersion,contextHash);
   if(!cache.isEmpty())return assessmentView(cache.getFirst());
   if(context.path("kind").asText().equals("TRANSFER"))jdbc.update("insert into velocity_admission(payment_id,actor,destination_id,last_attempt,expires_at) values(?,?,?,?::timestamptz,?::timestamptz) on conflict(payment_id) do update set last_attempt=excluded.last_attempt,expires_at=excluded.expires_at",payment,actor,optionalId(context,"destinationAccountId"),now.toString(),now.plusSeconds(60).toString());
@@ -71,7 +71,8 @@ public class FraudStore {
   if(existing==null && !verdict.equals("ALLOW")){
    caseVersion=1;
    jdbc.update("insert into fraud_case(id,payment_id,status,rules_version,reason_codes) values(?,?,?,?,?::jsonb)",caseId,payment,verdict.equals("BLOCK")?"BLOCKED":"OPEN",version,Json.text(codes));
-   var event=UUID.randomUUID();jdbc.update("insert into fraud_outbox(id,aggregate_id,aggregate_version,event_type,payload) values(?,?,1,'fraud.alert.created',?::jsonb)",event,payment,Json.text(Map.of("paymentId",payment,"caseId",caseId,"actorSubject",actor,"verdict",verdict,"rulesVersion",version)));
+   var event=UUID.randomUUID();jdbc.update("insert into fraud_alert(id,case_id,payment_id,assessment_id,verdict,score,rules_version,reasons) values(?,?,?,?,?,?,?,?::jsonb)",event,caseId,payment,assessment,verdict,score,version,Json.text(explanations));
+   jdbc.update("insert into fraud_outbox(id,aggregate_id,aggregate_version,event_type,payload) values(?,?,1,'fraud.alert.created',?::jsonb)",event,payment,Json.text(Map.of("alertId",event,"paymentId",payment,"caseId",caseId,"actorSubject",actor,"verdict",verdict,"rulesVersion",version)));
   }else if(existing!=null && !existing.path("status").asText().equals("APPROVED") && !existing.path("status").asText().equals("REJECTED")
     && (existing.path("rules_version").asLong()!=version || !existing.path("reason_codes").equals(Json.read(Json.text(codes))) || !existing.path("status").asText().equals(caseStatus(verdict)))){
    caseVersion++;jdbc.update("update fraud_case set status=?,version=?,rules_version=?,reason_codes=?::jsonb,updated_at=clock_timestamp() where id=?",caseStatus(verdict),caseVersion,version,Json.text(codes),caseId);
@@ -84,15 +85,24 @@ public class FraudStore {
  private static String caseStatus(String verdict){return verdict.equals("ALLOW")?"CLEARED":verdict.equals("BLOCK")?"BLOCKED":"OPEN";}
  private static Map<String,Object> assessmentFields(JsonNode row){return Map.of("assessmentId",row.path("id").asText(),"paymentId",row.path("payment_id").asText(),"verdict",row.path("verdict").asText(),"score",row.path("score").asInt(),"rulesVersion",row.path("rules_version").asLong(),"expiresAt",row.path("expires_at").asText(),"reasons",row.path("reasons"));}
  private static JsonNode assessmentView(JsonNode row){return Json.read(Json.text(assessmentFields(row)));}
+ public JsonNode validate(UUID assessment,UUID payment,String fingerprint){
+  var rows=jdbc.query("select jsonb_build_object('assessmentId',a.id,'paymentId',a.payment_id,'fingerprint',p.fingerprint,'expiresAt',a.expires_at)::text from risk_assessment a join risk_payment p on p.payment_id=a.payment_id where a.id=? and a.payment_id=? and p.fingerprint=? and a.verdict='ALLOW' and a.expires_at>clock_timestamp()",ROW,assessment,payment,fingerprint);
+  if(rows.isEmpty())throw new ApiFailure(403,"RISK_AUTHORIZATION_REQUIRED");return rows.getFirst();
+ }
 
  public List<JsonNode> cases(Long before,String status){
   if(before!=null && before<1 || !Set.of("","OPEN","APPROVED","REJECTED","BLOCKED","CLEARED").contains(status))throw new ApiFailure(400,"INVALID_CASE_FILTER");
   return jdbc.query("select jsonb_build_object('caseId',c.id,'paymentId',c.payment_id,'version',c.version,'status',c.status,'createdAt',c.created_at,'sequence',a.sequence::text,'assessment',jsonb_build_object('verdict',a.verdict,'score',a.score,'rulesVersion',a.rules_version,'reasons',a.reasons),'context',a.context)::text from fraud_case c join risk_assessment a on a.id=c.last_assessment where (?='' or c.status=?) and (?::bigint is null or a.sequence<?) order by a.sequence desc limit 50",ROW,status,status,before,before);
  }
+ public List<JsonNode> alerts(Long before){
+  if(before!=null && before<1)throw new ApiFailure(400,"INVALID_ALERT_CURSOR");
+  return jdbc.query("select jsonb_build_object('alertId',id,'caseId',case_id,'paymentId',payment_id,'assessmentId',assessment_id,'sequence',sequence::text,'verdict',verdict,'score',score,'rulesVersion',rules_version,'reasons',reasons,'createdAt',created_at)::text from fraud_alert where (?::bigint is null or sequence<?) order by sequence desc limit 50",ROW,before,before);
+ }
  public JsonNode caseDetail(UUID id){
-  var rows=jdbc.query("select jsonb_build_object('caseId',c.id,'paymentId',c.payment_id,'version',c.version,'status',c.status,'createdAt',c.created_at,'rulesVersion',c.rules_version,'assessment',to_jsonb(a),'context',a.context)::text from fraud_case c join risk_assessment a on a.id=c.last_assessment where c.id=?",ROW,id);
+  var rows=jdbc.query("select jsonb_build_object('caseId',c.id,'paymentId',c.payment_id,'version',c.version,'status',c.status,'createdAt',c.created_at,'rulesVersion',c.rules_version,'assessment',jsonb_build_object('assessmentId',a.id,'paymentId',a.payment_id,'verdict',a.verdict,'score',a.score,'rulesVersion',a.rules_version,'expiresAt',a.expires_at,'reasons',a.reasons,'createdAt',a.created_at),'context',a.context)::text from fraud_case c join risk_assessment a on a.id=c.last_assessment where c.id=?",ROW,id);
   if(rows.isEmpty())throw new ApiFailure(404,"FRAUD_CASE_NOT_FOUND");
   var result=(com.fasterxml.jackson.databind.node.ObjectNode)rows.getFirst();
+  result.set("alerts",Json.read(Json.text(jdbc.query("select jsonb_build_object('alertId',id,'verdict',verdict,'score',score,'rulesVersion',rules_version,'createdAt',created_at)::text from fraud_alert where case_id=? order by sequence",ROW,id))));
   result.set("decisions",Json.read(Json.text(jdbc.query("select jsonb_build_object('decisionId',id,'caseVersion',case_version,'actor',actor,'approve',approve,'reason',reason,'createdAt',created_at)::text from investigation_decision where case_id=? order by case_version",ROW,id))));
   return result;
  }

@@ -1,6 +1,7 @@
 package com.fincore.ledger;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fincore.ledger.configuration.*;
 import com.nimbusds.jose.jwk.*;
 import com.nimbusds.jose.jwk.source.ImmutableJWKSet;
@@ -27,6 +28,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class InstructionSecurityTest {
     @Autowired MockMvc http;
     @MockitoBean JdbcTemplate jdbc;
+    @MockitoBean LedgerStore store;
+    @MockitoBean LedgerRiskVerifier risk;
     static final String BODY="{\"id\":\"00000000-0000-0000-0000-000000000003\",\"key\":\"stable-key\",\"kind\":\"TRANSFER\",\"debitAccountId\":\"00000000-0000-0000-0000-000000000001\",\"creditAccountId\":\"00000000-0000-0000-0000-000000000002\",\"amount\":\"10.00\",\"currency\":\"MAD\",\"metadata\":{}}";
     @TestConfiguration(proxyBeanMethods=false)static class Decoders{
         @Bean @Primary JwtDecoder primary()throws Exception{var decoder=NimbusJwtDecoder.withPublicKey(LedgerSecurityTest.KEY.toRSAPublicKey()).build();decoder.setJwtValidator(SecurityConfiguration.validator(LedgerSecurityTest.ISSUER,"ledger-service"));return decoder;}
@@ -55,6 +58,18 @@ class InstructionSecurityTest {
         http.perform(get(path).header("Authorization","Bearer "+token("fincore-customer","ledger.prepare"))).andExpect(status().isForbidden());
         http.perform(get(path+"?month=invalid").header("Authorization","Bearer "+token("fincore-account","ledger.read"))).andExpect(status().isBadRequest());
         verifyNoInteractions(jdbc);
+    }
+    @Test void callerExpiryCannotReplaceTheVerifiedGrantDeadline()throws Exception{
+        var id=UUID.randomUUID();var assessment=UUID.randomUUID();var deadline=Instant.now().plusSeconds(20);var result=new ObjectMapper().readTree("{\"status\":\"POSTED\"}");
+        when(jdbc.query(anyString(),org.mockito.ArgumentMatchers.<RowMapper<JsonNode>>any(),any(Object[].class))).thenReturn(List.of(new ObjectMapper().readTree("{\"fingerprint\":\""+"f".repeat(64)+"\",\"outcome\":null}")));
+        when(risk.verify(assessment,id,"f".repeat(64))).thenReturn(deadline);when(store.executeInstruction("fincore-payment",id,deadline)).thenReturn(result);
+        http.perform(post("/internal/v1/ledger/instructions/"+id+"/execute").header("Authorization","Bearer "+token("fincore-payment","ledger.execute")).contentType("application/json").content("{\"assessmentId\":\""+assessment+"\",\"assessmentExpiresAt\":\"2099-01-01T00:00:00Z\"}")).andExpect(status().isOk());
+        verify(store).executeInstruction("fincore-payment",id,deadline);verify(risk).verify(assessment,id,"f".repeat(64));
+    }
+    @Test void alreadyRecordedOutcomeRemainsRecoverableWithoutFraud()throws Exception{
+        var id=UUID.randomUUID();when(jdbc.query(anyString(),org.mockito.ArgumentMatchers.<RowMapper<JsonNode>>any(),any(Object[].class))).thenReturn(List.of(new ObjectMapper().readTree("{\"outcome\":{\"status\":\"POSTED\"}}")));
+        http.perform(post("/internal/v1/ledger/instructions/"+id+"/execute").header("Authorization","Bearer "+token("fincore-payment","ledger.execute")).contentType("application/json").content("{}")).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("POSTED"));
+        verifyNoInteractions(risk,store);
     }
 
 }

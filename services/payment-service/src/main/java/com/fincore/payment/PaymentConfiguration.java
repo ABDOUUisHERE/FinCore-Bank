@@ -21,6 +21,7 @@ public class PaymentConfiguration {
                 .requestMatchers(org.springframework.http.HttpMethod.POST,"/internal/v1/payments/funding").hasAuthority("payment.fund")
                 .requestMatchers(org.springframework.http.HttpMethod.POST,"/internal/v1/payments/*/reversal").hasAuthority("payment.reverse")
                 .requestMatchers(org.springframework.http.HttpMethod.POST,"/internal/v1/payments/*/decision").hasAuthority("payment.review")
+                .requestMatchers(org.springframework.http.HttpMethod.GET,"/internal/v1/payments/*/risk-context").hasAuthority("payment.risk.read")
                 .requestMatchers(org.springframework.http.HttpMethod.GET,"/internal/v1/payments/*").hasAuthority("payment.inspect")
                 .requestMatchers("/api/v1/transfers","/api/v1/transfers/*","/api/v1/transfers/*/history","/api/v1/transfers/*/cancel").hasRole("CUSTOMER").anyRequest().denyAll())
             .oauth2ResourceServer(o->o.jwt(j->j.jwtAuthenticationConverter(converter)).authenticationEntryPoint((q,r,e)->WebSupport.denied(q,r,401)))

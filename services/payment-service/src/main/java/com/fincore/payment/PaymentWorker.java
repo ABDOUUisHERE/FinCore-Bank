@@ -34,14 +34,20 @@ public class PaymentWorker {
             var saved=coordinator.ledger("GET","/instructions/"+id,null).path("outcome");
             if(!saved.isNull() && !saved.isMissingNode()){store.completed(payment,saved);return;}
         }
-        var assessment=risk.assess(payment.path("kind").asText(),new BigDecimal(payment.path("amount").asText()),payment.path("currency").asText(),payment.path("approved").asBoolean());
+        var assessment=risk.assess(payment);
+        if(status.equals("PENDING_RISK_REVIEW")){
+            if(assessment.verdict()==RiskPolicy.Verdict.REVIEW){store.deferReview(payment);return;}
+            if(assessment.verdict()==RiskPolicy.Verdict.ALLOW){payment=store.move(payment,PaymentState.VALIDATING,null,assessment);status="VALIDATING";}
+        }
         if(assessment.verdict()!=RiskPolicy.Verdict.ALLOW){
             if(status.equals("PROCESSING"))throw new ApiFailure(503,"RISK_REASSESSMENT_REQUIRED");
-            payment=store.move(payment,assessment.verdict()==RiskPolicy.Verdict.REVIEW?PaymentState.PENDING_RISK_REVIEW:PaymentState.REJECTED,assessment.reason(),assessment);store.release(payment);return;
+            payment=store.move(payment,assessment.verdict()==RiskPolicy.Verdict.REVIEW?PaymentState.PENDING_RISK_REVIEW:PaymentState.REJECTED,assessment.reason(),assessment);
+            if(assessment.verdict()==RiskPolicy.Verdict.REVIEW)store.deferReview(payment);else store.release(payment);return;
         }
         if(status.equals("VALIDATING"))payment=store.move(payment,PaymentState.PROCESSING,null,assessment);
         store.assessed(payment,assessment);
-        var outcome=coordinator.ledger("POST","/instructions/"+id+"/execute",Map.of("assessmentExpiresAt",assessment.expiresAt().toString()));
+        var authorization=new LinkedHashMap<String,Object>();authorization.put("assessmentExpiresAt",assessment.expiresAt().toString());authorization.put("assessmentId",assessment.reference());
+        var outcome=coordinator.ledger("POST","/instructions/"+id+"/execute",authorization);
         store.completed(payment,outcome);
     }
 }

@@ -40,7 +40,7 @@ class FraudDatabaseIT {
  @Test void rollbackCannotLeaveAdmissionAssessmentAlertOrCaseFacts(){
   var input=context(UUID.randomUUID(),"actor","20000.00",UUID.randomUUID());
   assertThatThrownBy(()->tx.execute(s->{store.assess(input);throw new IllegalStateException("CRASH");})).hasMessage("CRASH");
-  for(var table:List.of("risk_payment","velocity_admission","risk_assessment","fraud_case","fraud_outbox"))assertThat(jdbc.queryForObject("select count(*) from "+table,Long.class)).isZero();
+  for(var table:List.of("risk_payment","velocity_admission","risk_assessment","fraud_case","fraud_alert","fraud_outbox"))assertThat(jdbc.queryForObject("select count(*) from "+table,Long.class)).isZero();
  }
  @Test void concurrentIdenticalRequestsReserveOneSlotAndHaveOneAssessment()throws Exception{
   var input=context(UUID.randomUUID(),"same-actor","100.00",UUID.randomUUID());
@@ -99,12 +99,22 @@ class FraudDatabaseIT {
    assertThat(List.of(a.get(),b.get()).stream().filter("CASE_VERSION_CONFLICT"::equals).count()).isOne();
   }
   assertThat(jdbc.queryForObject("select count(*) from investigation_decision",Long.class)).isOne();
-  for(var sql:List.of("delete from risk_assessment","update risk_payment set actor='forged'","update investigation_decision set reason='FORGED'","truncate fraud_outbox","update fraud_rule set reason='FORGED'","create table forbidden(id int)"))assertThatThrownBy(()->jdbc.execute(sql)).isInstanceOf(org.springframework.dao.DataAccessException.class);
+  for(var sql:List.of("delete from risk_assessment","update risk_payment set actor='forged'","update investigation_decision set reason='FORGED'","update fraud_alert set score=0","truncate fraud_outbox","update fraud_rule set reason='FORGED'","create table forbidden(id int)"))assertThatThrownBy(()->jdbc.execute(sql)).isInstanceOf(org.springframework.dao.DataAccessException.class);
  }
  @Test void deniedInvestigationHasAnExplicitReasonEvenIfBaseRulesWouldAllow(){
   var payment=UUID.randomUUID();var c=context(payment,"denied-actor","20000.00",UUID.randomUUID());assess(c);
   tx.execute(s->store.decide(caseId(payment),1,false,"REJECT_REVIEW","analyst","deny-key"));
   var result=assess(c);assertThat(result.path("verdict").asText()).isEqualTo("BLOCK");
   assertThat(result.path("reasons")).anySatisfy(r->assertThat(r.path("code").asText()).isEqualTo("ANALYST_REJECTED"));
+ }
+ @Test void ledgerValidationRequiresTheExactUnexpiredAllowedPaymentFingerprint(){
+  var payment=UUID.randomUUID();var input=context(payment,"ledger-binding","100.00",UUID.randomUUID());var grant=assess(input);var id=UUID.fromString(grant.path("assessmentId").asText());
+  assertThat(store.validate(id,payment,input.path("fingerprint").asText()).path("paymentId").asText()).isEqualTo(payment.toString());
+  assertThatThrownBy(()->store.validate(id,UUID.randomUUID(),input.path("fingerprint").asText())).hasMessage("RISK_AUTHORIZATION_REQUIRED");
+  assertThatThrownBy(()->store.validate(id,payment,"f".repeat(64))).hasMessage("RISK_AUTHORIZATION_REQUIRED");
+  owner.update("update risk_assessment set expires_at=clock_timestamp()-interval '1 second' where id=?",id);
+  assertThatThrownBy(()->store.validate(id,payment,input.path("fingerprint").asText())).hasMessage("RISK_AUTHORIZATION_REQUIRED");
+  var review=assess(context(UUID.randomUUID(),"review-binding","20000.00",UUID.randomUUID()));
+  assertThatThrownBy(()->store.validate(UUID.fromString(review.path("assessmentId").asText()),UUID.fromString(review.path("paymentId").asText()),"f".repeat(64))).hasMessage("RISK_AUTHORIZATION_REQUIRED");
  }
 }

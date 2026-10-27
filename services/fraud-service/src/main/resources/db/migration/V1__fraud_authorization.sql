@@ -52,6 +52,14 @@ CREATE TABLE investigation_decision (
  response jsonb NOT NULL,created_at timestamptz NOT NULL DEFAULT clock_timestamp(),
  UNIQUE(case_id,request_key),UNIQUE(case_id,case_version)
 );
+CREATE TABLE fraud_alert (
+ id uuid PRIMARY KEY,sequence bigint GENERATED ALWAYS AS IDENTITY UNIQUE,
+ case_id uuid NOT NULL REFERENCES fraud_case(id),payment_id uuid NOT NULL UNIQUE REFERENCES risk_payment(payment_id),
+ assessment_id uuid NOT NULL REFERENCES risk_assessment(id) DEFERRABLE INITIALLY DEFERRED,
+ verdict varchar(6) NOT NULL CHECK(verdict IN ('REVIEW','BLOCK')),score int NOT NULL CHECK(score BETWEEN 0 AND 100),
+ rules_version bigint NOT NULL REFERENCES fraud_rule(version),reasons jsonb NOT NULL,
+ created_at timestamptz NOT NULL DEFAULT clock_timestamp()
+);
 CREATE TABLE fraud_outbox (
  id uuid PRIMARY KEY,aggregate_id uuid NOT NULL,aggregate_version bigint NOT NULL,
  event_type varchar(100) NOT NULL,payload jsonb NOT NULL,
@@ -67,7 +75,7 @@ CREATE TABLE event_delivery (
 );
 CREATE INDEX event_delivery_pending ON event_delivery(next_attempt,event_id) WHERE sent_at IS NULL;
 REVOKE ALL ON ALL TABLES IN SCHEMA public FROM PUBLIC;
-GRANT SELECT,INSERT ON fraud_rule,risk_payment,risk_assessment,investigation_decision,fraud_outbox TO fraud_runtime;
+GRANT SELECT,INSERT ON fraud_rule,risk_payment,risk_assessment,investigation_decision,fraud_alert,fraud_outbox TO fraud_runtime;
 GRANT SELECT ON current_rule,fraud_case,velocity_admission,fincore_event_source TO fraud_runtime;
 GRANT INSERT ON fraud_case,velocity_admission TO fraud_runtime;
 GRANT UPDATE(version) ON current_rule TO fraud_runtime;

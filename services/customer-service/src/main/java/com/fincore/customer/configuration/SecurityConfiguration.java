@@ -19,7 +19,7 @@ import org.springframework.http.MediaType;
 @Configuration
 public class SecurityConfiguration {
     public static OAuth2TokenValidator<Jwt> validator(String issuer, String audience) {
-        OAuth2TokenValidator<Jwt> audienceValidator = jwt -> jwt.getAudience().contains(audience)
+        OAuth2TokenValidator<Jwt> audienceValidator = jwt -> (jwt.getAudience().contains(audience) || jwt.getAudience().contains("customer-service"))
             && jwt.getExpiresAt() != null && jwt.getSubject() != null && !jwt.getSubject().isBlank()
             ? OAuth2TokenValidatorResult.success()
             : OAuth2TokenValidatorResult.failure(new OAuth2Error("invalid_token", "Invalid audience", null));
@@ -37,11 +37,14 @@ public class SecurityConfiguration {
 
     public static Collection<GrantedAuthority> roles(Jwt jwt) {
         Map<String, Object> realm = jwt.getClaimAsMap("realm_access");
-        if (realm == null || !(realm.get("roles") instanceof List<?> values)) return List.of();
+        var result = new java.util.ArrayList<GrantedAuthority>();
         var allowed = List.of("CUSTOMER", "SUPPORT_AGENT", "FRAUD_ANALYST", "FINANCE_OPERATOR", "ADMIN");
-        return values.stream().filter(String.class::isInstance).map(String.class::cast)
+        if (realm != null && realm.get("roles") instanceof List<?> values) result.addAll(values.stream().filter(String.class::isInstance).map(String.class::cast)
             .filter(allowed::contains).distinct()
-            .<GrantedAuthority>map(role -> new SimpleGrantedAuthority("ROLE_" + role)).toList();
+            .<GrantedAuthority>map(role -> new SimpleGrantedAuthority("ROLE_" + role)).toList());
+        var resources=jwt.getClaimAsMap("resource_access");
+        if(resources!=null && resources.get("customer-service") instanceof Map<?,?> resource && resource.get("roles") instanceof List<?> scopes && scopes.contains("customer.risk.read"))result.add(new SimpleGrantedAuthority("customer.risk.read"));
+        return List.copyOf(result);
     }
 
     @Bean
@@ -52,6 +55,7 @@ public class SecurityConfiguration {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.POST, "/internal/v1/customers/risk-context").hasAuthority("customer.risk.read")
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me").hasRole("CUSTOMER")
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me/profile").hasRole("CUSTOMER")
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/customers/me/onboarding").hasRole("CUSTOMER")

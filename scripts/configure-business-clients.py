@@ -107,6 +107,36 @@ def main():
     for browser in ("fincore-customer", "fincore-admin"):
         target = api("GET", "/clients?clientId=" + browser)[0]["id"]
         audience(target, "fincore-payment")
+    fraud_resource = client("fraud-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
+    fraud_assess = ensure_role(fraud_resource, "fraud.assess")
+    fraud_review = ensure_role(fraud_resource, "fraud.review")
+    fraud_validate = ensure_role(fraud_resource, "fraud.validate")
+    ledger_risk_client = machine("fincore-ledger-risk", "LEDGER_RISK_CLIENT_SECRET")
+    assign(ledger_risk_client, fraud_resource, [fraud_validate])
+    audience(ledger_risk_client, "fraud-service")
+    role_claim(ledger_risk_client, "fraud-service")
+    assign(payment_client, fraud_resource, [fraud_assess])
+    audience(payment_client, "fraud-service")
+    role_claim(payment_client, "fraud-service")
+    assign(operator, fraud_resource, [fraud_review])
+    audience(operator, "fraud-service")
+    role_claim(operator, "fraud-service")
+    fraud_client = machine("fincore-fraud", "FRAUD_CLIENT_SECRET")
+    customer_resource = client("customer-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
+    beneficiary_resource = client("beneficiary-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
+    for target, client_id, scope in [(payment_resource, "payment-service", "payment.risk.read"),
+            (customer_resource, "customer-service", "customer.risk.read"),
+            (beneficiary_resource, "beneficiary-service", "beneficiary.risk.read")]:
+        assign(fraud_client, target, [ensure_role(target, scope)])
+        audience(fraud_client, client_id)
+        role_claim(fraud_client, client_id)
+    analysts = api("GET", "/users?username=analyst.demo&exact=true")
+    if not analysts:
+        api("POST", "/users", {"username": "analyst.demo", "enabled": True, "emailVerified": True,
+            "email": "analyst@example.invalid", "firstName": "Synthetic", "lastName": "Analyst",
+            "credentials": [{"type": "password", "value": values["FRAUD_ANALYST_PASSWORD"], "temporary": False}]})
+        analysts = api("GET", "/users?username=analyst.demo&exact=true")
+    api("POST", f"/users/{analysts[0]['id']}/role-mappings/realm", [api("GET", "/roles/FRAUD_ANALYST")])
     users = api("GET", "/users?username=recipient.demo&exact=true")
     if not users:
         api("POST", "/users", {"username": "recipient.demo", "enabled": True, "emailVerified": True,

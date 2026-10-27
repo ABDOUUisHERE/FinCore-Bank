@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: FinCore owned accounts and simulated payments
-  version: 0.4.0
+  version: 0.6.0
   description: >-
     Public routes require CUSTOMER. Private operator routes require their explicit client roles.
     Payment acceptance is not completion; poll until COMPLETED with a confirmed journalId.
@@ -164,7 +164,7 @@ paths:
     servers: [{url: 'http://payment-service:8080'}]
     parameters: [{$ref: '#/components/parameters/Id'}]
     post:
-      summary: Review a pending payment; payment.review technical scope
+      summary: Bridge a pending review to audited Fraud; payment.review and fraud.review technical scopes
       requestBody:
         required: true
         content:
@@ -177,7 +177,13 @@ paths:
                 expectedVersion: {type: integer, format: int64, minimum: 0}
                 approve: {type: boolean}
                 reason: {type: string, pattern: '^[A-Z_]{3,80}$'}
-      responses: {'200': {description: Approval returns to validation; rejection moves to REJECTED}}
+      responses: {'200': {description: Decision recorded by Fraud; returns actual current Payment state. Durable polling rechecks authorization before changing financial state}}
+  /internal/v1/payments/{id}/risk-context:
+    servers: [{url: 'http://payment-service:8080'}]
+    parameters: [{$ref: '#/components/parameters/Id'}]
+    get:
+      summary: Narrow payment.risk.read scope; canonical instruction identity and ten-minute financial FAILED count
+      responses: {'200': {description: 'paymentId, receipt fingerprint, actor, kind, exact amount, currency, destinationAccountId, paymentStatus/paymentVersion, recentFailures, journalId and opaque risk references'}, '403': {description: No technical context-read scope}}
   /internal/v1/payments/{id}:
     servers: [{url: 'http://payment-service:8080'}]
     parameters: [{$ref: '#/components/parameters/Id'}]
@@ -246,4 +252,6 @@ components:
         destinationAccountId: {type: string, format: uuid, nullable: true}
         createdAt: {type: string, format: date-time}
         journalId: {type: string, format: uuid, nullable: true}
+        riskAssessmentId: {type: string, format: uuid, nullable: true}
+        riskRuleset: {type: string, nullable: true}
         code: {type: string, nullable: true}

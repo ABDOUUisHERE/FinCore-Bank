@@ -44,5 +44,63 @@
       "type": "object"
     }
   },
-  "description": "Topic fincore.<eventType>.v1; key aggregateId. Producer projections exclude names, email addresses, tokens and card data. Opaque subjects route owned notifications. Historical correlation falls back explicitly to the durable event ID."
+  "description": "Topic fincore.<eventType>.v1; key aggregateId. Producer projections exclude names, email addresses, tokens and card data. Opaque subjects route owned notifications. Historical correlation falls back explicitly to the durable event ID.",
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "eventType": {
+            "const": "fraud.alert.created"
+          }
+        },
+        "required": [
+          "eventType"
+        ]
+      },
+      "then": {
+        "properties": {
+          "payload": {
+            "type": "object",
+            "required": [
+              "alertId",
+              "paymentId",
+              "caseId",
+              "actorSubject",
+              "verdict",
+              "rulesVersion"
+            ],
+            "properties": {
+              "alertId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "paymentId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "caseId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "actorSubject": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 200
+              },
+              "verdict": {
+                "enum": [
+                  "REVIEW",
+                  "BLOCK"
+                ]
+              },
+              "rulesVersion": {
+                "type": "integer",
+                "minimum": 1
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
 }

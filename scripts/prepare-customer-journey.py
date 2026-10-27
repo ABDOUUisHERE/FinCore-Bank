@@ -77,6 +77,27 @@ def main():
                 raise AssertionError("Funding did not confirm")
         assert call("GET", gateway + "/api/v1/accounts/" + source + "/balance", customer)["booked"] == "16000.00"
         print(json.dumps({"funded": True}))
+    elif action == "fraud-assert":
+        result = call("GET", gateway + "/api/v1/transfers/" + data["paymentId"], customer)
+        assert result["status"] == data["expectedStatus"]
+        assert call("GET", gateway + "/api/v1/accounts/" + source + "/balance", customer)["booked"] == data["expectedSource"]
+        assert call("GET", gateway + "/api/v1/accounts/" + destination + "/balance", recipient)["booked"] == data["expectedDestination"]
+        history = call("GET", gateway + "/api/v1/accounts/" + source + "/transactions?kind=TRANSFER", customer)
+        assert history["nextCursor"] is None, "Fresh fixture history must be complete"
+        matching = [r for r in history["items"] if r["paymentId"] == data["paymentId"]]
+        assert len(matching) == data["expectedPostings"]
+        if data["expectedPostings"] == 0:
+            assert not result.get("journalId")
+        else:
+            assert data["expectedPostings"] == 1 and result["status"] == "COMPLETED"
+            assert matching[0]["journalId"] == result["journalId"] and matching[0]["amount"] == data["amount"]
+            uuid.UUID(result["riskAssessmentId"])
+            inspector = grant("fincore-ledger-operator", os.environ["LEDGER_CLIENT_SECRET"])
+            journal = call("GET", ledger + "/internal/v1/ledger/journals/" + result["journalId"], inspector)
+            assert len(journal["entries"]) == 2 and {r["side"] for r in journal["entries"]} == {"DEBIT", "CREDIT"}
+            assert all(r["amount"] == data["amount"] for r in journal["entries"])
+            assert call("GET", ledger + "/internal/v1/ledger/reconciliation", inspector) == {"balanceDiscrepancies": [], "invalidJournals": []}
+        print(json.dumps({"verified": True}))
     elif action == "assert":
         result = call("GET", gateway + "/api/v1/transfers/" + data["paymentId"], customer)
         assert result["status"] == "COMPLETED" and result["journalId"]

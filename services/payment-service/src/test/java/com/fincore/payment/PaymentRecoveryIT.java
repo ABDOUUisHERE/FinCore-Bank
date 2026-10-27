@@ -16,7 +16,11 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(properties={"PAYMENT_CLIENT_SECRET=synthetic-test-secret","PAYMENT_WORKER_ENABLED=false"})
+@org.springframework.context.annotation.Import(PaymentRecoveryIT.IsolatedRiskPort.class)
 class PaymentRecoveryIT {
+    @org.springframework.boot.test.context.TestConfiguration(proxyBeanMethods=false) static class IsolatedRiskPort {
+        @org.springframework.context.annotation.Bean @org.springframework.context.annotation.Primary RiskPolicy isolatedRisk(){return new RiskPolicy.Local();}
+    }
     static final DatabaseLab LAB=new DatabaseLab();
     @DynamicPropertySource static void properties(DynamicPropertyRegistry values){values.add("spring.datasource.url",()->LAB.url("payment"));values.add("spring.datasource.password",()->LAB.password("payment","runtime"));}
     @Autowired PaymentStore store;

@@ -32,6 +32,7 @@ class GatewaySecurityTest {
 
     @RestController
     static class Endpoint {
+        @GetMapping("/api/v1/admin/fraud-cases") Map<String,Object> fraud(){return Map.of("items",List.of());}
         @GetMapping("/api/v1/customers/me")
         Map<String, String> me(@org.springframework.web.bind.annotation.RequestParam(defaultValue = "false") boolean unavailable) {
             if (unavailable) throw new org.springframework.web.server.ResponseStatusException(org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "sensitive internal detail");
@@ -43,6 +44,10 @@ class GatewaySecurityTest {
         http.get().uri("/api/v1/customers/me").exchange().expectStatus().isUnauthorized()
             .expectHeader().contentType("application/problem+json").expectHeader().exists("X-Correlation-ID");
         get("not-a-token").expectStatus().isUnauthorized();
+    }
+    @Test void investigationRoutesRequireFraudAnalystRatherThanImplicitAdmin() {
+        for(var role:List.of("CUSTOMER","ADMIN"))http.get().uri("/api/v1/admin/fraud-cases").headers(h->h.setBearerAuth(TestTokens.token(TestTokens.ISSUER,"fincore-api",List.of(role),Instant.now().plusSeconds(120)))).exchange().expectStatus().isForbidden();
+        http.get().uri("/api/v1/admin/fraud-cases").headers(h->h.setBearerAuth(TestTokens.token(TestTokens.ISSUER,"fincore-api",List.of("FRAUD_ANALYST"),Instant.now().plusSeconds(120)))).exchange().expectStatus().isOk();
     }
 
     @Test void validatesSignedIssuerAudienceExpiryAndRole() {

@@ -20,6 +20,7 @@ public class FraudConfiguration {
   return http.csrf(c->c.disable()).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
    .authorizeHttpRequests(a->a.requestMatchers("/actuator/health","/actuator/health/**").permitAll()
     .requestMatchers(HttpMethod.POST,"/internal/v1/risk-assessments").hasAuthority("fraud.assess")
+    .requestMatchers(HttpMethod.POST,"/internal/v1/risk-assessments/*/validate").hasAuthority("fraud.validate")
     .requestMatchers(HttpMethod.POST,"/internal/v1/fraud/payments/*/decision").hasAuthority("fraud.review")
     .requestMatchers("/api/v1/admin/fraud-alerts","/api/v1/admin/fraud-cases","/api/v1/admin/fraud-cases/*","/api/v1/admin/fraud-cases/*/decisions","/api/v1/admin/fraud-rules").hasRole("FRAUD_ANALYST")
     .anyRequest().denyAll())

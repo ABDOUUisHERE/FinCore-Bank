@@ -149,6 +149,9 @@ services:
       SERVER_PORT: '8080'
       LEDGER_DATABASE_URL: jdbc:postgresql://postgres:5432/ledger
       LEDGER_DB_PASSWORD: ${LEDGER_DB_PASSWORD:?Run local bootstrap first}
+      LEDGER_RISK_CLIENT_SECRET: ${LEDGER_RISK_CLIENT_SECRET:?Run local bootstrap first}
+      TOKEN_ENDPOINT: http://keycloak:8180/realms/fincore/protocol/openid-connect/token
+      FRAUD_URL: http://fraud-service:8080
       OIDC_ISSUER: http://localhost:8180/realms/fincore
       OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
     depends_on:
@@ -207,6 +210,9 @@ services:
       BENEFICIARY_CLIENT_SECRET: ${BENEFICIARY_CLIENT_SECRET:?Run local bootstrap first}
       NOTIFICATION_CLIENT_SECRET: ${NOTIFICATION_CLIENT_SECRET:?Run local bootstrap first}
       NOTIFICATION_OPERATOR_SECRET: ${NOTIFICATION_OPERATOR_SECRET:?Run local bootstrap first}
+      FRAUD_CLIENT_SECRET: ${FRAUD_CLIENT_SECRET:?Run local bootstrap first}
+      FRAUD_ANALYST_PASSWORD: ${FRAUD_ANALYST_PASSWORD:?Run local bootstrap first}
+      LEDGER_RISK_CLIENT_SECRET: ${LEDGER_RISK_CLIENT_SECRET:?Run local bootstrap first}
     volumes: ["./scripts/configure-business-clients.py:/scripts/configure-business-clients.py:ro"]
     read_only: true
     cap_drop: [ALL]
@@ -284,6 +290,7 @@ services:
       PAYMENT_DB_PASSWORD: ${PAYMENT_DB_PASSWORD:?Run local bootstrap first}
       PAYMENT_CLIENT_SECRET: ${PAYMENT_CLIENT_SECRET:?Run local bootstrap first}
       TOKEN_ENDPOINT: http://keycloak:8180/realms/fincore/protocol/openid-connect/token
+      FRAUD_URL: http://fraud-service:8080
       LEDGER_URL: http://ledger-service:8080
       CUSTOMER_URL: http://customer-service:8080
       ACCOUNT_URL: http://account-service:8080
@@ -292,6 +299,7 @@ services:
     depends_on:
       kafka-init: { condition: service_completed_successfully }
       payment-migrations: { condition: service_completed_successfully }
+      fraud-service: { condition: service_healthy }
       business-identity: { condition: service_completed_successfully }
       ledger-service: { condition: service_healthy }
       account-service: { condition: service_healthy }
@@ -521,6 +529,62 @@ services:
       start_period: 90s
       retries: 12
     networks: [backend]
+  fraud-bootstrap:
+    image: postgres:17.11-alpine
+    entrypoint: [/bin/sh, /bootstrap/init-fraud.sh]
+    environment:
+      PGHOST: postgres
+      PGUSER: fincore_bootstrap
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Run local bootstrap first}
+      FRAUD_DB_PASSWORD: ${FRAUD_DB_PASSWORD:?Run local bootstrap first}
+      FRAUD_MIGRATION_PASSWORD: ${FRAUD_MIGRATION_PASSWORD:?Run local bootstrap first}
+    volumes: ["./infrastructure/docker/postgres/init-fraud.sh:/bootstrap/init-fraud.sh:ro"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]
+  fraud-migrations:
+    image: fincore/fraud-service:local
+    build: { context: ., dockerfile: services/fraud-service/Dockerfile }
+    command: [--migrate-only]
+    environment:
+      FRAUD_DATABASE_URL: jdbc:postgresql://postgres:5432/fraud
+      FRAUD_MIGRATION_PASSWORD: ${FRAUD_MIGRATION_PASSWORD:?Run local bootstrap first}
+    healthcheck: { disable: true }
+    depends_on:
+      fraud-bootstrap: { condition: service_completed_successfully }
+    networks: [backend]
+  fraud-service:
+    image: fincore/fraud-service:local
+    build: { context: ., dockerfile: services/fraud-service/Dockerfile }
+    environment:
+      SERVER_PORT: '8080'
+      FRAUD_DATABASE_URL: jdbc:postgresql://postgres:5432/fraud
+      FRAUD_DB_PASSWORD: ${FRAUD_DB_PASSWORD:?Run local bootstrap first}
+      FRAUD_CLIENT_SECRET: ${FRAUD_CLIENT_SECRET:?Run local bootstrap first}
+      TOKEN_ENDPOINT: http://keycloak:8180/realms/fincore/protocol/openid-connect/token
+      PAYMENT_URL: http://payment-service:8080
+      CUSTOMER_URL: http://customer-service:8080
+      BENEFICIARY_URL: http://beneficiary-service:8080
+      OIDC_ISSUER: http://localhost:8180/realms/fincore
+      OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
+      MESSAGING_ENABLED: 'true'
+      SPRING_TASK_SCHEDULING_POOL_SIZE: '4'
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_USER: fraud
+      KAFKA_PASSWORD: ${KAFKA_FRAUD_PASSWORD:?Run local bootstrap first}
+    depends_on:
+      fraud-migrations: { condition: service_completed_successfully }
+      business-identity: { condition: service_completed_successfully }
+      kafka-init: { condition: service_completed_successfully }
+      customer-service: { condition: service_healthy }
+      beneficiary-service: { condition: service_healthy }
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1:8080/actuator/health/readiness || exit 1']
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 12
+    networks: [backend]
   api-gateway:
     image: fincore/api-gateway:local
     build: { context: ., dockerfile: services/api-gateway/Dockerfile }
@@ -531,6 +595,7 @@ services:
       PAYMENT_SERVICE_URL: http://payment-service:8080
       BENEFICIARY_SERVICE_URL: http://beneficiary-service:8080
       NOTIFICATION_SERVICE_URL: http://notification-service:8080
+      FRAUD_SERVICE_URL: http://fraud-service:8080
       OIDC_ISSUER: http://localhost:8180/realms/fincore
       OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
     ports: ["127.0.0.1:8280:8080"]
@@ -540,6 +605,7 @@ services:
       payment-service: { condition: service_healthy }
       beneficiary-service: { condition: service_healthy }
       notification-service: { condition: service_healthy }
+      fraud-service: { condition: service_healthy }
     healthcheck:
       test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1:8080/actuator/health/readiness || exit 1']
       interval: 10s

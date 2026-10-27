@@ -300,16 +300,23 @@ paths:
               type: object
               additionalProperties: false
               required:
-                - assessmentExpiresAt
+                - assessmentId
               properties:
+                assessmentId:
+                  type: string
+                  format: uuid
+                  description: Ledger independently verifies an unexpired Fraud ALLOW bound to this immutable instruction fingerprint before opening its posting transaction
                 assessmentExpiresAt:
                   type: string
                   format: date-time
+                  description: Legacy field parsed for compatibility; caller-supplied expiry does not authorize execution
       responses:
         '200':
           description: Immutable POSTED or REJECTED financial outcome, including replay
         '409':
           description: Expired risk assessment; reassess without changing the instruction identity
+        '403':
+          description: Missing, expired, non-ALLOW or mismatched Fraud authorization
         '503':
           description: Lock/dependency timeout; lookup or retry the same identity
   /accounts/{id}:

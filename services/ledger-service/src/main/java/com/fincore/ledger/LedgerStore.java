@@ -33,6 +33,10 @@ public class LedgerStore {
     @Transactional public JsonNode guard(UUID id, String status, long revision) {
         return query("select ledger.set_guard(?,?,?)", id, status, revision);
     }
+    @Transactional public JsonNode executeInstruction(String issuer,UUID id,java.time.Instant verifiedExpiry){
+        jdbc.execute("set local lock_timeout='3s'");jdbc.execute("set local statement_timeout='4s'");
+        return query("select ledger.execute_instruction(?,?,?::timestamptz)",issuer,id,verifiedExpiry.toString());
+    }
     @Transactional public JsonNode post(String issuer, String actor, String key, Object command) {
         jdbc.execute("set local lock_timeout = '5s'");
         jdbc.execute("set local statement_timeout = '10s'");

@@ -12,13 +12,20 @@ public class FraudController {
  private final FraudStore store;private final FraudContextClient context;
  public FraudController(FraudStore store,FraudContextClient context){this.store=store;this.context=context;}
  public record Assessment(UUID paymentId){}
+ public record Validation(UUID paymentId,String fingerprint){}
  public record Decision(Long expectedVersion,Boolean approve,String reason){}
  public record RuleChange(Long expectedVersion,FraudRules rules,String reason){}
  @PostMapping("/internal/v1/risk-assessments") public Object assess(@RequestBody Assessment body){if(body.paymentId()==null)throw new ApiFailure(400,"PAYMENT_ID_REQUIRED");return store.assess(context.context(body.paymentId()));}
- @GetMapping({"/api/v1/admin/fraud-alerts","/api/v1/admin/fraud-cases"}) public Object cases(@RequestParam(required=false)Long before,@RequestParam(defaultValue="")String status){
+ @PostMapping("/internal/v1/risk-assessments/{id}/validate") public Object validate(@PathVariable UUID id,@RequestBody Validation body){if(body.paymentId()==null || body.fingerprint()==null || !body.fingerprint().matches("[a-f0-9]{64}"))throw new ApiFailure(400,"INVALID_RISK_CONTEXT");return store.validate(id,body.paymentId(),body.fingerprint());}
+ @GetMapping("/api/v1/admin/fraud-cases") public Object cases(@RequestParam(required=false)Long before,@RequestParam(defaultValue="")String status){
   var items=store.cases(before,status);var result=new LinkedHashMap<String,Object>();result.put("items",items);result.put("nextCursor",items.size()==50?items.getLast().path("sequence").asText():null);return result;
  }
- @GetMapping("/api/v1/admin/fraud-cases/{id}") public Object get(@PathVariable UUID id){return store.caseDetail(id);}
+ @GetMapping("/api/v1/admin/fraud-alerts") public Object alerts(@RequestParam(required=false)Long before){var items=store.alerts(before);var result=new LinkedHashMap<String,Object>();result.put("items",items);result.put("nextCursor",items.size()==50?items.getLast().path("sequence").asText():null);return result;}
+ @GetMapping("/api/v1/admin/fraud-cases/{id}") public Object get(@PathVariable UUID id){
+  var detail=(com.fasterxml.jackson.databind.node.ObjectNode)store.caseDetail(id);
+  try{var p=context.payment(FraudStore.id(detail,"paymentId"));var state=new LinkedHashMap<String,Object>();state.put("status",p.path("paymentStatus").asText());state.put("version",p.path("paymentVersion").asLong());state.put("journalId",p.path("journalId").asText(null));state.put("riskAssessmentId",p.path("riskAssessmentId").asText(null));detail.set("payment",Json.read(Json.text(state)));detail.put("paymentUnavailable",false);}
+  catch(ApiFailure unavailable){detail.putNull("payment");detail.put("paymentUnavailable",true);}return detail;
+ }
  @GetMapping("/api/v1/admin/fraud-rules") public Object rules(){return store.rules();}
  @PutMapping("/api/v1/admin/fraud-rules") public Object rules(@RequestBody RuleChange body,@AuthenticationPrincipal Jwt jwt){if(body.expectedVersion()==null || body.rules()==null)throw new ApiFailure(400,"INVALID_FRAUD_RULES");return store.rules(body.expectedVersion(),body.rules(),jwt.getSubject(),body.reason());}
  @PostMapping("/api/v1/admin/fraud-cases/{id}/decisions") public ResponseEntity<?> decide(@PathVariable UUID id,@RequestHeader("Idempotency-Key")String key,@RequestBody Decision body,@AuthenticationPrincipal Jwt jwt){

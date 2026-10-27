@@ -22,6 +22,13 @@ class PaymentSecurityTest {
     @MockitoBean PaymentStore store;
     @MockitoBean PaymentCoordinator coordinator;
     @MockitoBean Remote remote;
+    @Test void onlyNarrowRiskReaderCanInspectCanonicalActorContext()throws Exception{
+        var id=UUID.randomUUID();when(store.riskContext(id)).thenReturn(Map.of("paymentId",id,"actor","verified-owner","fingerprint","f".repeat(64)));
+        http.perform(get("/internal/v1/payments/"+id+"/risk-context").header("Authorization","Bearer "+SignedTokens.customer())).andExpect(status().isForbidden());
+        var token=SignedTokens.token("payment-service","fraud-worker","fincore-fraud",List.of(),Map.of("payment-service",Map.of("roles",List.of("payment.risk.read"))));
+        http.perform(get("/internal/v1/payments/"+id+"/risk-context").header("Authorization","Bearer "+token)).andExpect(status().isOk()).andExpect(jsonPath("$.actor").value("verified-owner"));
+        verify(store).riskContext(id);http.perform(get("/api/v1/transfers").header("Authorization","Bearer "+token)).andExpect(status().isForbidden());
+    }
     static final String BODY="{\"sourceAccountId\":\"00000000-0000-0000-0000-000000000001\",\"destinationAccountId\":\"00000000-0000-0000-0000-000000000002\",\"amount\":\"10.00\",\"currency\":\"MAD\"}";
     @TestConfiguration(proxyBeanMethods=false)static class Decoders{
         @Bean @Primary JwtDecoder primary()throws Exception{var decoder=NimbusJwtDecoder.withPublicKey(SignedTokens.KEY.toRSAPublicKey()).build();decoder.setJwtValidator(ServiceSecurity.validator(SignedTokens.ISSUER,Set.of("fincore-api","payment-service")));return decoder;}
