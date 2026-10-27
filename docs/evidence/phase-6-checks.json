@@ -1,0 +1,305 @@
+{
+  "milestone": "Phase 6: synchronous fraud authorization and investigation",
+  "recorded_at_utc": "2026-10-27T10:44:27.642226+00:00",
+  "repository": {
+    "id": 1138747020,
+    "name": "ABDOUUisHERE/FinCore-Bank"
+  },
+  "branch": "feature/fincore-fraud",
+  "base_commit": "080dc468e49b9a40ae78f3fa7b42ad2d27a08daa",
+  "source_commit": "194e046c7346509f207cc78632310e9f543ecadf",
+  "workflows": [
+    {
+      "id": 40488435254,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "194e046c7346509f207cc78632310e9f543ecadf",
+      "head_branch": "feature/fincore-fraud",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40488435254",
+      "created_at": "2026-10-27T10:26:05Z",
+      "updated_at": "2026-10-27T10:26:30Z",
+      "jobs": [
+        {
+          "id": 122135987120,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40488435254/job/122135987120"
+        }
+      ]
+    },
+    {
+      "id": 40488434873,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "194e046c7346509f207cc78632310e9f543ecadf",
+      "head_branch": "feature/fincore-fraud",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40488434873",
+      "created_at": "2026-10-27T10:26:05Z",
+      "updated_at": "2026-10-27T10:28:39Z",
+      "jobs": [
+        {
+          "id": 122135985838,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40488434873/job/122135985838"
+        }
+      ]
+    },
+    {
+      "id": 40488434943,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "194e046c7346509f207cc78632310e9f543ecadf",
+      "head_branch": "feature/fincore-fraud",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40488434943",
+      "created_at": "2026-10-27T10:26:05Z",
+      "updated_at": "2026-10-27T10:33:12Z",
+      "jobs": [
+        {
+          "id": 122135986119,
+          "name": "compose",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/40488434943/job/122135986119"
+        }
+      ]
+    }
+  ],
+  "ci_backend": {
+    "command": "./mvnw -B -ntp verify",
+    "tests": 144,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "suites": [
+      {
+        "name": "com.fincore.messaging.MessagingDeliveryIT",
+        "tests": 4
+      },
+      {
+        "name": "com.fincore.gateway.configuration.GatewaySecurityTest",
+        "tests": 6
+      },
+      {
+        "name": "com.fincore.gateway.configuration.ApiRateLimitFilterTest",
+        "tests": 3
+      },
+      {
+        "name": "com.fincore.customer.configuration.CurrentSubjectSecurityTest",
+        "tests": 4
+      },
+      {
+        "name": "com.fincore.customer.configuration.CustomerRiskSecurityTest",
+        "tests": 2
+      },
+      {
+        "name": "com.fincore.customer.configuration.DatabaseIsolationIT",
+        "tests": 1
+      },
+      {
+        "name": "com.fincore.ledger.InstructionSecurityTest",
+        "tests": 6
+      },
+      {
+        "name": "com.fincore.ledger.LedgerRiskVerifierTest",
+        "tests": 3
+      },
+      {
+        "name": "com.fincore.ledger.LedgerSecurityTest",
+        "tests": 9
+      },
+      {
+        "name": "com.fincore.ledger.MoneyTest",
+        "tests": 11
+      },
+      {
+        "name": "com.fincore.ledger.LedgerDatabaseIT",
+        "tests": 22
+      },
+      {
+        "name": "com.fincore.account.AccountSecurityTest",
+        "tests": 4
+      },
+      {
+        "name": "com.fincore.account.AccountRecoveryIT",
+        "tests": 3
+      },
+      {
+        "name": "com.fincore.payment.RiskPolicyTest",
+        "tests": 3
+      },
+      {
+        "name": "com.fincore.payment.PaymentSecurityTest",
+        "tests": 5
+      },
+      {
+        "name": "com.fincore.payment.FraudRiskPolicyTest",
+        "tests": 4
+      },
+      {
+        "name": "com.fincore.payment.PaymentIdempotencyTest",
+        "tests": 1
+      },
+      {
+        "name": "com.fincore.payment.PaymentRecoveryIT",
+        "tests": 9
+      },
+      {
+        "name": "com.fincore.beneficiary.BeneficiaryRiskSecurityTest",
+        "tests": 1
+      },
+      {
+        "name": "com.fincore.beneficiary.BeneficiarySecurityTest",
+        "tests": 4
+      },
+      {
+        "name": "com.fincore.beneficiary.BeneficiaryDatabaseIT",
+        "tests": 5
+      },
+      {
+        "name": "com.fincore.notification.EventProcessorTest",
+        "tests": 4
+      },
+      {
+        "name": "com.fincore.notification.NotificationSecurityTest",
+        "tests": 4
+      },
+      {
+        "name": "com.fincore.notification.NotificationDatabaseIT",
+        "tests": 6
+      },
+      {
+        "name": "com.fincore.fraud.FraudSecurityTest",
+        "tests": 6
+      },
+      {
+        "name": "com.fincore.fraud.FraudEngineTest",
+        "tests": 5
+      },
+      {
+        "name": "com.fincore.fraud.FraudDatabaseIT",
+        "tests": 9
+      }
+    ]
+  },
+  "ci_frontend": {
+    "component_tests": 24,
+    "test_files": 5,
+    "typecheck": "pass",
+    "lint": "pass",
+    "both_portal_builds": "pass",
+    "npm_audit": "zero vulnerabilities"
+  },
+  "ci_integration": {
+    "browser_journeys": 7,
+    "retries": 0,
+    "fresh_compose": "pass",
+    "independent_authentication": "pass",
+    "private_ledger": "pass",
+    "kafka_acl_dlq_replay": "pass"
+  },
+  "local_checks": [
+    {
+      "check": "foundation",
+      "exit_code": 0,
+      "started_at_utc": "2026-10-27T10:28:07.445418+00:00",
+      "finished_at_utc": "2026-10-27T10:28:17.788422+00:00"
+    },
+    {
+      "check": "ledger",
+      "exit_code": 0,
+      "started_at_utc": "2026-10-27T10:28:17.789966+00:00",
+      "finished_at_utc": "2026-10-27T10:28:32.422407+00:00"
+    },
+    {
+      "check": "e2e",
+      "exit_code": 1,
+      "started_at_utc": "2026-10-27T10:28:32.429641+00:00",
+      "finished_at_utc": "2026-10-27T10:36:17.608168+00:00"
+    },
+    {
+      "check": "messaging",
+      "exit_code": 0,
+      "started_at_utc": "2026-10-27T10:41:52.800230+00:00",
+      "finished_at_utc": "2026-10-27T10:42:39.077247+00:00"
+    }
+  ],
+  "local_browser_provenance": {
+    "latest_full_command": {
+      "passed": 6,
+      "failed": 1,
+      "retries": 0,
+      "failure": "Sender inbox UI expected one notification but displayed zero; the owner notification and synthetic email both existed in PostgreSQL. No separate root cause is claimed."
+    },
+    "strict_customer_rerun": {
+      "exit_code": 0,
+      "started_at_utc": "2026-10-27T10:38:19.011447+00:00",
+      "finished_at_utc": "2026-10-27T10:40:31.611073+00:00"
+    },
+    "strict_customer_rerun_passed": 1,
+    "coverage": "Seven journeys exercised successfully across the full run and the focused rerun; not presented as one successful full local seven-journey command. Exact-source GitHub ran all seven in one successful command."
+  },
+  "local_backend": {
+    "tests_across_latest_reports": 144,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "provenance": "Earlier full default reactor passed 137 cases. Subsequent Ledger/Payment/Fraud focused verify passed after owner-side grant binding. Totals combine those reports; exact final source was independently verified by the full GitHub reactor."
+  },
+  "local_frontend": {
+    "component_tests": 24,
+    "worker_mode": "--maxWorkers=1",
+    "typecheck": "pass",
+    "lint": "pass",
+    "both_portal_builds": "pass",
+    "npm_audit_low_threshold": "zero vulnerabilities",
+    "initial_parallel_attempt": "worker-start timeouts; no tests executed, not counted as passing"
+  },
+  "local_upgrade": {
+    "engine": "29.1.2",
+    "runtime_services": 13,
+    "fraud_schema": "V1",
+    "payment_schema": "V3 -> V4",
+    "existing_named_volumes": "retained",
+    "existing_secrets": "retained",
+    "unrelated_commerce_containers": "untouched"
+  },
+  "acceptance_facts": [
+    "Real customer and FRAUD_ANALYST hosted PKCE",
+    "Initial immutable alert, review with no posting, audited approval, one balanced journal and matching assessment reference",
+    "Strict block with no posting",
+    "Fraud service outage with no debit; same payment recovers exactly one journal",
+    "Analyst confirms a new immutable rule version; original thresholds restored by a separate audited version",
+    "Customer and ordinary ADMIN denied Fraud API",
+    "Broker outage does not prevent synchronous Fraud authorization"
+  ],
+  "visual_qa": {
+    "inspected_widths": [
+      1440,
+      390
+    ],
+    "overflow_assertions": [
+      1440,
+      390,
+      320
+    ],
+    "captures": "Authenticated synthetic captures stay ignored in .local/visual; no private captures published"
+  },
+  "gateway_recovery": {
+    "dns_positive_cache_max_seconds": 5,
+    "dns_negative_cache_seconds": 0,
+    "observation": "Resumed Fraud was healthy and reached by Payment/private lookup while the public route returned 503. Bounded DNS caching was added; subsequent public-route recovery passed without restarting Gateway. Stale resolution is an inference; repeated local outage reported an unchanged address, so deterministic IP churn was not proven."
+  },
+  "limits": [
+    "Synthetic money and declared-country simulation only",
+    "No funds reservations, physical geolocation, sanctions/ML claim or distributed transaction",
+    "Issued ALLOW expires after thirty seconds; no instantaneous distributed revocation",
+    "Case feed is a mutable work queue; immutable initial alerts have a stable cursor",
+    "Cards, reporting and Ledger holds remain Phase 7"
+  ]
+}

@@ -2,7 +2,7 @@
 
 Distributed digital banking and payment processing **simulation**, using synthetic customers and simulated money exclusively.
 
-**Status: Phase 5 - Kafka and notifications.** The connected customer workspace includes owned accounts, beneficiaries, recoverable simulated transfers and confirmed history. Transactional facts now feed an owned notification inbox, local synthetic email and authenticated live updates through Kafka. Delivery is at least once with replay-safe effects. See the [Phase 5 verification report](docs/verification/phase-5.md) and [customer demo](docs/deployment/customer-demo.md).
+**Status: Phase 6 - fraud authorization and investigation.** The customer workspace includes owned accounts, beneficiaries, recoverable simulated transfers, confirmed history and Kafka-backed notifications. Fraud now owns synchronous explainable assessments, atomic velocity admission and versioned analyst decisions/rules. Ledger independently verifies Fraud grants before executing Payment instructions. See the [Phase 6 verification report](docs/verification/phase-6.md), [analyst demo and upgrade](docs/deployment/fraud-phase-6.md) and [customer demo](docs/deployment/customer-demo.md).
 
 GitHub's canonical repository is `ABDOUUisHERE/FinCore-Bank`. Local Docker validation is recorded in the [workstation verification report](docs/verification/local-docker-2026-10-23.md).
 
@@ -19,7 +19,7 @@ docker compose up --build -d --wait --wait-timeout 600
 docker compose run --rm --no-deps ledger-check
 ```
 
-Open **http://localhost:5173** for the customer workspace or **http://localhost:5174** for operations. Sign in as `customer.demo` or `admin.demo` using their generated passwords in ignored `.local/credentials.json`. No shared passwords are committed. Use `localhost` exactly for OIDC redirect matching. [Setup and troubleshooting](docs/deployment/local-setup.md) explains startup, migration credentials, native development and persistent data.
+Open **http://localhost:5173** for the customer workspace or **http://localhost:5174** for operations. Sign in as `customer.demo`, `admin.demo` or `analyst.demo` using their generated passwords in ignored `.local/credentials.json`. Only the analyst role opens Fraud cases/rules. No shared passwords are committed. Use `localhost` exactly for OIDC redirect matching. [Setup and troubleshooting](docs/deployment/local-setup.md) explains startup, migration credentials, native development and persistent data.
 
 Stop with `docker compose down`. The named PostgreSQL volume survives normal shutdown. This loopback-only environment uses simulated identities and development HTTP; external deployment is outside this milestone.
 
@@ -47,6 +47,12 @@ flowchart LR
   Payment --> PDB[(Private payment database)]
   Account --> Ledger[Authoritative ledger]
   Payment --> Ledger
+  Payment --> Fraud[Fraud service]
+  Ledger -->|Verify risk grant| Fraud
+  Gateway --> Fraud
+  Fraud --> FDB[(Private fraud database)]
+  Fraud --> Service
+  Fraud --> Beneficiary
   Ledger --> LDB[(Private ledger database)]
   Gateway --> Notification[Notification service]
   Notification --> NDB[(Private notification database)]
@@ -54,13 +60,14 @@ flowchart LR
   Account --> Kafka
   Payment --> Kafka
   Ledger --> Kafka
+  Fraud --> Kafka
   Kafka --> Notification
   Notification --> Account
   Operator[Private simulation operator] --> Payment
   Operator --> Keycloak
 ```
 
-Gateway and each business resource server independently validate signed JWTs, issuer, audience, expiry and roles. Customer APIs derive identity from the token; administrator privileges do not imply customer privileges. Portal tokens stay in memory. The operations shell currently has no operational data APIs. [API contract](contracts/openapi/customer-v1.yaml): `GET /api/v1/customers/me` returns the authorized subject and recognized roles only.
+Gateway and each business resource server independently validate signed JWTs, issuer, audience, expiry and roles. Customer APIs derive identity from the token; administrator privileges do not imply customer or fraud analyst privileges. Portal tokens stay in memory. The analyst workspace uses independently authorized [Fraud APIs](contracts/openapi/fraud-v1.json). [Customer API contract](contracts/openapi/customer-v1.yaml): `GET /api/v1/customers/me` returns the authorized subject and recognized roles only.
 
 ## Architecture review
 
@@ -79,7 +86,7 @@ The architecture was approved before implementation. The [Phase 0 review](docs/f
 
 ## Proposed stack
 
-Java 21, Spring Boot 3.5.16, Spring Cloud 2025.0.3, Keycloak 26.8.1, PostgreSQL 17.11, React 19.3.1, TypeScript, Vite and Tailwind CSS. Dependencies are locked. Kafka, Redis, full observability and Kubernetes are introduced when their milestones need them.
+Java 21, Spring Boot 3.5.16, Spring Cloud 2025.0.3, Keycloak 26.8.1, PostgreSQL 17.11, Kafka 4.2.2, React 19.3.1, TypeScript, Vite and Tailwind CSS. Dependencies are locked. Redis, full observability and Kubernetes remain later milestones.
 
 The ledger owns all financial postings. Customer and account balance screens are read models; payment success requires authoritative ledger confirmation. Services are independently deployable and added incrementally, rather than creating eleven empty implementations.
 

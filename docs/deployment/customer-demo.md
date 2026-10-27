@@ -33,7 +33,7 @@ Refresh portal data afterward. A repeated key does not add money twice; a new ke
 7. History shows confirmed ledger entries separately from pending requests. Filter by UTC dates, exact amount, type, direction or reference. Compensation links preserve original entries. CSV includes the loaded filtered rows; load more for additional rows.
 8. Accounts support confirmed versioned freeze/unfreeze and permanent zero-balance closure. Profile and beneficiary edits require review/confirmation.
 
-Dashboard totals stay separate by currency and are withheld if data is incomplete. Monthly flows cover the whole selected UTC month, including funding and compensation. Cards, statements and operational review retain later phases. Self-registration is not claimed: generated demo users and test-created synthetic users use real hosted sign-in.
+Dashboard totals stay separate by currency and are withheld if data is incomplete. Monthly flows cover the whole selected UTC month, including funding and compensation. Cards and statements retain later phases. Fraud review is available to the explicitly authorized analyst in the [Phase 6 demo](fraud-phase-6.md); approval still requires fresh authorization before settlement. Self-registration is not claimed: generated demo users and test-created synthetic users use real hosted sign-in.
 
 ## Notifications and live updates
 
