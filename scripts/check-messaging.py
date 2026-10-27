@@ -21,6 +21,9 @@ def main():
     denied=produce("customer","fincore.payment.completed.v1",identifier+"|"+json.dumps({"mustNeverPublish":True}))
     assert "TopicAuthorizationException" in denied.stderr+denied.stdout,"Producer was not denied its foreign topic"
     print("PASS: customer Kafka identity cannot publish payment facts",flush=True)
+    card_denied=produce("card","fincore.ledger.journal.posted.v1",identifier+"|"+json.dumps({"mustNeverPublish":True}))
+    assert "TopicAuthorizationException" in card_denied.stderr+card_denied.stdout,"Card producer was not denied authoritative Ledger facts"
+    print("PASS: card Kafka identity cannot publish Ledger facts",flush=True)
     before={r["deadLetterId"] for r in operator("list")["items"]}
     body=json.dumps({"eventId":str(uuid.uuid4()),"eventType":"customer.created","schemaVersion":99,"aggregateId":identifier,"aggregateVersion":0,"correlationId":identifier,"occurredAt":"2026-10-26T10:00:00Z","payload":{}})
     sent=produce("customer","fincore.customer.created.v1",identifier+"|"+body)

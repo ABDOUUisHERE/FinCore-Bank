@@ -607,6 +607,62 @@
           }
         }
       }
+    },
+    "/internal/v1/card-risk-assessments": {
+      "servers": [
+        {
+          "url": "http://fraud-service:8080"
+        }
+      ],
+      "post": {
+        "summary": "fraud.card.assess only; fetch canonical Card owner context and Customer country. No Payment/Beneficiary outage fallback.",
+        "responses": {
+          "200": {
+            "description": "Recorded result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Assessment"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or filter"
+          },
+          "401": {
+            "description": "Invalid bearer"
+          },
+          "403": {
+            "description": "Insufficient role or invalid authorization"
+          },
+          "409": {
+            "description": "Version, state or idempotency conflict"
+          },
+          "503": {
+            "description": "Required owner unavailable; no permissive fallback"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "paymentId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                },
+                "required": [
+                  "paymentId"
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {

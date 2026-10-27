@@ -1,0 +1,607 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "FinCore synthetic cards and merchant authorizations",
+    "version": "0.7.0",
+    "description": "Synthetic money only. Gateway and each owner service independently validate JWT roles. Subject ownership is never a body/header field. Phase 7 acceptance remains in progress."
+  },
+  "servers": [
+    {
+      "url": "http://localhost:8280"
+    }
+  ],
+  "security": [
+    {
+      "bearer": []
+    }
+  ],
+  "paths": {
+    "/api/v1/cards": {
+      "get": {
+        "summary": "50 owned current Ledger card views and nullable nextCursor",
+        "responses": {
+          "200": {
+            "description": "Recorded result; current views and immutable receipts are distinguished in the endpoint summary"
+          },
+          "400": {
+            "description": "Invalid or unknown fields"
+          },
+          "401": {
+            "description": "Invalid identity"
+          },
+          "403": {
+            "description": "Required explicit role or delegation absent"
+          },
+          "404": {
+            "description": "Resource unavailable to the signed owner"
+          },
+          "409": {
+            "description": "Idempotency, state or observed-version conflict"
+          },
+          "503": {
+            "description": "Required dependency unavailable; preserve original mutation identity"
+          }
+        },
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      },
+      "post": {
+        "summary": "Replay the immutable card creation receipt with the same key/body; CUSTOMER required",
+        "responses": {
+          "200": {
+            "description": "Recorded result; current views and immutable receipts are distinguished in the endpoint summary"
+          },
+          "400": {
+            "description": "Invalid or unknown fields"
+          },
+          "401": {
+            "description": "Invalid identity"
+          },
+          "403": {
+            "description": "Required explicit role or delegation absent"
+          },
+          "404": {
+            "description": "Resource unavailable to the signed owner"
+          },
+          "409": {
+            "description": "Idempotency, state or observed-version conflict"
+          },
+          "503": {
+            "description": "Required dependency unavailable; preserve original mutation identity"
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{1,120}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "accountId",
+                  "transactionLimit",
+                  "dailyLimit"
+                ],
+                "properties": {
+                  "accountId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "transactionLimit": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,17})(\\.[0-9]{1,2})?$",
+                    "description": "Positive exact decimal string. Responses normalize monetary values to two decimals."
+                  },
+                  "dailyLimit": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,17})(\\.[0-9]{1,2})?$",
+                    "description": "Positive exact decimal string. Responses normalize monetary values to two decimals."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/cards/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "summary": "Read current Ledger controls for an owned card",
+        "responses": {
+          "200": {
+            "description": "Recorded result; current views and immutable receipts are distinguished in the endpoint summary"
+          },
+          "400": {
+            "description": "Invalid or unknown fields"
+          },
+          "401": {
+            "description": "Invalid identity"
+          },
+          "403": {
+            "description": "Required explicit role or delegation absent"
+          },
+          "404": {
+            "description": "Resource unavailable to the signed owner"
+          },
+          "409": {
+            "description": "Idempotency, state or observed-version conflict"
+          },
+          "503": {
+            "description": "Required dependency unavailable; preserve original mutation identity"
+          }
+        }
+      },
+      "put": {
+        "summary": "Change ACTIVE/FROZEN/TERMINATED controls using the exact observed version",
+        "responses": {
+          "200": {
+            "description": "Recorded result; current views and immutable receipts are distinguished in the endpoint summary"
+          },
+          "400": {
+            "description": "Invalid or unknown fields"
+          },
+          "401": {
+            "description": "Invalid identity"
+          },
+          "403": {
+            "description": "Required explicit role or delegation absent"
+          },
+          "404": {
+            "description": "Resource unavailable to the signed owner"
+          },
+          "409": {
+            "description": "Idempotency, state or observed-version conflict"
+          },
+          "503": {
+            "description": "Required dependency unavailable; preserve original mutation identity"
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{1,120}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "expectedVersion",
+                  "status",
+                  "transactionLimit",
+                  "dailyLimit"
+                ],
+                "properties": {
+                  "expectedVersion": {
+                    "type": "integer",
+                    "format": "int64",
+                    "minimum": 0
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "FROZEN",
+                      "TERMINATED"
+                    ]
+                  },
+                  "transactionLimit": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,17})(\\.[0-9]{1,2})?$",
+                    "description": "Positive exact decimal string. Responses normalize monetary values to two decimals."
+                  },
+                  "dailyLimit": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,17})(\\.[0-9]{1,2})?$",
+                    "description": "Positive exact decimal string. Responses normalize monetary values to two decimals."
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/card-merchants": {
+      "get": {
+        "summary": "Seeded synthetic Demo Market merchant per currency",
+        "responses": {
+          "200": {
+            "description": "Recorded result; current views and immutable receipts are distinguished in the endpoint summary"
+          },
+          "400": {
+            "description": "Invalid or unknown fields"
+          },
+          "401": {
+            "description": "Invalid identity"
+          },
+          "403": {
+            "description": "Required explicit role or delegation absent"
+          },
+          "404": {
+            "description": "Resource unavailable to the signed owner"
+          },
+          "409": {
+            "description": "Idempotency, state or observed-version conflict"
+          },
+          "503": {
+            "description": "Required dependency unavailable; preserve original mutation identity"
+          }
+        }
+      }
+    },
+    "/api/v1/cards/{id}/authorizations": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "summary": "50 owned merchant authorizations and nullable nextCursor",
+        "responses": {
+          "200": {
+            "description": "Recorded result; current views and immutable receipts are distinguished in the endpoint summary"
+          },
+          "400": {
+            "description": "Invalid or unknown fields"
+          },
+          "401": {
+            "description": "Invalid identity"
+          },
+          "403": {
+            "description": "Required explicit role or delegation absent"
+          },
+          "404": {
+            "description": "Resource unavailable to the signed owner"
+          },
+          "409": {
+            "description": "Idempotency, state or observed-version conflict"
+          },
+          "503": {
+            "description": "Required dependency unavailable; preserve original mutation identity"
+          }
+        },
+        "parameters": [
+          {
+            "name": "after",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ]
+      },
+      "post": {
+        "summary": "Immutable AUTHORIZING receipt; no claim that funds are held. Poll its current resource.",
+        "responses": {
+          "202": {
+            "description": "Recorded result; current views and immutable receipts are distinguished in the endpoint summary"
+          },
+          "400": {
+            "description": "Invalid or unknown fields"
+          },
+          "401": {
+            "description": "Invalid identity"
+          },
+          "403": {
+            "description": "Required explicit role or delegation absent"
+          },
+          "404": {
+            "description": "Resource unavailable to the signed owner"
+          },
+          "409": {
+            "description": "Idempotency, state or observed-version conflict"
+          },
+          "503": {
+            "description": "Required dependency unavailable; preserve original mutation identity"
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{1,120}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "merchantId",
+                  "amount",
+                  "currency"
+                ],
+                "properties": {
+                  "merchantId": {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  "amount": {
+                    "type": "string",
+                    "pattern": "^(0|[1-9][0-9]{0,17})(\\.[0-9]{1,2})?$",
+                    "description": "Positive exact decimal string. Responses normalize monetary values to two decimals."
+                  },
+                  "currency": {
+                    "type": "string",
+                    "enum": [
+                      "MAD",
+                      "EUR",
+                      "USD"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/card-authorizations/{id}": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "get": {
+        "summary": "Owned financial outcome or pending/rejected pre-hold Fraud workflow",
+        "responses": {
+          "200": {
+            "description": "Recorded result; current views and immutable receipts are distinguished in the endpoint summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Authorization"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or unknown fields"
+          },
+          "401": {
+            "description": "Invalid identity"
+          },
+          "403": {
+            "description": "Required explicit role or delegation absent"
+          },
+          "404": {
+            "description": "Resource unavailable to the signed owner"
+          },
+          "409": {
+            "description": "Idempotency, state or observed-version conflict"
+          },
+          "503": {
+            "description": "Required dependency unavailable; preserve original mutation identity"
+          }
+        }
+      }
+    },
+    "/api/v1/card-authorizations/{id}/settle": {
+      "parameters": [
+        {
+          "name": "id",
+          "in": "path",
+          "required": true,
+          "schema": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      ],
+      "post": {
+        "summary": "Full CAPTURE/RELEASE/REFUND. HTTP 200 may carry a recorded REJECTED operationOutcome; inspect journals and refundOutcome.",
+        "responses": {
+          "200": {
+            "description": "Recorded result; current views and immutable receipts are distinguished in the endpoint summary",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Authorization"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid or unknown fields"
+          },
+          "401": {
+            "description": "Invalid identity"
+          },
+          "403": {
+            "description": "Required explicit role or delegation absent"
+          },
+          "404": {
+            "description": "Resource unavailable to the signed owner"
+          },
+          "409": {
+            "description": "Idempotency, state or observed-version conflict"
+          },
+          "503": {
+            "description": "Required dependency unavailable; preserve original mutation identity"
+          }
+        },
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{1,120}$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "action"
+                ],
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "CAPTURE",
+                      "RELEASE",
+                      "REFUND"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Authorization": {
+        "type": "object",
+        "required": [
+          "authorizationId",
+          "cardId",
+          "amount",
+          "currency",
+          "status"
+        ],
+        "properties": {
+          "authorizationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "cardId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "amount": {
+            "type": "string",
+            "pattern": "^(0|[1-9][0-9]{0,17})(\\.[0-9]{1,2})?$",
+            "description": "Positive exact decimal string. Responses normalize monetary values to two decimals."
+          },
+          "currency": {
+            "type": "string",
+            "enum": [
+              "MAD",
+              "EUR",
+              "USD"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "AUTHORIZING",
+              "PENDING_RISK_REVIEW",
+              "REJECTED",
+              "HELD",
+              "DECLINED",
+              "CAPTURED",
+              "RELEASED",
+              "REFUNDED",
+              "EXPIRED"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "nullable": true
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "journalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "refundJournalId": {
+            "type": "string",
+            "format": "uuid",
+            "nullable": true
+          },
+          "operationOutcome": {
+            "type": "object",
+            "description": "Immutable actual posting attempt result, when returned by a settle command."
+          },
+          "refundOutcome": {
+            "type": "object",
+            "nullable": true,
+            "description": "Definitive full refund result remains available on subsequent reads."
+          }
+        }
+      }
+    }
+  }
+}
