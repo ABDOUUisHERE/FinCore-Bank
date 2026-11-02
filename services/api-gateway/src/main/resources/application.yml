@@ -33,6 +33,8 @@ spring:
                     maxSize: 16KB
             - id: customer-me
               uri: ${CUSTOMER_SERVICE_URL:http://localhost:8081}
+              metadata:
+                response-timeout: 20000
               predicates:
                 - Path=/api/v1/customers/me,/api/v1/customers/me/onboarding,/api/v1/customers/me/profile
               filters:
@@ -41,6 +43,8 @@ spring:
                     maxSize: 16KB
             - id: accounts
               uri: ${ACCOUNT_SERVICE_URL:http://localhost:8083}
+              metadata:
+                response-timeout: 20000
               predicates:
                 - Path=/api/v1/accounts,/api/v1/accounts/**
               filters:
