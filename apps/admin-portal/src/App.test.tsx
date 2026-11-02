@@ -31,13 +31,12 @@ it("rejects a customer identity in the staff workspace", () => {
     screen.queryByText("Authorized staff session"),
   ).not.toBeInTheDocument();
 });
-it("shows an authorized staff session without fabricated operational data", () => {
+it("opens scoped incident operations after the service verifies the staff identity", async () => {
   mocks.session.roles = ["ADMIN"];
+  mocks.session.token = vi.fn().mockResolvedValue("memory-only");
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => Promise.resolve(new Response(JSON.stringify(url.endsWith("/operations/me") ? { subject: "signed-admin", scope: "ALL_INCIDENTS" } : { items: [], nextCursor: null }), { status: 200 }))));
   open();
-  expect(screen.getByText("Authorized staff session")).toBeVisible();
-  expect(
-    screen.getByText(
-      "Operational data will appear as its services are introduced.",
-    ),
-  ).toBeVisible();
+  expect(await screen.findByText("Authorized staff session")).toBeVisible();
+  expect(await screen.findByText("You can manage all incidents.", { exact: false })).toBeVisible();
+  expect(await screen.findByText("No incidents in your scope")).toBeVisible();
 });

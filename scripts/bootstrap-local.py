@@ -6,6 +6,7 @@ import secrets
 
 ROOT = Path(__file__).resolve().parents[1]
 LEDGER_KEYS = ("LEDGER_DB_PASSWORD", "LEDGER_MIGRATION_PASSWORD", "LEDGER_CLIENT_SECRET",
+    "AUDIT_DB_PASSWORD", "AUDIT_MIGRATION_PASSWORD", "KAFKA_AUDIT_PASSWORD", "SUPPORT_PASSWORD", "SUPPORT_SECOND_PASSWORD",
     "ACCOUNT_DB_PASSWORD", "ACCOUNT_MIGRATION_PASSWORD", "ACCOUNT_CLIENT_SECRET",
     "PAYMENT_DB_PASSWORD", "PAYMENT_MIGRATION_PASSWORD", "PAYMENT_CLIENT_SECRET", "PAYMENT_OPERATOR_SECRET", "RECIPIENT_PASSWORD",
     "CARD_DB_PASSWORD", "CARD_MIGRATION_PASSWORD", "CARD_CLIENT_SECRET", "KAFKA_CARD_PASSWORD",
@@ -22,7 +23,7 @@ def write_private(path: Path, text: str) -> None:
 
 def configure_kafka(env_path: Path) -> None:
     values = dict(line.split("=", 1) for line in env_path.read_text(encoding="utf-8").splitlines() if "=" in line and not line.startswith("#"))
-    users = ("broker", "admin", "customer", "account", "ledger", "payment", "notification", "fraud", "card")
+    users = ("broker", "admin", "customer", "account", "ledger", "payment", "notification", "fraud", "card", "audit")
     options = [f'username="broker"', f'password="{values["KAFKA_BROKER_PASSWORD"]}"']
     options += [f'user_{user}="{values["KAFKA_"+user.upper()+"_PASSWORD"]}"' for user in users]
     write_private(ROOT / ".local/kafka/server-jaas.conf", 'KafkaServer { org.apache.kafka.common.security.plain.PlainLoginModule required ' + " ".join(options) + '; };\n')
@@ -56,6 +57,11 @@ def main() -> None:
                 env_values = dict(line.split("=", 1) for line in env_path.read_text(encoding="utf-8").splitlines() if "=" in line and not line.startswith("#"))
                 credentials["finance"] = {"username": "finance.demo", "password": env_values["FINANCE_PASSWORD"]}
                 write_private(credentials_path, json.dumps(credentials, indent=2) + "\n")
+            env_values = dict(line.split("=", 1) for line in env_path.read_text(encoding="utf-8").splitlines() if "=" in line and not line.startswith("#"))
+            for name, secret in (("support", "SUPPORT_PASSWORD"), ("support-second", "SUPPORT_SECOND_PASSWORD")):
+                if name not in credentials:
+                    credentials[name] = {"username": name + ".demo", "password": env_values[secret]}
+            write_private(credentials_path, json.dumps(credentials, indent=2) + "\n")
             print("Existing local configuration retained. Credentials: .local/credentials.json")
             configure_kafka(env_path)
             return
@@ -68,11 +74,13 @@ def main() -> None:
     credentials["recipient"] = {"username": "recipient.demo", "password": values["RECIPIENT_PASSWORD"]}
     credentials["analyst"] = {"username": "analyst.demo", "password": values["FRAUD_ANALYST_PASSWORD"]}
     credentials["finance"] = {"username": "finance.demo", "password": values["FINANCE_PASSWORD"]}
+    for name, secret in (("support", "SUPPORT_PASSWORD"), ("support-second", "SUPPORT_SECOND_PASSWORD")):
+        credentials[name] = {"username": name + ".demo", "password": values[secret]}
     template = json.loads((ROOT / "infrastructure/keycloak/fincore-realm.template.json").read_text(encoding="utf-8"))
     template["users"] = [{
         "username": data["username"], "enabled": True, "emailVerified": True,
         "email": f"{name}@example.invalid", "firstName": "Synthetic", "lastName": name.title(),
-        "realmRoles": ["ADMIN" if name == "admin" else "FRAUD_ANALYST" if name == "analyst" else "FINANCE_OPERATOR" if name == "finance" else "CUSTOMER"],
+        "realmRoles": ["ADMIN" if name == "admin" else "SUPPORT_AGENT" if name in ("support", "support-second") else "FRAUD_ANALYST" if name == "analyst" else "FINANCE_OPERATOR" if name == "finance" else "CUSTOMER"],
         "credentials": [{"type": "password", "value": data["password"], "temporary": False}],
     } for name, data in credentials.items()]
     write_private(env_path, "".join(f"{key}={value}\n" for key, value in values.items()))

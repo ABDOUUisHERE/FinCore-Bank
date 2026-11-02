@@ -20,7 +20,12 @@ def main() -> None:
         "http://customer-service:8080/api/v1/customers/me",
     ], capture_output=True, text=True, timeout=20)
     assert result.returncode != 0 and "401" in result.stderr, "Direct customer API must reject unauthenticated traffic"
-    print("PASS: gateway/portal readiness and independent direct Customer authentication")
+    audit = subprocess.run([
+        "docker", "compose", "exec", "-T", "api-gateway", "wget", "-S", "-O", "-",
+        "http://audit-service:8080/api/v1/admin/audit/records",
+    ], capture_output=True, text=True, timeout=20)
+    assert audit.returncode != 0 and "401" in audit.stderr, "Direct Audit API must reject unauthenticated traffic"
+    print("PASS: gateway/portal readiness and independent direct Customer/Audit authentication")
 
 
 if __name__ == "__main__":

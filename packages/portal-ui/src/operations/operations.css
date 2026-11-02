@@ -1,0 +1,11 @@
+.operations-workspace { display: grid; gap: 20px; }
+.operations-workspace > p { color: var(--muted); line-height: 1.7; margin: 0; }
+.operations-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 310px), 1fr)); gap: 16px; }
+.operations-list .bank-panel { margin: 0; }
+.operations-facts { display: grid; gap: 12px; }
+.operations-fact { border-bottom: 1px solid var(--line); padding: 16px 0; overflow-wrap: anywhere; }
+.operations-fact summary { cursor: pointer; line-height: 1.6; }
+.operations-fact summary span { display: block; color: var(--muted); font-size: 12px; }
+.operations-fact .bank-facts { margin-top: 18px; }
+.operations-detail { display: contents; }
+.operations-workspace .bank-facts dd { overflow-wrap: anywhere; }

@@ -1,0 +1,164 @@
+openapi: 3.0.3
+info:
+  title: FinCore retained audit and scoped incidents
+  version: 0.8.0
+  description: Java Audit service. Signed subject selects ownership; Gateway and Audit independently enforce roles. First Phase 8 lot only. No financial mutations. Audit facts are asynchronous retained producer assertions, not complete historic/security coverage.
+servers: [{url: 'http://localhost:8280'}]
+security: [{bearer: []}]
+paths:
+  /api/v1/admin/operations/me:
+    get:
+      summary: ADMIN or SUPPORT_AGENT signed subject and ALL_INCIDENTS or OWN_INCIDENTS scope
+      responses:
+        '200':
+          description: Verified identity
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [subject, scope]
+                properties:
+                  subject: {type: string}
+                  scope: {type: string, enum: [ALL_INCIDENTS, OWN_INCIDENTS]}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/admin/audit/summary:
+    get:
+      summary: ADMIN retainedDomainFacts, recordedOperations, quarantinedRecords, openIncidents and observedAt
+      responses:
+        '200': {description: Local committed counts and observation timestamp; no completeness claim}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/admin/audit/records:
+    get:
+      summary: ADMIN retained DOMAIN and OPERATIONS facts, newest committed sequence first
+      parameters:
+        - {$ref: '#/components/parameters/before'}
+        - {name: aggregateId, in: query, schema: {type: string, format: uuid}}
+        - {name: eventType, in: query, schema: {type: string, pattern: '^[a-z]+(\.[a-z_]+){1,3}$'}}
+      responses:
+        '200': {description: 'Object with items (up to 50) and nullable string nextCursor. Each fact includes recordId, decimal string sequence, source, eventType, aggregateId/version, nullable actor, correlationId, source-reported occurredAt, local observedAt, allowlisted details, original bodyHash and nullable sourceTopic/Partition/decimal string Offset. Query before=nextCursor for older facts.'}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/admin/audit/quarantine:
+    get:
+      summary: ADMIN digest-only durable poison metadata; raw bodies are never returned or stored
+      parameters: [{$ref: '#/components/parameters/before'}]
+      responses:
+        '200': {description: 'Object with items (up to 50) and nullable decimal string nextCursor; entries include sequence, sourceTopic, sourcePartition, decimal string sourceOffset, SHA-256 bodyHash, fixed code and observedAt. No replay operation.'}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+  /api/v1/admin/incidents:
+    get:
+      summary: ADMIN all incidents; SUPPORT_AGENT only created_by=JWT subject
+      parameters: [{name: after, in: query, schema: {type: string, format: uuid}}]
+      responses:
+        '200': {description: 'Live UUID-ascending worklist; items (up to 50 Incident) and nullable UUID nextCursor. No snapshot promise.'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+    post:
+      summary: Confirmed opening under JWT subject; same actor/key/body returns original immutable receipt
+      parameters: [{$ref: '#/components/parameters/key'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [resourceKind, resourceId, severity, reason]
+              properties:
+                resourceKind: {type: string, enum: [CUSTOMER, ACCOUNT, PAYMENT, JOURNAL, CARD, SERVICE]}
+                resourceId: {type: string, format: uuid, description: Reported reference; not proof of ownership or financial state}
+                severity: {type: string, enum: [LOW, MEDIUM, HIGH]}
+                reason: {$ref: '#/components/schemas/Reason'}
+      responses:
+        '200': {$ref: '#/components/responses/Receipt'}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '409': {$ref: '#/components/responses/Conflict'}
+  /api/v1/admin/incidents/{id}:
+    parameters: [{$ref: '#/components/parameters/id'}]
+    get:
+      summary: Current incident under ADMIN all or SUPPORT_AGENT own scope
+      responses:
+        '200':
+          description: Current state, distinct from an earlier immutable command receipt
+          content: {application/json: {schema: {$ref: '#/components/schemas/Incident'}}}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/Missing'}
+  /api/v1/admin/incidents/{id}/history:
+    parameters: [{$ref: '#/components/parameters/id'}]
+    get:
+      summary: Incident-scoped immutable OPERATIONS facts; same access scope as detail
+      parameters: [{$ref: '#/components/parameters/before'}]
+      responses:
+        '200': {description: 'Object with items (up to 50) and nullable decimal string nextCursor; unrelated domain facts are excluded.'}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/Missing'}
+  /api/v1/admin/incidents/{id}/status:
+    parameters: [{$ref: '#/components/parameters/id'}]
+    put:
+      summary: 'Versioned OPEN -> INVESTIGATING -> RESOLVED; RESOLVED -> INVESTIGATING. Actor-global key, original-receipt replay, scope checked again.'
+      parameters: [{$ref: '#/components/parameters/key'}]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [expectedVersion, status, reason]
+              properties:
+                expectedVersion: {type: integer, format: int64, minimum: 0}
+                status: {type: string, enum: [INVESTIGATING, RESOLVED]}
+                reason: {$ref: '#/components/schemas/Reason'}
+      responses:
+        '200': {$ref: '#/components/responses/Receipt'}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/Missing'}
+        '409': {$ref: '#/components/responses/Conflict'}
+components:
+  securitySchemes:
+    bearer: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    id: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+    before: {name: before, in: query, schema: {type: integer, format: int64, minimum: 1}, description: Exclusive committed sequence from nextCursor; use decimal strings in clients to preserve precision}
+    key: {name: Idempotency-Key, in: header, required: true, schema: {type: string, minLength: 1, maxLength: 120, pattern: '^[A-Za-z0-9._:-]+$'}, description: Stable actor-global command identity; retry identical body after unknown response}
+  schemas:
+    Reason: {type: string, pattern: '^[A-Z][A-Z0-9_]{2,59}$', description: Structured operational code; no personal/free-text information}
+    Incident:
+      type: object
+      properties:
+        incidentId: {type: string, format: uuid}
+        createdBy: {type: string}
+        resourceKind: {type: string}
+        resourceId: {type: string, format: uuid}
+        severity: {type: string, enum: [LOW, MEDIUM, HIGH]}
+        status: {type: string, enum: [OPEN, INVESTIGATING, RESOLVED]}
+        version: {type: integer, format: int64}
+        reason: {$ref: '#/components/schemas/Reason'}
+        createdAt: {type: string, format: date-time}
+        updatedAt: {type: string, format: date-time}
+  responses:
+    Receipt:
+      description: Original recorded Incident result plus auditRecordId. Incident state, audit fact and receipt commit together; replay may differ from current state.
+      content:
+        application/json:
+          schema:
+            allOf:
+              - {$ref: '#/components/schemas/Incident'}
+              - {type: object, properties: {auditRecordId: {type: string, format: uuid}}}
+    Invalid: {description: Invalid/missing/unknown fields, key, filter or cursor}
+    Unauthorized: {description: Missing or invalid signed issuer/audience/expiry/subject}
+    Forbidden: {description: Explicit operations role absent or global audit requires ADMIN}
+    Missing: {description: Incident absent or outside signed support scope}
+    Conflict: {description: IDEMPOTENCY_CONFLICT, INCIDENT_VERSION_CONFLICT or INCIDENT_STATE_CONFLICT; refresh current state and retain original request reference}

@@ -57,6 +57,10 @@ public class SecurityConfiguration {
             .addFilterBefore(new ApiRateLimitFilter(), org.springframework.security.config.web.server.SecurityWebFiltersOrder.AUTHORIZATION)
             .authorizeExchange(auth -> auth
                 .pathMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .pathMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/audit/records","/api/v1/admin/audit/summary","/api/v1/admin/audit/quarantine").hasRole("ADMIN")
+                .pathMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/operations/me","/api/v1/admin/incidents","/api/v1/admin/incidents/*","/api/v1/admin/incidents/*/history").hasAnyRole("ADMIN","SUPPORT_AGENT")
+                .pathMatchers(org.springframework.http.HttpMethod.POST,"/api/v1/admin/incidents").hasAnyRole("ADMIN","SUPPORT_AGENT")
+                .pathMatchers(org.springframework.http.HttpMethod.PUT,"/api/v1/admin/incidents/*/status").hasAnyRole("ADMIN","SUPPORT_AGENT")
                 .pathMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/reports/reconciliation").hasRole("FINANCE_OPERATOR")
                 .pathMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/cards","/api/v1/cards/*","/api/v1/cards/*/authorizations","/api/v1/card-merchants","/api/v1/card-authorizations/*","/api/v1/statements","/api/v1/statements/*","/api/v1/statements/*/csv","/api/v1/statements/*/pdf").hasRole("CUSTOMER")
                 .pathMatchers(org.springframework.http.HttpMethod.POST,"/api/v1/cards","/api/v1/cards/*/authorizations","/api/v1/card-authorizations/*/settle","/api/v1/statements").hasRole("CUSTOMER")
