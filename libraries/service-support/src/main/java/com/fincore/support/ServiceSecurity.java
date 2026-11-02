@@ -21,7 +21,7 @@ public final class ServiceSecurity {
         var result=new ArrayList<GrantedAuthority>();
         var realm=jwt.getClaimAsMap("realm_access");
         if(realm!=null && realm.get("roles") instanceof List<?> roles) for(Object role:roles) {
-            if(role instanceof String text && Set.of("CUSTOMER","ADMIN","FRAUD_ANALYST","FINANCE_OPERATOR").contains(text))result.add(new SimpleGrantedAuthority("ROLE_"+text));
+            if(role instanceof String text && Set.of("CUSTOMER","ADMIN","FRAUD_ANALYST","FINANCE_OPERATOR","SUPPORT_AGENT").contains(text))result.add(new SimpleGrantedAuthority("ROLE_"+text));
         }
         var resources=jwt.getClaimAsMap("resource_access");
         if(resources!=null && resources.get(resource) instanceof Map<?,?> client && client.get("roles") instanceof List<?> roles) {
