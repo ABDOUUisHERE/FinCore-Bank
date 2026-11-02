@@ -6,6 +6,8 @@ Distributed digital banking and payment processing **simulation**, using synthet
 
 GitHub's canonical repository is `ABDOUUisHERE/FinCore-Bank`. Local Docker validation is recorded in the [workstation verification report](docs/verification/local-docker-2026-10-23.md).
 
+Phase 8 lot 1 adds a Java/Spring Boot Audit service, retained domain facts and staff-scoped incident operations. Validation is in progress: see the [lot report](docs/verification/phase-8.md), [operations guide](docs/deployment/operations-phase-8.md) and [API contract](contracts/openapi/operations-v1.yaml). Complete security audit coverage, scoped business inspection, distributed tracing and six monitoring dashboards remain later Phase 8 lots.
+
 ## Quick start
 
 Requires Git, Python 3.10+ and a running Docker Engine with Compose v2.
