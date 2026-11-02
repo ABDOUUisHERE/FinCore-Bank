@@ -55,7 +55,7 @@ The final local run covers the new operations journey. The full legacy local not
 
 ## F. Acceptance status
 
-Lot 1 is accepted on `feature/fincore-audit-incidents` against the exact application source above. Phase 8 is not complete. Merge delivery and main-branch verification are recorded separately after integration; documentation-only evidence changes preserve the tested application source.
+Lot 1 is accepted and merged into `main` as `e02c85f150600c15a4a60303e503e511c8b00f5c`. All three main-branch workflows passed. Application code is identical to tested source `4ef95f6036d0dc9d0479f544cd6cfb4a97200128`; the intervening changes are documentation/evidence only. The merge contains nine cohesive feature commits plus the merge commit. Phase 8 is not complete. This final documentation-only evidence update does not alter the tested application.
 
 ## G. Exact-source GitHub evidence
 
@@ -66,6 +66,14 @@ All three runs below use `4ef95f6036d0dc9d0479f544cd6cfb4a97200128`:
 | [Backend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41443748847) | **210 passed**, zero failure/error/skip, full Maven reactor |
 | [Frontend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41443748764) | Type checks, lint, **30 cases**, both builds and vulnerability check passed |
 | [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41443748779) | Fresh Compose/migrations, direct authentication, technical Ledger smoke, **9 browser journeys**, producer ACL denial, durable DLQ and audited replay passed |
+
+The merged `main` source `e02c85f150600c15a4a60303e503e511c8b00f5c` independently passed:
+
+| Workflow | Observed main result |
+| --- | --- |
+| [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41445542603) | 9 browser journeys; fresh Compose, direct auth, Ledger and messaging checks passed |
+| [Frontend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41445542521) | 30 cases; type checks, lint, builds and high-severity audit gate passed |
+| [Backend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41445542557) | 210 passed; zero failure/error/skip |
 
 Generated credentials, tokens, raw diagnostic logs and authenticated screenshots are excluded from public evidence. GitHub associates the implementation commits with `ABDOUUisHERE`; no empty or artificial contribution commits were created.
 

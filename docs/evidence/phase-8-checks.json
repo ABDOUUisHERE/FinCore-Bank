@@ -185,5 +185,77 @@
     "Incident resource references are reported, not ownership/financial state assertions.",
     "No production availability, performance or tamper-proof database-administrator claim.",
     "Local full legacy notification journey was not rerun for this lot; earlier Phase 7 observation remains preserved; all nine journeys passed in current exact-source CI."
-  ]
+  ],
+  "main_integration": {
+    "merge_sha": "e02c85f150600c15a4a60303e503e511c8b00f5c",
+    "branch": "main",
+    "application_code_unchanged_from": "4ef95f6036d0dc9d0479f544cd6cfb4a97200128",
+    "observed_at_utc": "2026-11-02T12:44:36.224Z",
+    "commits_at_merge": 10,
+    "backend_tests": 210,
+    "frontend_tests": 30,
+    "browser_journeys": 9,
+    "runs": [
+      {
+        "id": 41445542603,
+        "name": "Foundation integration",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "e02c85f150600c15a4a60303e503e511c8b00f5c",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41445542603",
+        "created_at": "2026-11-02T12:32:30Z",
+        "updated_at": "2026-11-02T12:44:05Z",
+        "jobs": [
+          {
+            "id": 125277588737,
+            "name": "compose",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41445542603/job/125277588737"
+          }
+        ]
+      },
+      {
+        "id": 41445542521,
+        "name": "Frontend quality",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "e02c85f150600c15a4a60303e503e511c8b00f5c",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41445542521",
+        "created_at": "2026-11-02T12:32:30Z",
+        "updated_at": "2026-11-02T12:33:45Z",
+        "jobs": [
+          {
+            "id": 125277588719,
+            "name": "verify",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41445542521/job/125277588719"
+          }
+        ]
+      },
+      {
+        "id": 41445542557,
+        "name": "Backend quality",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "e02c85f150600c15a4a60303e503e511c8b00f5c",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41445542557",
+        "created_at": "2026-11-02T12:32:30Z",
+        "updated_at": "2026-11-02T12:35:21Z",
+        "jobs": [
+          {
+            "id": 125277588985,
+            "name": "verify",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41445542557/job/125277588985"
+          }
+        ]
+      }
+    ]
+  }
 }
