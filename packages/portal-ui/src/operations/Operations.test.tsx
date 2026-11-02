@@ -1,5 +1,5 @@
 import { beforeEach, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { Session } from "../auth";
@@ -36,4 +36,23 @@ it("does not request central audit data for a support identity", async () => {
 it("does not request any operations data for customer or financial roles", () => {
   mocks.session.roles = ["FINANCE_OPERATOR", "FRAUD_ANALYST", "CUSTOMER"]; const fetch = vi.fn(); vi.stubGlobal("fetch", fetch); open();
   expect(screen.getByText("Operations access is required")).toBeVisible(); expect(fetch).not.toHaveBeenCalled();
+});
+it("keeps the incident reason selector accessible through investigation and resolution", async () => {
+  let current = incident; let created = false;
+  const mutations: unknown[] = [];
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string, options: RequestInit) => {
+    if (url.endsWith("/operations/me")) return response({ subject: "signed-support", scope: "OWN_INCIDENTS" });
+    if (options.method === "POST") { created = true; return response(current); }
+    if (options.method === "PUT") { const body = JSON.parse(options.body as string); mutations.push(body); current = { ...current, status: body.status, reason: body.reason, version: current.version + 1 }; return response(current); }
+    if (url.endsWith("/incidents/" + resource)) return response(current);
+    return response({ items: created && !url.includes("/history") ? [current] : [], nextCursor: null });
+  }));
+  open(); await userEvent.type(await screen.findByLabelText("Resource UUID"), resource); await userEvent.click(screen.getByRole("button", { name: "Review incident" })); await userEvent.click(screen.getByRole("button", { name: "Confirm incident request" }));
+  const selected = within(await screen.findByRole("region", { name: "Selected incident" }));
+  await userEvent.click(await selected.findByRole("button", { name: "Review investigation" })); await userEvent.click(screen.getByRole("button", { name: "Confirm incident request" }));
+  await selected.findByText("investigating", { selector: ".bank-badge" });
+  await userEvent.selectOptions(selected.getByRole("combobox", { name: "Reason code" }), "ISSUE_RESOLVED");
+  await userEvent.click(selected.getByRole("button", { name: "Review resolution" })); await userEvent.click(screen.getByRole("button", { name: "Confirm incident request" }));
+  await selected.findByText("resolved", { selector: ".bank-badge" });
+  expect(mutations).toEqual([{ expectedVersion: 0, status: "INVESTIGATING", reason: "INVESTIGATION_UPDATE" }, { expectedVersion: 1, status: "RESOLVED", reason: "ISSUE_RESOLVED" }]);
 });

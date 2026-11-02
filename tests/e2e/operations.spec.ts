@@ -6,6 +6,7 @@ const credentials = JSON.parse(readFileSync(".local/credentials.json", "utf8")) 
 async function login(browser: Browser, identity: string, admin = true) {
   const context = await browser.newContext(); const page = await context.newPage();
   await page.goto("http://localhost:" + (admin ? 5174 : 5173) + "/");
+  await expect(page.getByRole("button", { name: "Sign in securely", exact: true })).toBeVisible({ timeout: 60_000 });
   await page.getByRole("button", { name: "Sign in securely", exact: true }).click(); await expect(page).toHaveURL(/localhost:8180/);
   expect(new URL(page.url()).searchParams.get("code_challenge_method")).toBe("S256");
   await page.getByLabel("Username or email").fill(credentials[identity].username); await page.getByLabel("Password", { exact: true }).fill(credentials[identity].password);
@@ -45,7 +46,7 @@ test("hosted staff PKCE scopes immutable audit, incident replay and support isol
   await expect(page.getByText("Recorded result: open at version 0. Current incident details are refreshed below.")).toBeVisible(); expect(submissions).toHaveLength(2); expect(submissions[1]).toEqual(submissions[0]);
   const selected = page.getByRole("region", { name: "Selected incident", exact: true });
   await expect(selected.getByText("open", { exact: true })).toBeVisible(); await selected.getByRole("button", { name: "Review investigation", exact: true }).click(); await page.getByRole("button", { name: "Confirm incident request", exact: true }).click(); await expect(selected.getByText("investigating", { exact: true })).toBeVisible();
-  await selected.getByLabel("Reason code", { exact: true }).selectOption("ISSUE_RESOLVED"); await selected.getByRole("button", { name: "Review resolution", exact: true }).click(); await page.getByRole("button", { name: "Confirm incident request", exact: true }).click(); await expect(selected.getByText("resolved", { exact: true })).toBeVisible();
+  await selected.getByRole("combobox", { name: "Reason code", exact: true }).selectOption("ISSUE_RESOLVED"); await selected.getByRole("button", { name: "Review resolution", exact: true }).click(); await page.getByRole("button", { name: "Confirm incident request", exact: true }).click(); await expect(selected.getByText("resolved", { exact: true })).toBeVisible();
   const history = await call(support, "GET", "/admin/incidents/" + incidentId + "/history"); expect(history.items).toHaveLength(3); expect(history.items.every((fact: { source: string }) => fact.source === "OPERATIONS")).toBe(true);
   expect((await call(support, "POST", "/admin/incidents", JSON.parse(submissions[0].body!), submissions[0].key))).toEqual(firstReceipt);
   await call(support, "PUT", "/admin/incidents/" + incidentId + "/status", { expectedVersion: 0, status: "INVESTIGATING", reason: "INVESTIGATION_UPDATE" }, crypto.randomUUID(), 409);
@@ -55,8 +56,10 @@ test("hosted staff PKCE scopes immutable audit, incident replay and support isol
   expect((await call(admin, "GET", "/admin/incidents/" + incidentId)).status).toBe("RESOLVED");
   for (const identity of [customer, finance]) for (const path of ["/admin/incidents", "/admin/audit/records", "/admin/operations/me"]) await call(identity, "GET", path, undefined, undefined, 403);
   await call(support, "GET", "/admin/audit/records", undefined, undefined, 403);
+  console.info("Operations UI: retained Account fact, original incident receipt, investigation/resolution, version conflict and signed support isolation confirmed.");
   // Broker identity can consume but cannot forge financial/domain facts.
-  const denied = spawnSync("docker", ["compose", "exec", "-T", "-e", "KAFKA_HEAP_OPTS=-Xms32m -Xmx128m", "kafka", "/opt/kafka/bin/kafka-console-producer.sh", "--bootstrap-server", "kafka:9092", "--producer.config", "/etc/kafka/secrets/audit.properties", "--topic", "fincore.ledger.journal.posted.v1", "--sync", "--producer-property", "max.block.ms=10000", "--producer-property", "delivery.timeout.ms=12000", "--producer-property", "request.timeout.ms=5000"], { input: "{\"mustNeverPublish\":true}\n", encoding: "utf8", timeout: 60_000 });
+  // Disable producer idempotence only for this probe to test topic Write denial independently of cluster IdempotentWrite denial.
+  const denied = spawnSync("docker", ["compose", "exec", "-T", "-e", "KAFKA_HEAP_OPTS=-Xms32m -Xmx128m", "kafka", "/opt/kafka/bin/kafka-console-producer.sh", "--bootstrap-server", "kafka:9092", "--producer.config", "/etc/kafka/secrets/audit.properties", "--topic", "fincore.ledger.journal.posted.v1", "--sync", "--producer-property", "enable.idempotence=false", "--producer-property", "max.block.ms=10000", "--producer-property", "delivery.timeout.ms=12000", "--producer-property", "request.timeout.ms=5000"], { input: "{\"mustNeverPublish\":true}\n", encoding: "utf8", timeout: 60_000 });
   expect(denied.stderr + denied.stdout).toContain("TopicAuthorizationException");
   const poisonKey = crypto.randomUUID(); const poison = JSON.stringify({ privateCanary: "UNTRUSTED_AUDIT_BODY_" + poisonKey });
   const sent = spawnSync("docker", ["compose", "exec", "-T", "-e", "KAFKA_HEAP_OPTS=-Xms32m -Xmx128m", "kafka", "/opt/kafka/bin/kafka-console-producer.sh", "--bootstrap-server", "kafka:9092", "--producer.config", "/etc/kafka/secrets/customer.properties", "--topic", "fincore.customer.created.v1", "--sync", "--property", "parse.key=true", "--property", "key.separator=|"], { input: poisonKey + "|" + poison + "\n", encoding: "utf8", timeout: 60_000 });
