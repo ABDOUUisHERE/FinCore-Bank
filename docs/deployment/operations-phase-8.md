@@ -14,7 +14,7 @@ Bootstrap appends missing Audit database/Kafka secrets and two synthetic support
 
 Audit has an isolated `audit` database, `audit_migrator` and `audit_runtime`. The runtime holds no other database password or financial service credential. No Audit database/service port is published. Access is through Gateway on `http://localhost:8280`; staff UI remains `http://localhost:5174`. All data and actions use a local banking simulation.
 
-Customer identity/profile and Account routes allow a 20-second Gateway response budget and 25-second browser budget, matching the existing Card/Reporting owner-call chains. Their individual owner calls remain bounded at five seconds. This also accommodates cold signed identity lookup observed on the local workstation. Unknown mutation responses still require the original idempotency key; longer response budgets do not replace durable recovery.
+Customer identity/profile and Account routes allow a 20-second Gateway response budget. The banking browser client uses 25 seconds for customer profile/onboarding and Account calls, matching existing Card/Reporting owner-call chains. Their individual owner calls remain bounded at five seconds. This also accommodates cold signed identity lookup observed on the local workstation. Unknown mutation responses still require the original idempotency key; longer response budgets do not replace durable recovery.
 
 ## Roles and workflow
 

@@ -1,0 +1,189 @@
+{
+  "phase": 8,
+  "lot": 1,
+  "lot_status": "accepted",
+  "phase_status": "in_progress",
+  "recorded_at_utc": "2026-11-02T12:31:09.272Z",
+  "base": "994724d462f0a4c9dffd57e014004302a492a8b3",
+  "application_source": "4ef95f6036d0dc9d0479f544cd6cfb4a97200128",
+  "architecture": {
+    "backend": "Java 21 / Spring Boot 3.5.16",
+    "database": "PostgreSQL 17.11; isolated runtime and migrator",
+    "messaging": "Kafka 4.2.2; consumer-only Audit principal",
+    "authorization": "ADMIN all retained facts/incidents; SUPPORT_AGENT own incidents only"
+  },
+  "local": {
+    "environment": "Windows / Docker Desktop 29.1.2; persistent FinCore volumes; unrelated Commerce services left running",
+    "audit_tests": [
+      {
+        "name": "AuditEventTest",
+        "tests": 3,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "AuditMessagingTest",
+        "tests": 1,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "AuditSecurityTest",
+        "tests": 5,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "name": "AuditDatabaseIT",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      }
+    ],
+    "audit_tests_total": 18,
+    "frontend": {
+      "tests": 30,
+      "failures": 0,
+      "typecheck": "pass",
+      "lint": "pass",
+      "production_images": "both portals built and running",
+      "production_dependency_audit": {
+        "command": "npm audit --omit=dev --json",
+        "info": 0,
+        "low": 0,
+        "moderate": 0,
+        "high": 0,
+        "critical": 0,
+        "total": 0
+      }
+    },
+    "operations_pkce": {
+      "tests": 1,
+      "failures": 0,
+      "command": "npx playwright test tests/e2e/operations.spec.ts",
+      "visual_widths": [
+        1440,
+        390,
+        320
+      ],
+      "screenshots": "Desktop/mobile Audit and Incidents inspected; private ignored .local/visual only"
+    },
+    "direct_customer_and_audit_authentication": "pass",
+    "preservation": "Bootstrap compared existing secrets and user credentials before/after; all retained; no volumes deleted; Commerce untouched"
+  },
+  "ci": {
+    "backend": {
+      "tests": 210,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frontend": {
+      "tests": 30,
+      "failures": 0,
+      "npm_audit": {
+        "gate": "high",
+        "moderate": 11,
+        "high": 0,
+        "critical": 0,
+        "lockfile": "unchanged by this lot"
+      }
+    },
+    "foundation": {
+      "browser_journeys": 9,
+      "failures": 0,
+      "technical_ledger": "pass",
+      "messaging_acl_dlq_replay": "pass"
+    },
+    "runs": [
+      {
+        "id": 41443748764,
+        "name": "Frontend quality",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "4ef95f6036d0dc9d0479f544cd6cfb4a97200128",
+        "head_branch": "feature/fincore-audit-incidents",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41443748764",
+        "created_at": "2026-11-02T12:19:29Z",
+        "updated_at": "2026-11-02T12:20:48Z",
+        "jobs": [
+          {
+            "id": 125271676995,
+            "name": "verify",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41443748764/job/125271676995"
+          }
+        ]
+      },
+      {
+        "id": 41443748847,
+        "name": "Backend quality",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "4ef95f6036d0dc9d0479f544cd6cfb4a97200128",
+        "head_branch": "feature/fincore-audit-incidents",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41443748847",
+        "created_at": "2026-11-02T12:19:29Z",
+        "updated_at": "2026-11-02T12:22:16Z",
+        "jobs": [
+          {
+            "id": 125271675765,
+            "name": "verify",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41443748847/job/125271675765"
+          }
+        ]
+      },
+      {
+        "id": 41443748779,
+        "name": "Foundation integration",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "4ef95f6036d0dc9d0479f544cd6cfb4a97200128",
+        "head_branch": "feature/fincore-audit-incidents",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41443748779",
+        "created_at": "2026-11-02T12:19:29Z",
+        "updated_at": "2026-11-02T12:29:36Z",
+        "jobs": [
+          {
+            "id": 125271674904,
+            "name": "compose",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41443748779/job/125271674904"
+          }
+        ]
+      }
+    ]
+  },
+  "superseded": {
+    "source": "eff6628ff4ab583815bfa24e92b4ba1d19595ed8",
+    "integration_run": 41438272289,
+    "result": "8 existing journeys passed; new journey failed on exact label selector; corrected to combobox role and added lifecycle regression",
+    "local_findings": [
+      "Cold local startup exceeded a separate 600-second readiness probe before all services became healthy.",
+      "First cold Customer profile GET and Account POST returned Gateway 504 under the former five-second route budget; Customer/Account budgets now match bounded Card/Reporting calls.",
+      "Initial broker probe was denied cluster IdempotentWrite first; disabling idempotence in the probe independently verified topic Write denial.",
+      "Visual inspection found missing shared form scope; corrected and desktop/mobile inspected again."
+    ]
+  },
+  "remaining_phase_8": [
+    "Scoped customer/payment/ledger inspection",
+    "Missing critical-action/security audit sources",
+    "Distributed tracing",
+    "Six observed Grafana dashboards"
+  ],
+  "limitations": [
+    "Asynchronous retained domain facts do not reconstruct every historic/security action or events older than broker retention.",
+    "No raw quarantine bodies or replay API; investigate broker-retained records using digest and coordinates.",
+    "Incident resource references are reported, not ownership/financial state assertions.",
+    "No production availability, performance or tamper-proof database-administrator claim.",
+    "Local full legacy notification journey was not rerun for this lot; earlier Phase 7 observation remains preserved; all nine journeys passed in current exact-source CI."
+  ]
+}
