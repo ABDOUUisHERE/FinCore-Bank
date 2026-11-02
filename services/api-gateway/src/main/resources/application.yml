@@ -74,6 +74,13 @@ spring:
                 - name: RequestSize
                   args:
                     maxSize: 16KB
+            - id: operations
+              uri: ${AUDIT_SERVICE_URL:http://localhost:8090}
+              predicates: ["Path=/api/v1/admin/audit/**,/api/v1/admin/incidents,/api/v1/admin/incidents/**,/api/v1/admin/operations/me"]
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: 16KB
             - id: transfers
               uri: ${PAYMENT_SERVICE_URL:http://localhost:8084}
               predicates:

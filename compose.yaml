@@ -215,6 +215,8 @@ services:
       CARD_CLIENT_SECRET: ${CARD_CLIENT_SECRET:?Run local bootstrap first}
       REPORTING_CLIENT_SECRET: ${REPORTING_CLIENT_SECRET:?Run local bootstrap first}
       FINANCE_PASSWORD: ${FINANCE_PASSWORD:?Run local bootstrap first}
+      SUPPORT_PASSWORD: ${SUPPORT_PASSWORD:?Run local bootstrap first}
+      SUPPORT_SECOND_PASSWORD: ${SUPPORT_SECOND_PASSWORD:?Run local bootstrap first}
       LEDGER_RISK_CLIENT_SECRET: ${LEDGER_RISK_CLIENT_SECRET:?Run local bootstrap first}
     volumes: ["./scripts/configure-business-clients.py:/scripts/configure-business-clients.py:ro"]
     read_only: true
@@ -693,6 +695,54 @@ services:
       start_period: 90s
       retries: 12
     networks: [backend]
+  audit-bootstrap:
+    image: postgres:17.11-alpine
+    entrypoint: [/bin/sh, /bootstrap/init-audit.sh]
+    environment:
+      PGHOST: postgres
+      PGUSER: fincore_bootstrap
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Run local bootstrap first}
+      AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:?Run local bootstrap first}
+      AUDIT_MIGRATION_PASSWORD: ${AUDIT_MIGRATION_PASSWORD:?Run local bootstrap first}
+    volumes: ["./infrastructure/docker/postgres/init-audit.sh:/bootstrap/init-audit.sh:ro"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [backend]
+  audit-migrations:
+    image: fincore/audit-service:local
+    build: { context: ., dockerfile: services/audit-service/Dockerfile }
+    command: [--migrate-only]
+    environment:
+      AUDIT_DATABASE_URL: jdbc:postgresql://postgres:5432/audit
+      AUDIT_MIGRATION_PASSWORD: ${AUDIT_MIGRATION_PASSWORD:?Run local bootstrap first}
+    healthcheck: { disable: true }
+    depends_on:
+      audit-bootstrap: { condition: service_completed_successfully }
+    networks: [backend]
+  audit-service:
+    image: fincore/audit-service:local
+    build: { context: ., dockerfile: services/audit-service/Dockerfile }
+    environment:
+      SERVER_PORT: '8080'
+      AUDIT_DATABASE_URL: jdbc:postgresql://postgres:5432/audit
+      AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:?Run local bootstrap first}
+      AUDIT_MESSAGING_ENABLED: 'true'
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_USER: audit
+      KAFKA_PASSWORD: ${KAFKA_AUDIT_PASSWORD:?Run local bootstrap first}
+      OIDC_ISSUER: http://localhost:8180/realms/fincore
+      OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
+    depends_on:
+      audit-migrations: { condition: service_completed_successfully }
+      keycloak: { condition: service_healthy }
+      kafka-init: { condition: service_completed_successfully }
+    healthcheck:
+      test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1:8080/actuator/health/readiness || exit 1']
+      interval: 10s
+      timeout: 5s
+      start_period: 90s
+      retries: 12
+    networks: [backend]
   api-gateway:
     image: fincore/api-gateway:local
     build: { context: ., dockerfile: services/api-gateway/Dockerfile }
@@ -705,6 +755,7 @@ services:
       NOTIFICATION_SERVICE_URL: http://notification-service:8080
       CARD_SERVICE_URL: http://card-service:8080
       REPORTING_SERVICE_URL: http://reporting-service:8080
+      AUDIT_SERVICE_URL: http://audit-service:8080
       FRAUD_SERVICE_URL: http://fraud-service:8080
       OIDC_ISSUER: http://localhost:8180/realms/fincore
       OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
@@ -718,6 +769,7 @@ services:
       fraud-service: { condition: service_healthy }
       card-service: { condition: service_healthy }
       reporting-service: { condition: service_healthy }
+      audit-service: { condition: service_healthy }
     healthcheck:
       test: [CMD-SHELL, 'wget -q -O /dev/null http://127.0.0.1:8080/actuator/health/readiness || exit 1']
       interval: 10s

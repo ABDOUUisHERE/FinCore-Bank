@@ -32,6 +32,7 @@ class GatewaySecurityTest {
 
     @RestController
     static class Endpoint {
+        @GetMapping({"/api/v1/admin/audit/records","/api/v1/admin/audit/summary","/api/v1/admin/audit/quarantine","/api/v1/admin/incidents","/api/v1/admin/operations/me"}) Map<String,Object> operations(){return Map.of("items",List.of());}
         @GetMapping("/api/v1/admin/fraud-cases") Map<String,Object> fraud(){return Map.of("items",List.of());}
         @GetMapping("/api/v1/customers/me")
         Map<String, String> me(@org.springframework.web.bind.annotation.RequestParam(defaultValue = "false") boolean unavailable) {
@@ -48,6 +49,23 @@ class GatewaySecurityTest {
     @Test void investigationRoutesRequireFraudAnalystRatherThanImplicitAdmin() {
         for(var role:List.of("CUSTOMER","ADMIN"))http.get().uri("/api/v1/admin/fraud-cases").headers(h->h.setBearerAuth(TestTokens.token(TestTokens.ISSUER,"fincore-api",List.of(role),Instant.now().plusSeconds(120)))).exchange().expectStatus().isForbidden();
         http.get().uri("/api/v1/admin/fraud-cases").headers(h->h.setBearerAuth(TestTokens.token(TestTokens.ISSUER,"fincore-api",List.of("FRAUD_ANALYST"),Instant.now().plusSeconds(120)))).exchange().expectStatus().isOk();
+    }
+    @Test void auditAndIncidentsRequireTheirExplicitStaffRoles() {
+        for(String role:List.of("CUSTOMER","FRAUD_ANALYST","FINANCE_OPERATOR","SUPPORT_AGENT","ADMIN")) {
+            String token=TestTokens.token(TestTokens.ISSUER,"fincore-api",List.of(role),Instant.now().plusSeconds(120));
+            for(String path:List.of("/api/v1/admin/audit/records","/api/v1/admin/audit/summary","/api/v1/admin/audit/quarantine")) {
+                var response=http.get().uri(path).headers(h->h.setBearerAuth(token)).exchange();
+                if(role.equals("ADMIN"))response.expectStatus().isOk();else response.expectStatus().isForbidden();
+            }
+            for(String path:List.of("/api/v1/admin/incidents","/api/v1/admin/operations/me")) {
+                var response=http.get().uri(path).headers(h->h.setBearerAuth(token)).exchange();
+                if(List.of("ADMIN","SUPPORT_AGENT").contains(role))response.expectStatus().isOk();else response.expectStatus().isForbidden();
+            }
+        }
+        for(String token:List.of(TestTokens.token("https://wrong.invalid","fincore-api",List.of("ADMIN"),Instant.now().plusSeconds(120)),
+            TestTokens.token(TestTokens.ISSUER,"wrong-api",List.of("ADMIN"),Instant.now().plusSeconds(120)),
+            TestTokens.token(TestTokens.ISSUER,"fincore-api",List.of("ADMIN"),Instant.now().minusSeconds(120))))
+            http.get().uri("/api/v1/admin/audit/records").headers(h->h.setBearerAuth(token)).exchange().expectStatus().isUnauthorized();
     }
 
     @Test void validatesSignedIssuerAudienceExpiryAndRole() {

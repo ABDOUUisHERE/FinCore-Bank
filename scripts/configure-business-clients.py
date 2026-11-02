@@ -174,7 +174,16 @@ def main():
             "credentials": [{"type": "password", "value": values["RECIPIENT_PASSWORD"], "temporary": False}]})
         users = api("GET", "/users?username=recipient.demo&exact=true")
     api("POST", f"/users/{users[0]['id']}/role-mappings/realm", [api("GET", "/roles/CUSTOMER")])
-    print("Business identities, Card/Reporting delegation and bounded service scopes configured.")
+    for name, secret in (("support", "SUPPORT_PASSWORD"), ("support-second", "SUPPORT_SECOND_PASSWORD")):
+        username = name + ".demo"
+        support_users = api("GET", "/users?username=" + username + "&exact=true")
+        if not support_users:
+            api("POST", "/users", {"username": username, "enabled": True, "emailVerified": True,
+                "email": name + "@example.invalid", "firstName": "Synthetic", "lastName": name.title(),
+                "credentials": [{"type": "password", "value": values[secret], "temporary": False}]})
+            support_users = api("GET", "/users?username=" + username + "&exact=true")
+        api("POST", f"/users/{support_users[0]['id']}/role-mappings/realm", [api("GET", "/roles/SUPPORT_AGENT")])
+    print("Business identities, scoped support users and bounded service scopes configured.")
 
 
 if __name__ == "__main__":

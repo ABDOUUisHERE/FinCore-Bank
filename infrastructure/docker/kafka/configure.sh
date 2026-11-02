@@ -15,6 +15,11 @@ for user in customer account ledger payment fraud card; do
 "$K/kafka-acls.sh" --bootstrap-server kafka:9092 --command-config "$C" --add --allow-principal User:notification --operation Read --group fincore-notifications --resource-pattern-type prefixed
 "$K/kafka-acls.sh" --bootstrap-server kafka:9092 --command-config "$C" --add --allow-principal User:notification --operation Write --operation Describe --topic fincore.notifications. --resource-pattern-type prefixed
 "$K/kafka-acls.sh" --bootstrap-server kafka:9092 --command-config "$C" --add --allow-principal User:notification --operation IdempotentWrite --cluster
+# Audit consumes domain facts under its own group and has no producer authority.
+for domain in customer account ledger payment fraud card; do
+ "$K/kafka-acls.sh" --bootstrap-server kafka:9092 --command-config "$C" --add --allow-principal User:audit --operation Read --operation Describe --topic "fincore.$domain." --resource-pattern-type prefixed
+ done
+"$K/kafka-acls.sh" --bootstrap-server kafka:9092 --command-config "$C" --add --allow-principal User:audit --operation Read --group fincore-audit --resource-pattern-type prefixed
 for topic in notifications.dlt notifications.replay; do
  "$K/kafka-configs.sh" --bootstrap-server kafka:9092 --command-config "$C" --entity-type topics --entity-name "fincore.$topic.v1" --alter --add-config max.message.bytes=1048576
  done
