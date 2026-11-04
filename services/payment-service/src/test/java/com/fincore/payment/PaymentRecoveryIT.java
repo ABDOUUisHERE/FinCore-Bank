@@ -58,7 +58,9 @@ class PaymentRecoveryIT {
     void readyRetry(UUID id){LAB.owner("payment").update("update payment set lease_until=clock_timestamp()-interval '1 second',next_attempt=clock_timestamp() where id=?",id);}
     @Test void operationalInspectionRedactsAndPaginatesRealVersionedHistoryWithoutFinancialEffects(){
         var f=transfer("10.00");store.importInstruction(f.receipt());
-        for(int version=1;version<=53;version++)LAB.owner("payment").update("update payment set status=?,version=version+1,terminal_code='private free text' where id=?",version%2==1?"VALIDATING":"PENDING_RISK_REVIEW",f.id());
+        for(int version=1;version<=52;version++)LAB.owner("payment").update("update payment set status=?,version=version+1,terminal_code='private free text' where id=?",version%2==1?"VALIDATING":"PENDING_RISK_REVIEW",f.id());
+        // Leave a terminal fixture: unrelated worker/lease tests must never claim this payment.
+        LAB.owner("payment").update("update payment set status='REJECTED',version=version+1 where id=?",f.id());
         var before=balance(f.source());var page=store.inspection(f.id(),null);
         assertThat(page.path("version").asText()).isEqualTo("53");assertThat(page.path("history").size()).isEqualTo(50);assertThat(page.path("nextCursor").asText()).isEqualTo("4");
         assertThat(page.path("history").get(0).path("version").asText()).isEqualTo("53");
