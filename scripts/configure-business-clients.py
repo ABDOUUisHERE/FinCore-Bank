@@ -42,7 +42,7 @@ def main():
         if not any(item["name"] == name for item in existing):
             api("POST", f"/clients/{target}/roles", {"name": name})
         return api("GET", f"/clients/{target}/roles/{name}")
-    ledger_roles = {name: ensure_role(resource, name) for name in ("ledger.prepare", "ledger.prepare.fund", "ledger.prepare.reverse", "ledger.execute", "ledger.instructions.read", "ledger.provision", "ledger.guard", "ledger.read", "ledger.card.manage", "ledger.card.inspect", "ledger.card.reserve", "ledger.statement.read", "ledger.reconcile.read")}
+    ledger_roles = {name: ensure_role(resource, name) for name in ("ledger.prepare", "ledger.prepare.fund", "ledger.prepare.reverse", "ledger.execute", "ledger.instructions.read", "ledger.provision", "ledger.guard", "ledger.read", "ledger.card.manage", "ledger.card.inspect", "ledger.card.reserve", "ledger.statement.read", "ledger.reconcile.read", "ledger.journal.read")}
     account_resource = client("account-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
     account_lookup = ensure_role(account_resource, "account.lookup")
     payment_resource = client("payment-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
@@ -129,7 +129,7 @@ def main():
     role_claim(fraud_client, "card-service")
     for name, secret, worker_roles, delegated in [
             ("card", "CARD_CLIENT_SECRET", ["ledger.card.inspect", "ledger.card.reserve"], "ledger.card.manage"),
-            ("reporting", "REPORTING_CLIENT_SECRET", ["ledger.reconcile.read"], "ledger.statement.read")]:
+            ("reporting", "REPORTING_CLIENT_SECRET", ["ledger.reconcile.read", "ledger.journal.read"], "ledger.statement.read")]:
         target = machine("fincore-" + name, secret, exchange=True)
         assign(target, resource, [ledger_roles[r] for r in worker_roles])
         assign(target, account_resource, [account_lookup])

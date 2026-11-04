@@ -23,6 +23,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest({CardLedgerController.class,StatementController.class})
 @Import({SecurityConfiguration.class,JsonConfiguration.class,CorrelationFilter.class,BodyLimitFilter.class,CardLedgerSecurityTest.Decoders.class})
 class CardLedgerSecurityTest {
+ @Test void journalReportingNeedsBothNarrowScopeAndReportingIssuer()throws Exception{
+  var id=UUID.randomUUID();var path="/internal/v1/ledger/reports/journals/"+id;
+  for(String denied:List.of(token("fincore-reporting",false,"ledger.read"),token("fincore-reporting",false,"ledger.reconcile.read"),token("fincore-card",false,"ledger.journal.read")))http.perform(get(path).header("Authorization","Bearer "+denied)).andExpect(status().isForbidden());
+  verifyNoInteractions(ledger);
+  when(ledger.journal(id)).thenReturn(Json.read("{\"journalId\":\""+id+"\",\"total\":\"10.00\",\"entries\":[]}"));
+  var narrow=token("fincore-reporting",false,"ledger.journal.read");
+  http.perform(get(path).header("Authorization","Bearer "+narrow)).andExpect(status().isOk()).andExpect(jsonPath("$.source").value("ledger-postings")).andExpect(jsonPath("$.total").value("10.00"));
+  http.perform(get("/internal/v1/ledger/journals/"+id).header("Authorization","Bearer "+narrow)).andExpect(status().isForbidden());
+  http.perform(post("/internal/v1/ledger/reports/journals/"+id).header("Authorization","Bearer "+narrow).contentType("application/json").content("{}")).andExpect(status().isForbidden());
+  verify(ledger).journal(id);
+ }
  @Autowired MockMvc http;@MockitoBean CardLedgerStore store;@MockitoBean LedgerRiskVerifier risk;
  @MockitoBean StatementStore statements;@MockitoBean LedgerStore ledger;
  @TestConfiguration(proxyBeanMethods=false)static class Decoders{
