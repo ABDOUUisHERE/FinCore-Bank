@@ -15,3 +15,6 @@
 .inspection-table caption { text-align: left; font-weight: 600; margin-bottom: .75rem; }
 .inspection-table th, .inspection-table td { padding: .75rem; border-bottom: 1px solid var(--line); vertical-align: top; }
 .inspection-table code { overflow-wrap: anywhere; }
+.inspection-result { min-width: 0; }
+.customer-search-matches { margin: 20px 0; }
+.customer-search-matches h3 { overflow-wrap: anywhere; }

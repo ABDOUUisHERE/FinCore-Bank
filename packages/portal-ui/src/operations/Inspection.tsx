@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { useSession } from "../auth";
 import { request, uuid } from "../banking/api";
 import { Failure, Loading } from "../banking/Common";
+import { CustomerSearch } from "./CustomerSearch";
 import "./operations.css";
 
 type Kind = "Customer" | "Account" | "Payment" | "Journal";
@@ -23,6 +24,8 @@ function Lookup({ kinds }: { kinds: Kind[] }) {
   const [input, setInput] = useState("");
   const [target, setTarget] = useState<{ kind: Kind; id: string } | null>(null);
   const [error, setError] = useState("");
+  const result = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (target) result.current?.focus(); }, [target]);
   return <div className="bank-workspace operations-workspace inspection-workspace">
     <section className="surface bank-panel"><h2>Business inspection</h2><p>Look up an exact reference from your investigation. Results show the latest recorded state when observed.</p>
       <form className="bank-form" onSubmit={e => { e.preventDefault(); const id = input.trim().toLowerCase(); if (!uuid.test(id)) { setError("Enter a valid resource UUID."); return; } setError(""); setTarget({ kind, id }); }}>
@@ -32,7 +35,8 @@ function Lookup({ kinds }: { kinds: Kind[] }) {
       </form>{error && <p role="alert">{error}</p>}
       <p>{kind === "Journal" ? "Journal postings require the finance role. Amounts include their currency." : "Operational status excludes personal profile details and payment amounts."}</p>
     </section>
-    {target && (target.kind === "Customer" ? <CustomerResult key={target.id} id={target.id} /> : target.kind === "Account" ? <AccountResult key={target.id} id={target.id} /> : target.kind === "Payment" ? <PaymentResult key={target.id} id={target.id} /> : <JournalResult key={target.id} id={target.id} />)}
+    {target && <div ref={result} tabIndex={-1} className="inspection-result" aria-label="Inspection result">{target.kind === "Customer" ? <CustomerResult key={target.id} id={target.id} /> : target.kind === "Account" ? <AccountResult key={target.id} id={target.id} /> : target.kind === "Payment" ? <PaymentResult key={target.id} id={target.id} /> : <JournalResult key={target.id} id={target.id} />}</div>}
+    {kinds.includes("Customer") && <CustomerSearch inspect={id => { setKind("Customer"); setInput(id); setError(""); setTarget({ kind: "Customer", id }); }} />}
   </div>;
 }
 function CustomerResult({ id }: { id: string }) {
