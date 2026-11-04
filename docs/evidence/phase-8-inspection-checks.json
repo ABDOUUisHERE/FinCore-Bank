@@ -1,0 +1,124 @@
+{
+  "date": "2026-11-04",
+  "lot": "Phase 8 lot 2: exact-reference business inspection",
+  "base": "93afcc4b9d8874fc697142f203023bda59243457",
+  "applicationSource": "8ac48dc7b055f453cd3496e0f196d02f1b690f4b",
+  "branch": "feature/fincore-business-inspection",
+  "featureCi": [
+    {
+      "id": 41813946956,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "8ac48dc7b055f453cd3496e0f196d02f1b690f4b",
+      "head_branch": "feature/fincore-business-inspection",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41813946956",
+      "created_at": "2026-11-04T10:24:11Z",
+      "updated_at": "2026-11-04T10:25:16Z",
+      "jobs": [
+        {
+          "id": 126519841776,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41813946956/job/126519841776"
+        }
+      ]
+    },
+    {
+      "id": 41813946773,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "8ac48dc7b055f453cd3496e0f196d02f1b690f4b",
+      "head_branch": "feature/fincore-business-inspection",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41813946773",
+      "created_at": "2026-11-04T10:24:11Z",
+      "updated_at": "2026-11-04T10:26:41Z",
+      "jobs": [
+        {
+          "id": 126519860749,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41813946773/job/126519860749"
+        }
+      ]
+    },
+    {
+      "id": 41813946802,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "8ac48dc7b055f453cd3496e0f196d02f1b690f4b",
+      "head_branch": "feature/fincore-business-inspection",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41813946802",
+      "created_at": "2026-11-04T10:24:11Z",
+      "updated_at": "2026-11-04T10:34:49Z",
+      "jobs": [
+        {
+          "id": 126520132692,
+          "name": "compose",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41813946802/job/126520132692"
+        }
+      ]
+    }
+  ],
+  "results": {
+    "fullBackend": {
+      "passed": 220,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frontend": {
+      "passed": 34,
+      "typecheck": "passed",
+      "lint": "passed",
+      "builds": 2
+    },
+    "fullBrowserJourneys": 10,
+    "nativeFocusedJava": {
+      "passed": 114,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "nativeNewBrowserJourneys": 1,
+    "nativeHealthyRuntimes": 16,
+    "nativeCredentialsPreserved": true,
+    "nativeVisualWidths": [
+      1440,
+      390,
+      320
+    ],
+    "productionDependencyAdvisories": 0,
+    "developmentModerateAdvisories": 11,
+    "contractPaths": 3,
+    "resolvedContractReferences": 24
+  },
+  "observations": [
+    "Renamed repository directory left stale npm workspace junctions; npm ci restored them without a lockfile change.",
+    "Docker was manually paused; the user resumed it. Existing volumes and local secrets were preserved.",
+    "Initial missing-body negative HTTP fixture was rejected by the size filter before authorization; fixture now supplies a bounded body.",
+    "Initial native full verify stopped on MessagingDeliveryIT Kafka startup timeout. Focused native verification explicitly selects four PostgreSQL suites; full messaging and all other suites passed in exact-source CI.",
+    "Initial CI found an active inspection history fixture could be claimed by an unrelated worker test. The fixture now ends in REJECTED; the full suite passes."
+  ],
+  "limits": [
+    "Exact UUID lookup only; no personal/name search or account-status inspection.",
+    "No support business authorization grants; incident references are not access grants.",
+    "No financial writes, reversal workflow or global reconciliation claim from a journal lookup.",
+    "Payment consistency is per page, not a cross-page historical snapshot.",
+    "Reason codes are syntactically structured assertions, not an independently verified vocabulary.",
+    "Historic HTTP correlation IDs are not fabricated; inspection reads are not yet audited.",
+    "Complete critical-action/security/read audit coverage, tracing and six observed dashboards remain."
+  ],
+  "privateEvidenceExcluded": [
+    "generated credentials",
+    "tokens",
+    "raw logs",
+    "authenticated screenshots"
+  ]
+}

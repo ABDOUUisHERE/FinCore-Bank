@@ -17,11 +17,13 @@ The existing provisioning script adds `ledger.journal.read` to Reporting's servi
 
 ```powershell
 docker compose build customer-service payment-service ledger-service reporting-service api-gateway admin-portal
-docker compose up -d --force-recreate business-identity
-docker compose up -d --wait --wait-timeout 600
+docker compose run --rm --no-deps -T business-identity
+docker compose up -d --no-deps --wait --wait-timeout 600 customer-service payment-service ledger-service reporting-service api-gateway admin-portal
 ```
 
 Retain the existing `.env`, `.local/credentials.json`, realm and volumes. No schema migration is needed. Do not remove persistent volumes. After role provisioning, the recreated Reporting runtime obtains a fresh machine token with the new read scope.
+
+These upgrade commands assume the existing stack is healthy, including Keycloak/PostgreSQL/Kafka. Fresh installations still use the repository's full bootstrap and default Compose startup. The one-shot identity upgrade must complete successfully before replacing the six affected runtimes.
 
 Staff portal: `http://localhost:5174`, **Inspection**. ADMIN selects Customer or Payment; FINANCE_OPERATOR selects Journal. Enter an exact UUID from an investigation. There is no unrestricted search/list endpoint. The Gateway and destination independently enforce the roles. Reporting delegates journal reads using its own scoped machine identity; Ledger additionally checks the signed `azp=fincore-reporting`. Ledger's general `ledger.read` permission cannot satisfy this report route, and the new scope cannot post, reverse or inspect arbitrary Ledger endpoints.
 
