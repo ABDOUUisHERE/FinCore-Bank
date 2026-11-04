@@ -34,7 +34,7 @@ class AccountInspectionTest {
     }
     @Test void missingOrDeniedUpstreamIsNotPresentedAsObservedState(){
         when(store.get(id)).thenReturn(account("ACTIVE",ledger));
-        for(int status:List.of(401,403,404)){when(coordinator.ledger("GET","/accounts/"+ledger+"/operational-status",null)).thenThrow(new ApiFailure(status,"NOT_AUTHORIZED"));assertInvalid();}
+        for(int status:List.of(401,403,404)){doThrow(new ApiFailure(status,"NOT_AUTHORIZED")).when(coordinator).ledger("GET","/accounts/"+ledger+"/operational-status",null);assertInvalid();}
     }
     @Test void rejectsCrossAccountOwnerCurrencyTypeAndMalformedGuardMetadata(){
         when(store.get(id)).thenReturn(account("ACTIVE",ledger));
