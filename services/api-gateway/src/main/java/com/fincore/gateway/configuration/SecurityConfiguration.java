@@ -57,6 +57,8 @@ public class SecurityConfiguration {
             .addFilterBefore(new ApiRateLimitFilter(), org.springframework.security.config.web.server.SecurityWebFiltersOrder.AUTHORIZATION)
             .authorizeExchange(auth -> auth
                 .pathMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .pathMatchers(org.springframework.http.HttpMethod.POST,"/api/v1/admin/customers/search").hasRole("ADMIN")
+                .pathMatchers("/api/v1/admin/customers/search").denyAll()
                 .pathMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/customers/*","/api/v1/admin/accounts/*","/api/v1/admin/transactions/*").hasRole("ADMIN")
                 .pathMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/ledger/journals/*").hasRole("FINANCE_OPERATOR")
                 .pathMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/audit/records","/api/v1/admin/audit/summary","/api/v1/admin/audit/quarantine").hasRole("ADMIN")

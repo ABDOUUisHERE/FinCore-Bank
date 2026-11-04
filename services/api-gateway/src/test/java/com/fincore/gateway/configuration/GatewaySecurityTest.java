@@ -32,6 +32,7 @@ class GatewaySecurityTest {
 
     @RestController
     static class Endpoint {
+        @org.springframework.web.bind.annotation.PostMapping("/api/v1/admin/customers/search") Map<String,Object> search(){return Map.of("items",List.of());}
         @GetMapping({"/api/v1/admin/customers/test","/api/v1/admin/accounts/test","/api/v1/admin/transactions/test","/api/v1/admin/ledger/journals/test"}) Map<String,Object> inspection(){return Map.of("status","synthetic");}
         @GetMapping({"/api/v1/admin/audit/records","/api/v1/admin/audit/summary","/api/v1/admin/audit/quarantine","/api/v1/admin/incidents","/api/v1/admin/operations/me"}) Map<String,Object> operations(){return Map.of("items",List.of());}
         @GetMapping("/api/v1/admin/fraud-cases") Map<String,Object> fraud(){return Map.of("items",List.of());}
@@ -55,6 +56,17 @@ class GatewaySecurityTest {
                 var response=http.get().uri(path).headers(h->h.setBearerAuth(token)).exchange();if(allowed)response.expectStatus().isOk();else response.expectStatus().isForbidden();
                 http.post().uri(path).headers(h->h.setBearerAuth(token)).exchange().expectStatus().isForbidden();
             }
+        }
+    }
+    @Test void customerSearchIsAnAdminOnlyPostWithNoGetDirectory() {
+        String path="/api/v1/admin/customers/search";
+        http.post().uri(path).contentType(org.springframework.http.MediaType.APPLICATION_JSON).bodyValue("{\"namePrefix\":\"Syn\"}").exchange().expectStatus().isUnauthorized();
+        for(String role:List.of("ADMIN","CUSTOMER","SUPPORT_AGENT","FINANCE_OPERATOR","FRAUD_ANALYST")) {
+            String token=TestTokens.token(TestTokens.ISSUER,"fincore-api",List.of(role),Instant.now().plusSeconds(120));
+            var response=http.post().uri(path).headers(h->h.setBearerAuth(token)).contentType(org.springframework.http.MediaType.APPLICATION_JSON).bodyValue("{\"namePrefix\":\"Syn\"}").exchange();
+            if(role.equals("ADMIN"))response.expectStatus().isOk();else response.expectStatus().isForbidden();
+            http.get().uri(path+"?namePrefix=Syn").headers(h->h.setBearerAuth(token)).exchange().expectStatus().isForbidden();
+            http.put().uri(path).headers(h->h.setBearerAuth(token)).contentType(org.springframework.http.MediaType.APPLICATION_JSON).bodyValue("{}").exchange().expectStatus().isForbidden();
         }
     }
     @Test void investigationRoutesRequireFraudAnalystRatherThanImplicitAdmin() {
