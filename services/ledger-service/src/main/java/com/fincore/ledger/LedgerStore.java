@@ -56,6 +56,9 @@ public class LedgerStore {
     public JsonNode journal(UUID id) {
         return query("select jsonb_build_object('journalId',j.id,'operationId',j.operation_id,'currency',j.currency,'total',j.total::text,'reversalOf',j.reversal_of,'createdAt',j.created_at,'entries',jsonb_agg(jsonb_build_object('accountId',p.account_id,'side',p.side,'amount',p.amount::text) order by p.account_id,p.side)) from ledger.journal j join ledger.posting p on p.journal_id=j.id where j.id=? group by j.id", id);
     }
+    public JsonNode operationalStatus(UUID id) {
+        return query("select jsonb_build_object('ledgerAccountId',id,'externalReference',external_reference,'ownerSubject',owner_subject,'currency',currency,'type',type,'status',status,'guardRevision',guard_revision::text,'observedAt',statement_timestamp()) from ledger.account where id=?", id);
+    }
     @Transactional(readOnly = true, isolation = org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
     public JsonNode reconcile() {
         return query("select jsonb_build_object('balanceDiscrepancies',(select coalesce(jsonb_agg(to_jsonb(r)), '[]'::jsonb) from ledger.reconciliation r),'invalidJournals',(select coalesce(jsonb_agg(id),'[]'::jsonb) from (select j.id from ledger.journal j left join ledger.posting p on p.journal_id=j.id group by j.id having not j.sealed or count(p.id)<2 or coalesce(sum(p.amount) filter(where p.side='DEBIT'),0)<>j.total or coalesce(sum(p.amount) filter(where p.side='CREDIT'),0)<>j.total) invalid))");
