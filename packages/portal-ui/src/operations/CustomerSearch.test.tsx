@@ -30,6 +30,7 @@ it("validates a bounded prefix before any explicit request", async () => {
 it("posts literal names in the body and preserves exact versions and match selection", async () => {
   const fetch = vi.fn().mockImplementation(() => json(page)); vi.stubGlobal("fetch", fetch); const inspect = vi.fn(); open(inspect);
   await search("  O'Neil%_!  "); await screen.findByText("9007199254740993");
+  expect(screen.getByText("1 customer on this page. Page 1.")).toBeInTheDocument();
   expect(fetch.mock.calls[0][0]).toMatch(/\/admin\/customers\/search$/);
   expect(fetch.mock.calls[0][1]).toMatchObject({ method: "POST", cache: "no-store" });
   expect(JSON.parse(fetch.mock.calls[0][1].body)).toEqual({ namePrefix: "O'Neil%_!", afterId: null });

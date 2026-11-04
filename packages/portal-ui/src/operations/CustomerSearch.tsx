@@ -40,7 +40,7 @@ function Matches({ criteria, inspect, move }: { criteria: Criteria; inspect: (id
   return <div role="region" aria-label="Customer matches">
     <Failure error={query.error} retry={() => void query.refetch()} />
     {query.isPending ? <Loading /> : !query.error && query.data && <>
-      <p role="status">{query.data.items.length ? `${query.data.items.length} customers on this page. Page ${criteria.page}.` : "No customers match this name prefix on this page."}</p>
+      <p role="status">{query.data.items.length ? `${query.data.items.length} ${query.data.items.length === 1 ? "customer" : "customers"} on this page. Page ${criteria.page}.` : "No customers match this name prefix on this page."}</p>
       <p>Observed {new Date(query.data.observedAt).toLocaleString()}. Pages are separate observations.</p>
       <div className="operations-list customer-search-matches">{query.data.items.map(match => <article className="surface bank-panel" key={match.customerId} aria-label={"Customer " + match.customerId}>
         <h3>{match.displayName}</h3><dl className="bank-facts"><dt>Customer reference</dt><dd><code>{match.customerId}</code></dd><dt>Onboarding status</dt><dd>{match.status}</dd><dt>Profile version</dt><dd>{match.profileVersion}</dd><dt>Created</dt><dd>{new Date(match.createdAt).toLocaleString()}</dd></dl>
