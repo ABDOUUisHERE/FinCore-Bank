@@ -47,7 +47,7 @@ export function query(values: Record<string, string | undefined>) {
 export async function request<T>(token: () => Promise<string>, path: string, options: { method?: string; body?: unknown; key?: string; signal?: AbortSignal } = {}): Promise<T> {
   const bearer = await token();
   // These routes allow a bounded chain of 5s owner calls, including cold identity lookup.
-  const delegated = ["/customers", "/accounts", "/cards", "/card-authorizations", "/card-merchants", "/statements", "/admin/reports", "/admin/ledger"].some(prefix => path === prefix || path.startsWith(prefix + "/") || path.startsWith(prefix + "?"));
+  const delegated = ["/customers", "/accounts", "/cards", "/card-authorizations", "/card-merchants", "/statements", "/admin/reports", "/admin/ledger", "/admin/accounts"].some(prefix => path === prefix || path.startsWith(prefix + "/") || path.startsWith(prefix + "?"));
   const signals = [AbortSignal.timeout(delegated ? 25_000 : 15_000), ...(options.signal ? [options.signal] : [])];
   let response: Response;
   try {
