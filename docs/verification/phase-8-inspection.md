@@ -1,6 +1,6 @@
 # Phase 8 lot 2 — business inspection
 
-Date: 2026-11-04 UTC. **Lot 2 is accepted on the feature branch; main integration is pending. Phase 8 remains in progress.** Application source: `8ac48dc7b055f453cd3496e0f196d02f1b690f4b`; starting main: `93afcc4b9d8874fc697142f203023bda59243457`.
+Date: 2026-11-04 UTC. **Lot 2 is accepted and merged into main; all three main workflows passed. Phase 8 remains in progress.** Application source: `8ac48dc7b055f453cd3496e0f196d02f1b690f4b`; starting main: `93afcc4b9d8874fc697142f203023bda59243457`.
 
 ## Delivered scope
 
@@ -49,3 +49,15 @@ All three runs use `8ac48dc7b055f453cd3496e0f196d02f1b690f4b`:
 | [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41813946802) | Passed |
 
 Generated secrets, tokens, raw logs and authenticated screenshots are excluded from public evidence. All commits represent implementation, tests or measured documentation; no empty/artificial contribution commits were created.
+
+## Main integration
+
+Merged as `7c30c61dcc9fbfaae7d01f05c7b9cec36613798f`. The application is identical to tested source `8ac48dc7b055f453cd3496e0f196d02f1b690f4b`; intervening feature changes and this proof update contain documentation only. Independent main checks passed:
+
+| Workflow | Main result |
+| --- | --- |
+| [Frontend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41815700144) | 34 passed; types, lint, builds and high-severity audit gate passed |
+| [Backend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41815700231) | 220 passed; zero failure/error/skip |
+| [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41815700175) | 10 journeys; fresh Compose, direct auth, Ledger, ACL/DLQ/replay passed |
+
+GitHub associates the seven cohesive feature commits and merge with `ABDOUUisHERE`. During a reported [GitHub Git Operations incident](https://www.githubstatus.com/incidents/smtdswd1h2w4), GitHub returned HTTP 500 push rejections; subsequent main and feature pushes succeeded. No force push or history rewrite was used. The final documentation proof commit does not alter the tested application.
