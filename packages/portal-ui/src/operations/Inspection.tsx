@@ -5,15 +5,16 @@ import { request, uuid } from "../banking/api";
 import { Failure, Loading } from "../banking/Common";
 import "./operations.css";
 
-type Kind = "Customer" | "Payment" | "Journal";
+type Kind = "Customer" | "Account" | "Payment" | "Journal";
 type Customer = { customerId: string; status: string; profileVersion: string; createdAt: string; observedAt: string };
+type AccountStatus = { accountId: string; customerId: string; currency: string; recordedStatus: string; accountVersion: string; pendingStatus: string | null; lastGuardError: string | null; recordedGuardRevision: string; accountObservedAt: string; ledgerState: "OBSERVED" | "NOT_LINKED" | "UNAVAILABLE"; ledger: { status: string; guardRevision: string; observedAt: string } | null };
 type Transition = { version: string; from: string | null; to: string; reason: string | null; occurredAt: string };
 type Payment = { paymentId: string; kind: string; status: string; version: string; terminalCode: string | null; journalId: string | null; originalPaymentId: string | null; createdAt: string; observedAt: string; history: Transition[]; nextCursor: string | null };
 type Journal = { journalId: string; operationId: string; currency: string; total: string; reversalOf: string | null; createdAt: string; observedAt: string; source: string; entries: { accountId: string; side: string; amount: string }[] };
 
 export function Inspection() {
   const session = useSession();
-  const kinds: Kind[] = [...(session.roles.includes("ADMIN") ? ["Customer", "Payment"] as const : []), ...(session.roles.includes("FINANCE_OPERATOR") ? ["Journal"] as const : [])];
+  const kinds: Kind[] = [...(session.roles.includes("ADMIN") ? ["Customer", "Account", "Payment"] as const : []), ...(session.roles.includes("FINANCE_OPERATOR") ? ["Journal"] as const : [])];
   if (session.status !== "authenticated" || !kinds.length) return <div className="status-panel" role="alert">Inspection access is required</div>;
   return <Lookup key={session.username + kinds.join()} kinds={kinds} />;
 }
@@ -31,7 +32,7 @@ function Lookup({ kinds }: { kinds: Kind[] }) {
       </form>{error && <p role="alert">{error}</p>}
       <p>{kind === "Journal" ? "Journal postings require the finance role. Amounts include their currency." : "Operational status excludes personal profile details and payment amounts."}</p>
     </section>
-    {target && (target.kind === "Customer" ? <CustomerResult key={target.id} id={target.id} /> : target.kind === "Payment" ? <PaymentResult key={target.id} id={target.id} /> : <JournalResult key={target.id} id={target.id} />)}
+    {target && (target.kind === "Customer" ? <CustomerResult key={target.id} id={target.id} /> : target.kind === "Account" ? <AccountResult key={target.id} id={target.id} /> : target.kind === "Payment" ? <PaymentResult key={target.id} id={target.id} /> : <JournalResult key={target.id} id={target.id} />)}
   </div>;
 }
 function CustomerResult({ id }: { id: string }) {
@@ -40,6 +41,17 @@ function CustomerResult({ id }: { id: string }) {
   return <section className="surface bank-panel" aria-label="Inspected customer"><h3>Customer status</h3><Failure error={query.error} retry={() => void query.refetch()} />{query.isPending ? <Loading /> : query.data && <>
     <dl className="bank-facts"><dt>Customer reference</dt><dd><code>{query.data.customerId}</code></dd><dt>Onboarding status</dt><dd>{query.data.status}</dd><dt>Profile version</dt><dd>{query.data.profileVersion}</dd><dt>Created</dt><dd>{date(query.data.createdAt)}</dd><dt>Observed</dt><dd>{date(query.data.observedAt)}</dd></dl>
     <button className="button secondary" disabled={query.isFetching} onClick={() => void query.refetch()}>Refresh customer</button></>}
+  </section>;
+}
+function AccountResult({ id }: { id: string }) {
+  const session = useSession();
+  const query = useQuery({ queryKey: ["inspection", session.username, "account", id], queryFn: ({ signal }) => request<AccountStatus>(session.token, "/admin/accounts/" + id, { signal }), retry: false });
+  const a = query.data;
+  return <section className="surface bank-panel" aria-label="Inspected account"><h3>Account status</h3><Failure error={query.error} retry={() => void query.refetch()} />{query.isPending ? <Loading /> : a && !query.error && <>
+    <p>Account and Ledger are observed separately. A pending request or recorded status does not prove the current Ledger state.</p>
+    <dl className="bank-facts"><dt>Account reference</dt><dd><code>{a.accountId}</code></dd><dt>Customer reference</dt><dd><code>{a.customerId}</code></dd><dt>Currency</dt><dd>{a.currency}</dd><dt>Recorded status</dt><dd>{a.recordedStatus}</dd><dt>Account version</dt><dd>{a.accountVersion}</dd><dt>Pending requested status</dt><dd>{a.pendingStatus ?? "None"}</dd><dt>Last restriction result</dt><dd>{a.lastGuardError ?? "No recorded rejection"}</dd><dt>Recorded guard revision</dt><dd>{a.recordedGuardRevision}</dd><dt>Account observed</dt><dd>{date(a.accountObservedAt)}</dd></dl>
+    {a.ledgerState === "OBSERVED" && a.ledger ? <div role="region" aria-label="Observed Ledger status"><h3>Observed Ledger status</h3><dl className="bank-facts"><dt>Effective status</dt><dd>{a.ledger.status}</dd><dt>Guard revision</dt><dd>{a.ledger.guardRevision}</dd><dt>Ledger observed</dt><dd>{date(a.ledger.observedAt)}</dd></dl></div> : <p role="status">{a.ledgerState === "NOT_LINKED" ? "No Ledger link is recorded yet. Provisioning may still be recovering; this does not prove that no Ledger account exists." : "Ledger status is unavailable. The recorded account status is not confirmation of its effective state."}</p>}
+    <button className="button secondary" disabled={query.isFetching} onClick={() => void query.refetch()}>Refresh account</button></>}
   </section>;
 }
 function PaymentResult({ id }: { id: string }) {

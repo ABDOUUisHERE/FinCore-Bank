@@ -44,3 +44,31 @@ it("limits finance to journals and preserves decimal amounts and currency", asyn
   const result = within(await screen.findByRole("region", { name: "Inspected journal" })); expect(await result.findByRole("table")).toHaveTextContent("10.01 MAD");
   expect(fetch.mock.calls[0][0]).toContain("/admin/ledger/journals/" + id); expect(fetch.mock.calls.every(call => call[1].method === "GET")).toBe(true);
 });
+const account = { accountId: id, customerId: id, currency: "MAD", recordedStatus: "GUARD_PENDING", accountVersion: "9007199254740993", pendingStatus: "FROZEN", lastGuardError: null, recordedGuardRevision: "0", accountObservedAt: at, ledgerState: "OBSERVED", ledger: { status: "FROZEN", guardRevision: "9007199254740993", observedAt: at } };
+it("shows recorded intent separately from the observed Ledger guard without mutations", async () => {
+  const fetch = vi.fn().mockImplementation(() => json(account)); vi.stubGlobal("fetch", fetch); open(); await lookup("Account");
+  const result = within(await screen.findByRole("region", { name: "Inspected account" })); await result.findByText("GUARD_PENDING");
+  const effective = within(result.getByRole("region", { name: "Observed Ledger status" })); expect(effective.getByText("FROZEN")).toBeVisible(); expect(effective.getByText("9007199254740993")).toBeVisible();
+  expect(fetch.mock.calls[0][0]).toContain("/admin/accounts/" + id); expect(fetch.mock.calls[0][1].method).toBe("GET");
+});
+it("removes the previous effective state when a refresh reports Ledger unavailable and recovers on retry", async () => {
+  let calls = 0;
+  const fetch = vi.fn().mockImplementation(() => json(++calls === 2 ? { ...account, ledgerState: "UNAVAILABLE", ledger: null } : account)); vi.stubGlobal("fetch", fetch); open(); await lookup("Account");
+  await screen.findByRole("region", { name: "Observed Ledger status" }); await userEvent.click(screen.getByRole("button", { name: "Refresh account" }));
+  await screen.findByText("Ledger status is unavailable. The recorded account status is not confirmation of its effective state.");
+  expect(screen.queryByRole("region", { name: "Observed Ledger status" })).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Refresh account" })); await screen.findByRole("region", { name: "Observed Ledger status" }); expect(fetch).toHaveBeenCalledTimes(3);
+});
+it("does not infer absence of a Ledger account from an unrecorded provisioning link", async () => {
+  vi.stubGlobal("fetch", vi.fn().mockImplementation(() => json({ ...account, recordedStatus: "PROVISIONING", pendingStatus: null, ledgerState: "NOT_LINKED", ledger: null }))); open(); await lookup("Account");
+  await screen.findByText("No Ledger link is recorded yet. Provisioning may still be recovering; this does not prove that no Ledger account exists.");
+  expect(screen.queryByRole("region", { name: "Observed Ledger status" })).not.toBeInTheDocument();
+});
+it("hides cached effective state after a failed refresh until a successful retry", async () => {
+  let calls = 0;
+  vi.stubGlobal("fetch", vi.fn().mockImplementation(() => ++calls === 2 ? Promise.resolve(new Response(JSON.stringify({ code: "INVALID_ACCOUNT_STATUS_SOURCE" }), { status: 503 })) : json(account)));
+  open(); await lookup("Account"); await screen.findByRole("region", { name: "Observed Ledger status" });
+  await userEvent.click(screen.getByRole("button", { name: "Refresh account" })); await screen.findByRole("alert");
+  expect(screen.queryByRole("region", { name: "Observed Ledger status" })).not.toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Try again" })); await screen.findByRole("region", { name: "Observed Ledger status" });
+});

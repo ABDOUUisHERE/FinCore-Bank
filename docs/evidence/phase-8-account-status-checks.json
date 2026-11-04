@@ -1,0 +1,141 @@
+{
+  "date": "2026-11-04",
+  "lot": "Phase 8 lot 3: account status inspection",
+  "base": "29cb2b871280cc59afc6764dfc14138be6e4d7e6",
+  "applicationSource": "ae0fb2a47f52172fdce07894c04b0c242cf9fafc",
+  "branch": "feature/fincore-account-status-inspection",
+  "acceptance": "feature validated; main integration pending",
+  "featureCi": [
+    {
+      "id": 41868046124,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "ae0fb2a47f52172fdce07894c04b0c242cf9fafc",
+      "head_branch": "feature/fincore-account-status-inspection",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41868046124",
+      "created_at": "2026-11-04T16:31:15Z",
+      "updated_at": "2026-11-04T16:34:10Z",
+      "jobs": [
+        {
+          "id": 126707302885,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41868046124/job/126707302885"
+        }
+      ]
+    },
+    {
+      "id": 41868045913,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "ae0fb2a47f52172fdce07894c04b0c242cf9fafc",
+      "head_branch": "feature/fincore-account-status-inspection",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41868045913",
+      "created_at": "2026-11-04T16:31:15Z",
+      "updated_at": "2026-11-04T16:35:14Z",
+      "jobs": [
+        {
+          "id": 126707302175,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41868045913/job/126707302175"
+        }
+      ]
+    },
+    {
+      "id": 41868045937,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "ae0fb2a47f52172fdce07894c04b0c242cf9fafc",
+      "head_branch": "feature/fincore-account-status-inspection",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41868045937",
+      "created_at": "2026-11-04T16:31:15Z",
+      "updated_at": "2026-11-04T16:42:42Z",
+      "jobs": [
+        {
+          "id": 126708019790,
+          "name": "compose",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41868045937/job/126708019790"
+        }
+      ]
+    }
+  ],
+  "results": {
+    "fullBackend": {
+      "passed": 231,
+      "classes": 45,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frontend": {
+      "passed": 38,
+      "files": 8,
+      "typecheck": "passed",
+      "lint": "passed",
+      "productionBuilds": 2
+    },
+    "fullBrowserJourneys": 10,
+    "nativeFocusedJava": {
+      "uniquePassed": 88,
+      "classes": 13,
+      "modules": {
+        "gateway": 11,
+        "ledger": 61,
+        "account": 16
+      },
+      "basis": "Latest successful class result across two focused runs; initial reactor failed and is not relabeled successful"
+    },
+    "nativeOriginalBrowserJourneys": 1,
+    "nativeFinalFixture": "original, unmodified",
+    "nativeRealLedgerOutageRestored": true,
+    "nativeHealthyRuntimes": 16,
+    "nativeCredentialsPreserved": true,
+    "nativeResponsiveWidths": [
+      1440,
+      390,
+      320
+    ],
+    "productionDependencyAdvisories": 0,
+    "developmentModerateAdvisories": 11,
+    "contractPaths": 4,
+    "resolvedContractReferences": 33
+  },
+  "observations": [
+    "Initial native Maven invocation selected Java 11 via JAVA_HOME; later runs select installed Java 21 for the task process only.",
+    "New Ledger test helper dependency was replaced with existing module RSA helpers before acceptance.",
+    "Account mock re-stubbing initially invoked the previous exception; doThrow isolates successive upstream failures, and focused Account verify passes.",
+    "Two local frontend attempts timed out in the existing incident-remount case during image builds; unchanged idle suite and exact-source CI pass all 38 cases.",
+    "First native browser run failed in the existing funding fixture before account inspection. Later read-only probe found funding COMPLETED/POSTED. Cause remains unestablished; no funding fix claimed.",
+    "Private diagnostic rerun and final original unmodified fixture both pass. Temporary instrumentation removed; failed attempts not counted as passes.",
+    "Only Account, Ledger, Gateway and Admin runtimes replaced; selected FinCore Ledger alone stopped/restored for outage assertions. Volumes and unrelated projects retained."
+  ],
+  "semantics": {
+    "consistency": "Separate sequential Account and Ledger observations; no atomic distributed snapshot or freshness SLA",
+    "notLinked": "No recorded Ledger link while provisioning; does not prove absence of a remotely created account",
+    "unavailable": "Recorded intent retained, null effective observation; no assertion that intent equals effective state",
+    "invalidSource": "503 INVALID_ACCOUNT_STATUS_SOURCE; no fabricated effective state",
+    "mutation": "Inspection triggers no provisioning, recovery, acknowledgement, reconciliation or event publication"
+  },
+  "remaining": [
+    "customer/name search",
+    "scoped support business grants",
+    "complete critical-action/security/read audit",
+    "distributed tracing",
+    "six Grafana dashboards",
+    "Phase 9 Kubernetes and later roadmap"
+  ],
+  "publicArtifactsExclude": [
+    "credentials",
+    "tokens",
+    "raw logs",
+    "authenticated screenshots"
+  ]
+}

@@ -71,6 +71,15 @@ class LedgerDatabaseIT {
     static long count(String table) { return runtime.queryForObject("select count(*) from ledger." + table, Long.class); }
     static void cleanReconciliation() { assertThat(store.reconcile().get("balanceDiscrepancies")).isEmpty(); assertThat(store.reconcile().get("invalidJournals")).isEmpty(); }
 
+    @Test void operationalStatusIsExactGuardMetadataAndCannotChangeMoney(){
+        var id=customer();fund(id,"10.01");var journals=count("journal");var postings=count("posting");
+        var initial=store.operationalStatus(id);assertThat(initial.path("status").asText()).isEqualTo("ACTIVE");assertThat(initial.path("guardRevision").asText()).isEqualTo("0");
+        store.guard(id,"FROZEN",0);var frozen=store.operationalStatus(id);
+        assertThat(frozen.path("status").asText()).isEqualTo("FROZEN");assertThat(frozen.path("guardRevision").asText()).isEqualTo("1");assertThat(frozen.path("observedAt").isTextual()).isTrue();
+        assertThat(frozen.toString()).doesNotContain("booked","amount","entries","balance");assertThat(balance(id)).isEqualTo("10.01");assertThat(count("journal")).isEqualTo(journals);assertThat(count("posting")).isEqualTo(postings);
+        assertThatThrownBy(()->store.operationalStatus(UUID.randomUUID())).isInstanceOf(LedgerStore.MissingRecord.class);
+    }
+
     @Test void booksTransfersWithdrawalsMerchantPaymentsAndCompensation() {
         UUID a=customer(),b=customer(),merchant=account("MERCHANT_LIABILITY","MAD",ACTOR),settlement=account("SETTLEMENT_ASSET","MAD",ACTOR);
         assertThat(post("DEPOSIT",settlement,a,"100.00").get("status").asText()).isEqualTo("POSTED");

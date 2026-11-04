@@ -5,11 +5,12 @@ Backend implementation remains Java 21/Spring Boot. This lot implements a delibe
 | Signed role | Available lookup | Excluded data |
 | --- | --- | --- |
 | ADMIN | Customer UUID: onboarding status, profile version and timestamps | Subject, name, country/contact details |
+| ADMIN (lot 3) | Account UUID: recorded intent and separately observed Ledger status/revision | Subject, internal Ledger ID, balance, postings, keys and raw dependency responses |
 | ADMIN | Payment UUID: status/version, structured result/reason codes, journal/original payment references and 50-transition pages | Actor, amounts, currency, account IDs, free reference, idempotency key, instruction/risk/lease details |
 | FINANCE_OPERATOR | Journal UUID: authoritative operation reference, exact decimal debit/credit postings and currency | Customer profile, payment intent, financial mutation |
 | SUPPORT_AGENT, CUSTOMER, FRAUD_ANALYST | No new inspection access | An incident resource UUID is not a business authorization grant |
 
-Multi-role users receive only the union of their explicit roles. ADMIN alone still cannot read journals or reconciliation. Support retains its existing own-incident access. Scoped support grants, customer/name search, account-status inspection, aggregate financial dashboards and reversal workflows are subsequent work.
+Multi-role users receive only the union of their explicit roles. ADMIN alone still cannot read journals or reconciliation. Support retains its existing own-incident access. Scoped support grants, customer/name search, aggregate financial dashboards and reversal workflows are subsequent work. The additive lot 3 account read has its own [upgrade and observation semantics](account-status-phase-8.md).
 
 ## Local upgrade
 
@@ -25,7 +26,7 @@ Retain the existing `.env`, `.local/credentials.json`, realm and volumes. No sch
 
 These upgrade commands assume the existing stack is healthy, including Keycloak/PostgreSQL/Kafka. Fresh installations still use the repository's full bootstrap and default Compose startup. The one-shot identity upgrade must complete successfully before replacing the six affected runtimes.
 
-Staff portal: `http://localhost:5174`, **Inspection**. ADMIN selects Customer or Payment; FINANCE_OPERATOR selects Journal. Enter an exact UUID from an investigation. There is no unrestricted search/list endpoint. The Gateway and destination independently enforce the roles. Reporting delegates journal reads using its own scoped machine identity; Ledger additionally checks the signed `azp=fincore-reporting`. Ledger's general `ledger.read` permission cannot satisfy this report route, and the new scope cannot post, reverse or inspect arbitrary Ledger endpoints.
+Staff portal: `http://localhost:5174`, **Inspection**. ADMIN selects Customer, Account or Payment; FINANCE_OPERATOR selects Journal. Enter an exact UUID from an investigation. There is no unrestricted search/list endpoint. The Gateway and destination independently enforce the roles. Reporting delegates journal reads using its own scoped machine identity; Ledger additionally checks the signed `azp=fincore-reporting`. Ledger's general `ledger.read` permission cannot satisfy this report route, and the new scope cannot post, reverse or inspect arbitrary Ledger endpoints.
 
 ## Observations and consistency
 
@@ -35,4 +36,4 @@ Journal reads use immutable authoritative Ledger postings and preserve decimal s
 
 The response `X-Correlation-ID` identifies the current HTTP request. Payment does not store historic request correlation IDs in its status table, so the inspection does not invent a historical correlation timeline. Existing retained domain facts remain available through Audit. Inspection reads do not yet generate new audit events; complete sensitive-read/security auditing belongs to the remaining Phase 8 audit work.
 
-The [OpenAPI contract](../../contracts/openapi/inspection-v1.yaml) documents all three routes. [Lot verification](../verification/phase-8-inspection.md) records executed checks and acceptance separately from the earlier Audit/Incidents lot.
+The [OpenAPI contract](../../contracts/openapi/inspection-v1.yaml) now documents four routes, including the additive Account read. [Lot 2 verification](../verification/phase-8-inspection.md) records its original three-route acceptance separately from the earlier Audit/Incidents lot and later [Account verification](../verification/phase-8-account-status.md).

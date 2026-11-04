@@ -1,11 +1,23 @@
 openapi: 3.0.3
 info:
   title: FinCore role-scoped business inspection
-  version: 0.8.1
+  version: 0.8.2
   description: Exact UUID lookup only. Gateway and owning Java services enforce explicit roles. No financial mutation, personal profile search or support business grant is provided.
 servers: [{url: 'http://localhost:8280'}]
 security: [{bearer: []}]
 paths:
+  /api/v1/admin/accounts/{id}:
+    parameters: [{$ref: '#/components/parameters/id'}]
+    get:
+      summary: ADMIN reads recorded account intent and separately observed effective Ledger guard
+      description: No balance, owner subject, Ledger ID or financial command. This GET never provisions or reconciles. NOT_LINKED means no link is recorded, not that no Ledger account exists. Two observations are not an atomic distributed snapshot. An upstream 5xx/transport failure returns explicitly partial UNAVAILABLE with ledger=null; invalid/mismatched source or upstream 401/403/404 returns 503.
+      responses:
+        '200': {description: Complete or explicitly partial observation, content: {application/json: {schema: {$ref: '#/components/schemas/Account'}}}}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/Missing'}
+        '503': {description: Invalid/mismatched/unauthorized upstream status, or Account storage unavailable; no effective state may be inferred}
   /api/v1/admin/customers/{id}:
     parameters: [{$ref: '#/components/parameters/id'}]
     get:
@@ -50,6 +62,31 @@ components:
   parameters:
     id: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
   schemas:
+    Account:
+      type: object
+      additionalProperties: false
+      required: [accountId, customerId, currency, recordedStatus, accountVersion, pendingStatus, lastGuardError, recordedGuardRevision, accountObservedAt, ledgerState, ledger]
+      properties:
+        accountId: {type: string, format: uuid}
+        customerId: {type: string, format: uuid}
+        currency: {type: string, enum: [MAD, EUR, USD]}
+        recordedStatus: {type: string, enum: [PROVISIONING, ACTIVE, GUARD_PENDING, FROZEN, CLOSED]}
+        accountVersion: {$ref: '#/components/schemas/Version'}
+        pendingStatus: {type: string, nullable: true, enum: [ACTIVE, FROZEN, CLOSED, null]}
+        lastGuardError: {type: string, nullable: true, enum: [ACCOUNT_NOT_EMPTY, GUARD_CONFLICT, null]}
+        recordedGuardRevision: {$ref: '#/components/schemas/Version'}
+        accountObservedAt: {type: string, format: date-time, description: Time Account read the recorded intent; separate from Ledger observation}
+        ledgerState: {type: string, enum: [OBSERVED, NOT_LINKED, UNAVAILABLE]}
+        ledger:
+          type: object
+          nullable: true
+          description: Present only for OBSERVED; null for NOT_LINKED or UNAVAILABLE. No cross-observation consistency guarantee.
+          additionalProperties: false
+          required: [status, guardRevision, observedAt]
+          properties:
+            status: {type: string, enum: [ACTIVE, FROZEN, CLOSED]}
+            guardRevision: {$ref: '#/components/schemas/Version'}
+            observedAt: {type: string, format: date-time, description: Ledger database statement observation time}
     Version: {type: string, pattern: '^(0|[1-9][0-9]*)$', description: Decimal bigint without JavaScript precision loss}
     Code: {type: string, nullable: true, pattern: '^[A-Z][A-Z0-9_]{2,79}$'}
     Customer:

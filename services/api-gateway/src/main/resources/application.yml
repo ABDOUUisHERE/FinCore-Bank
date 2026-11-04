@@ -12,6 +12,11 @@ spring:
             connect-timeout: 3000
             response-timeout: 5s
           routes:
+            - id: account-inspection
+              uri: ${ACCOUNT_SERVICE_URL:http://localhost:8083}
+              predicates: ["Path=/api/v1/admin/accounts/*"]
+              metadata:
+                response-timeout: 20000
             - id: customer-inspection
               uri: ${CUSTOMER_SERVICE_URL:http://localhost:8081}
               predicates: ["Path=/api/v1/admin/customers/*"]

@@ -19,6 +19,7 @@ class AccountRecoveryIT {
     @DynamicPropertySource static void properties(DynamicPropertyRegistry values){values.add("spring.datasource.url",()->LAB.url("account"));values.add("spring.datasource.password",()->LAB.password("account","runtime"));}
     @Autowired AccountStore store;
     @Autowired AccountCoordinator coordinator;
+    @Autowired AccountInspection inspection;
     @MockitoBean Remote remote;
     AtomicBoolean lose=new AtomicBoolean();
     @BeforeEach void network(){
@@ -59,6 +60,24 @@ class AccountRecoveryIT {
         assertThatThrownBy(()->store.own(account.id(),"another-subject")).hasMessage("ACCOUNT_NOT_FOUND");assertThat(store.list("another-subject",null)).isEmpty();
         assertThatThrownBy(()->java.sql.DriverManager.getConnection(LAB.url("ledger"),"account_runtime",LAB.password("account","runtime"))).isInstanceOf(java.sql.SQLException.class).hasMessageContaining("permission denied");
         assertThatThrownBy(()->LAB.runtime("account").execute("delete from account_outbox")).hasStackTraceContaining("permission denied");
+    }
+    @Test void inspectionRetainsPendingProjectionWithoutAcknowledgingAnAppliedLedgerGuard(){
+        var actor=UUID.randomUUID().toString();var created=store.create(actor,UUID.randomUUID(),"MAD",UUID.randomUUID().toString());coordinator.sync(created);var active=store.get(created.id());
+        var pending=store.guard(active.id(),actor,"FROZEN",active.version());
+        LAB.runtime("ledger").queryForObject("select ledger.set_guard(?,'FROZEN',0)::text",String.class,active.ledgerId());
+        var outbox=LAB.runtime("account").queryForObject("select count(*) from account_outbox",Long.class);
+        var source=Json.read(Json.text(Map.of("ledgerAccountId",active.ledgerId(),"externalReference","account:"+active.id(),"ownerSubject",actor,"currency","MAD","type","CUSTOMER_LIABILITY","status","FROZEN","guardRevision","1","observedAt",java.time.Instant.now().toString())));
+        doReturn(source).when(remote).call(eq("GET"),org.mockito.ArgumentMatchers.endsWith("/operational-status"),anyString(),isNull());
+        var result=inspection.inspect(active.id());assertThat(result.recordedStatus()).isEqualTo("GUARD_PENDING");assertThat(result.pendingStatus()).isEqualTo("FROZEN");assertThat(result.recordedGuardRevision()).isEqualTo("0");assertThat(result.ledger().status()).isEqualTo("FROZEN");assertThat(result.ledger().guardRevision()).isEqualTo("1");
+        assertThat(store.get(active.id())).isEqualTo(pending);assertThat(LAB.runtime("account").queryForObject("select count(*) from account_outbox",Long.class)).isEqualTo(outbox);
+        coordinator.sync(pending); // Explicit fixture recovery; the inspection itself did not recover it.
+    }
+    @Test void inspectionOfLostProvisioningResponseDoesNotInventAbsenceOrCreateAnotherAccount(){
+        var created=store.create(UUID.randomUUID().toString(),UUID.randomUUID(),"EUR",UUID.randomUUID().toString());lose.set(true);assertThatThrownBy(()->coordinator.sync(created)).hasMessage("DEPENDENCY_UNAVAILABLE");
+        var before=LAB.runtime("ledger").queryForObject("select count(*) from ledger.account where external_reference=?",Long.class,"account:"+created.id());
+        var result=inspection.inspect(created.id());assertThat(result.ledgerState()).isEqualTo("NOT_LINKED");assertThat(result.ledger()).isNull();assertThat(store.get(created.id())).isEqualTo(created);
+        assertThat(before).isEqualTo(1);assertThat(LAB.runtime("ledger").queryForObject("select count(*) from ledger.account where external_reference=?",Long.class,"account:"+created.id())).isEqualTo(before);
+        coordinator.sync(created);
     }
     @AfterAll static void close(){LAB.close();}
 }
