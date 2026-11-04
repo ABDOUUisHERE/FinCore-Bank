@@ -11,6 +11,9 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 import static org.assertj.core.api.Assertions.*;
+import com.fincore.customer.adapter.in.web.CustomerInspectionController;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 @Testcontainers
 class DatabaseIsolationIT {
@@ -22,6 +25,22 @@ class DatabaseIsolationIT {
         .withEnv("CUSTOMER_MIGRATION_PASSWORD", PASSWORD)
         .withEnv("KEYCLOAK_DB_PASSWORD", UUID.randomUUID().toString())
         .withCopyFileToContainer(MountableFile.forHostPath(Path.of("../../infrastructure/docker/postgres/init-databases.sh").toAbsolutePath().normalize().toString(), 0744), "/docker-entrypoint-initdb.d/10-databases.sh");
+
+    @Test void statusInspectionUsesRuntimePrivilegesAndDoesNotChangeProfileOrOutbox() {
+        String url=POSTGRES.getJdbcUrl().replace("/bootstrap", "/customer");
+        Flyway.configure().dataSource(url,"customer_migrator",PASSWORD).load().migrate();
+        var db=new JdbcTemplate(new DriverManagerDataSource(url,"customer_runtime",PASSWORD));
+        var id=UUID.randomUUID();
+        db.update("insert into customer_profile(id,subject,display_name,country_code,version) values(?,?,'Private canary','MA',9007199254740993)",id,"private-"+id);
+        var count=db.queryForObject("select count(*) from customer_outbox",Long.class);
+        var result=new CustomerInspectionController.Inspection(db).get(id);
+        assertThat(result.customerId()).isEqualTo(id);assertThat(result.status()).isEqualTo("ACTIVE");
+        assertThat(result.profileVersion()).isEqualTo("9007199254740993");
+        assertThat(result.toString()).doesNotContain("Private canary","private-","MA");
+        assertThat(db.queryForObject("select count(*) from customer_outbox",Long.class)).isEqualTo(count);
+        assertThatThrownBy(()->new CustomerInspectionController.Inspection(db).get(UUID.randomUUID()))
+            .isInstanceOf(org.springframework.web.server.ResponseStatusException.class).hasMessageContaining("CUSTOMER_NOT_FOUND");
+    }
 
     @Test void migrationAndRuntimePrivilegesAreSeparated() throws Exception {
         String url = POSTGRES.getJdbcUrl().replace("/bootstrap", "/customer");

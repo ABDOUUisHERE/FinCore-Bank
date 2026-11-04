@@ -14,6 +14,19 @@ public class PaymentStore {
     private final JdbcTemplate jdbc;
     private static final RowMapper<JsonNode> ROW=(rs,n)->Json.read(rs.getString(1));
     public PaymentStore(JdbcTemplate jdbc){this.jdbc=jdbc;}
+    /** One repeatable snapshot per page; no actor, free text, amounts or instruction/lease data. */
+    @Transactional(readOnly=true,isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+    public JsonNode inspection(UUID id,Long beforeVersion){
+        if(beforeVersion!=null && beforeVersion<1)throw new ApiFailure(400,"INVALID_HISTORY_CURSOR");
+        jdbc.execute("set local statement_timeout='4s'");
+        var rows=jdbc.query("select jsonb_build_object('paymentId',id,'kind',kind,'status',status,'version',version::text,'terminalCode',case when terminal_code ~ '^[A-Z][A-Z0-9_]{2,79}$' then terminal_code end,'journalId',journal_id,'originalPaymentId',original_payment_id,'createdAt',created_at,'observedAt',statement_timestamp())::text from payment where id=?",ROW,id);
+        if(rows.isEmpty())throw new ApiFailure(404,"PAYMENT_NOT_FOUND");
+        var history=jdbc.query("select jsonb_build_object('version',version::text,'from',old_status,'to',new_status,'reason',case when reason ~ '^[A-Z][A-Z0-9_]{2,79}$' then reason end,'occurredAt',occurred_at)::text from payment_status_history where payment_id=? and (?::bigint is null or version<?) order by version desc limit 51",ROW,id,beforeVersion,beforeVersion);
+        var result=(com.fasterxml.jackson.databind.node.ObjectNode)rows.getFirst();
+        result.set("history",Json.read(Json.text(history.stream().limit(50).toList())));
+        if(history.size()>50)result.put("nextCursor",history.get(49).path("version").asText());else result.putNull("nextCursor");
+        return result;
+    }
     public JsonNode get(UUID id){var values=jdbc.query("select to_jsonb(p)::text from payment p where id=?",ROW,id);if(values.isEmpty())throw new ApiFailure(404,"PAYMENT_NOT_FOUND");return values.getFirst();}
     public JsonNode own(UUID id,String actor){var payment=get(id);if(!payment.path("actor").asText().equals(actor))throw new ApiFailure(404,"PAYMENT_NOT_FOUND");return payment;}
     public boolean exists(UUID id){return Boolean.TRUE.equals(jdbc.queryForObject("select exists(select from payment where id=?)",Boolean.class,id));}
