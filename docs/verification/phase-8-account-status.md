@@ -1,6 +1,6 @@
 # Phase 8 lot 3 — account status inspection
 
-Date: 2026-11-04 UTC. **Feature validation passed; main integration is pending. Phase 8 remains in progress.** Application/test source: `ae0fb2a47f52172fdce07894c04b0c242cf9fafc`; starting main: `29cb2b871280cc59afc6764dfc14138be6e4d7e6`.
+Date: 2026-11-04 UTC. **Lot 3 is accepted and merged into main; all three main workflows passed. Phase 8 remains in progress.** Application/test source: `ae0fb2a47f52172fdce07894c04b0c242cf9fafc`; starting main: `29cb2b871280cc59afc6764dfc14138be6e4d7e6`.
 
 ## Delivered scope
 
@@ -59,4 +59,12 @@ Generated secrets, tokens, raw logs and authenticated screenshots are excluded f
 
 ## Main integration
 
-Pending merge and independent workflows on the merge SHA. This section and the evidence JSON will record those observed results after completion; feature success alone is not main acceptance.
+Merged as `0d1e89e3060cea2548516c1e797b1739675229e2`. Application and tests are identical to feature-tested source `ae0fb2a47f52172fdce07894c04b0c242cf9fafc`; the intervening feature acceptance commit and this final proof update contain documentation only. Independent main checks passed:
+
+| Workflow | Main result |
+| --- | --- |
+| [Backend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41873406336) | 231 passed; zero failure/error/skip |
+| [Frontend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41873406454) | 38 passed; types, lint, both builds and high-severity audit gate passed |
+| [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41873406506) | 10 journeys; fresh Compose, direct auth, Ledger, ACL/DLQ/replay passed |
+
+The branch contains six cohesive scope, implementation, test and verification commits. Main retains their history through a merge commit; this final documentation proof does not alter the tested application. No force push or history rewrite was used.

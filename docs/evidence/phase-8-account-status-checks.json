@@ -4,7 +4,7 @@
   "base": "29cb2b871280cc59afc6764dfc14138be6e4d7e6",
   "applicationSource": "ae0fb2a47f52172fdce07894c04b0c242cf9fafc",
   "branch": "feature/fincore-account-status-inspection",
-  "acceptance": "feature validated; main integration pending",
+  "acceptance": "accepted and merged into main; three independent main workflows passed",
   "featureCi": [
     {
       "id": 41868046124,
@@ -137,5 +137,78 @@
     "tokens",
     "raw logs",
     "authenticated screenshots"
-  ]
+  ],
+  "merge": "0d1e89e3060cea2548516c1e797b1739675229e2",
+  "mainCi": [
+    {
+      "id": 41873406506,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "0d1e89e3060cea2548516c1e797b1739675229e2",
+      "head_branch": "main",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41873406506",
+      "created_at": "2026-11-04T17:01:32Z",
+      "updated_at": "2026-11-04T17:14:29Z",
+      "jobs": [
+        {
+          "id": 126726298479,
+          "name": "compose",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41873406506/job/126726298479"
+        }
+      ]
+    },
+    {
+      "id": 41873406454,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "0d1e89e3060cea2548516c1e797b1739675229e2",
+      "head_branch": "main",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41873406454",
+      "created_at": "2026-11-04T17:01:32Z",
+      "updated_at": "2026-11-04T17:02:36Z",
+      "jobs": [
+        {
+          "id": 126726298020,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41873406454/job/126726298020"
+        }
+      ]
+    },
+    {
+      "id": 41873406336,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "0d1e89e3060cea2548516c1e797b1739675229e2",
+      "head_branch": "main",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41873406336",
+      "created_at": "2026-11-04T17:01:32Z",
+      "updated_at": "2026-11-04T17:04:29Z",
+      "jobs": [
+        {
+          "id": 126726299471,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41873406336/job/126726299471"
+        }
+      ]
+    }
+  ],
+  "mainResults": {
+    "backendPassed": 231,
+    "backendClasses": 45,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "frontendPassed": 38,
+    "fullBrowserJourneys": 10,
+    "applicationIdenticalToFeatureSource": true
+  }
 }

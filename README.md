@@ -2,7 +2,7 @@
 
 Distributed digital banking and payment processing **simulation**, using synthetic customers and simulated money exclusively.
 
-**Status: Phase 8 in progress — Audit/Incidents and exact-reference business inspection accepted; account-status inspection validated on its feature branch.** The connected customer workspace now supports synthetic cards, merchant authorization with explainable Fraud review, Ledger-owned holds, full capture/release/refund and immutable monthly CSV/PDF statements. Finance reconciliation requires an explicit role. Existing account, transfer, notification and analyst journeys remain covered. See the [Phase 7 verification report](docs/verification/phase-7.md), [Card/Reporting demo and upgrade](docs/deployment/cards-phase-7.md) and [customer demo](docs/deployment/customer-demo.md).
+**Status: Phase 8 in progress — Audit/Incidents, exact-reference business inspection and account-status inspection lots accepted.** The connected customer workspace now supports synthetic cards, merchant authorization with explainable Fraud review, Ledger-owned holds, full capture/release/refund and immutable monthly CSV/PDF statements. Finance reconciliation requires an explicit role. Existing account, transfer, notification and analyst journeys remain covered. See the [Phase 7 verification report](docs/verification/phase-7.md), [Card/Reporting demo and upgrade](docs/deployment/cards-phase-7.md) and [customer demo](docs/deployment/customer-demo.md).
 
 GitHub's canonical repository is `ABDOUUisHERE/FinCore-Bank`. Local Docker validation is recorded in the [workstation verification report](docs/verification/local-docker-2026-10-23.md).
 

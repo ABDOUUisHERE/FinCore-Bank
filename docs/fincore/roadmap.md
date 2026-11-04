@@ -1,6 +1,6 @@
 # Prioritized implementation roadmap
 
-Implementation checkpoint: Phase 7 cards, reservations and statements passed acceptance; see the [verification report](../verification/phase-7.md). Phase 8 is the next milestone and has not started.
+Implementation checkpoint: Phase 7 passed acceptance. Phase 8 is in progress: [Audit/Incidents](../verification/phase-8.md), [customer/payment/journal inspection](../verification/phase-8-inspection.md) and [account-status inspection](../verification/phase-8-account-status.md) are accepted on main. Remaining Phase 8 work includes customer/name search, scoped support business grants, complete critical-action/security/read audit, distributed tracing and six dashboards. Phases 9–11 remain subsequent milestones; existing multi-stage images and CI are partial prerequisites, not deployment-hardening acceptance.
 
 The original proposal and acceptance gates are preserved below. Status of the original proposal: approved before implementation. Architecture approval precedes all application code. Each milestone must explain its file/module changes before work, remain runnable, report actual commands/results, and document remaining limitations. No milestone is done solely because a container starts.
 
