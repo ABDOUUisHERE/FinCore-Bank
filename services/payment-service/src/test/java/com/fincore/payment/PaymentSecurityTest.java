@@ -22,6 +22,20 @@ class PaymentSecurityTest {
     @MockitoBean PaymentStore store;
     @MockitoBean PaymentCoordinator coordinator;
     @MockitoBean Remote remote;
+    @Test void operationalStatusIsAnAdminOnlyReadAndHasNoImplicitCustomerOrTechnicalScope()throws Exception{
+        var id=UUID.randomUUID();var path="/api/v1/admin/transactions/"+id;
+        http.perform(get(path)).andExpect(status().isUnauthorized());
+        for(String role:List.of("CUSTOMER","SUPPORT_AGENT","FRAUD_ANALYST","FINANCE_OPERATOR"))http.perform(get(path).header("Authorization","Bearer "+SignedTokens.token("fincore-api","staff","browser",List.of(role),Map.of()))).andExpect(status().isForbidden());
+        var machine=SignedTokens.token("payment-service","operator","fincore-payment-operator",List.of(),Map.of("payment-service",Map.of("roles",List.of("payment.inspect"))));
+        http.perform(get(path).header("Authorization","Bearer "+machine)).andExpect(status().isForbidden());
+        var admin=SignedTokens.token("fincore-api","admin","browser",List.of("ADMIN"),Map.of());
+        http.perform(post(path).header("Authorization","Bearer "+admin).contentType("application/json").content("{}")).andExpect(status().isForbidden());
+        http.perform(get("/api/v1/admin/transactions").header("Authorization","Bearer "+admin)).andExpect(status().isForbidden());
+        verifyNoInteractions(store,coordinator);
+        when(store.inspection(id,7L)).thenReturn(Json.read("{\"paymentId\":\""+id+"\",\"history\":[],\"nextCursor\":null}"));
+        http.perform(get(path+"?beforeVersion=7").header("Authorization","Bearer "+admin).header("X-User-ID","forged"))
+            .andExpect(status().isOk()).andExpect(jsonPath("$.paymentId").value(id.toString()));verify(store).inspection(id,7L);
+    }
     @Test void onlyNarrowRiskReaderCanInspectCanonicalActorContext()throws Exception{
         var id=UUID.randomUUID();when(store.riskContext(id)).thenReturn(Map.of("paymentId",id,"actor","verified-owner","fingerprint","f".repeat(64)));
         http.perform(get("/internal/v1/payments/"+id+"/risk-context").header("Authorization","Bearer "+SignedTokens.customer())).andExpect(status().isForbidden());

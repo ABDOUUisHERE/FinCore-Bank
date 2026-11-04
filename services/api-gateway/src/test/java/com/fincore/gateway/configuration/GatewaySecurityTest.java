@@ -32,6 +32,7 @@ class GatewaySecurityTest {
 
     @RestController
     static class Endpoint {
+        @GetMapping({"/api/v1/admin/customers/test","/api/v1/admin/transactions/test","/api/v1/admin/ledger/journals/test"}) Map<String,Object> inspection(){return Map.of("status","synthetic");}
         @GetMapping({"/api/v1/admin/audit/records","/api/v1/admin/audit/summary","/api/v1/admin/audit/quarantine","/api/v1/admin/incidents","/api/v1/admin/operations/me"}) Map<String,Object> operations(){return Map.of("items",List.of());}
         @GetMapping("/api/v1/admin/fraud-cases") Map<String,Object> fraud(){return Map.of("items",List.of());}
         @GetMapping("/api/v1/customers/me")
@@ -45,6 +46,16 @@ class GatewaySecurityTest {
         http.get().uri("/api/v1/customers/me").exchange().expectStatus().isUnauthorized()
             .expectHeader().contentType("application/problem+json").expectHeader().exists("X-Correlation-ID");
         get("not-a-token").expectStatus().isUnauthorized();
+    }
+    @Test void inspectionHasSeparateOperationalAndFinancialReadPermissions() {
+        for(String role:List.of("ADMIN","FINANCE_OPERATOR","SUPPORT_AGENT","FRAUD_ANALYST","CUSTOMER")) {
+            String token=TestTokens.token(TestTokens.ISSUER,"fincore-api",List.of(role),Instant.now().plusSeconds(120));
+            for(String path:List.of("/api/v1/admin/customers/test","/api/v1/admin/transactions/test","/api/v1/admin/ledger/journals/test")) {
+                boolean allowed=path.contains("/ledger/")?role.equals("FINANCE_OPERATOR"):role.equals("ADMIN");
+                var response=http.get().uri(path).headers(h->h.setBearerAuth(token)).exchange();if(allowed)response.expectStatus().isOk();else response.expectStatus().isForbidden();
+                http.post().uri(path).headers(h->h.setBearerAuth(token)).exchange().expectStatus().isForbidden();
+            }
+        }
     }
     @Test void investigationRoutesRequireFraudAnalystRatherThanImplicitAdmin() {
         for(var role:List.of("CUSTOMER","ADMIN"))http.get().uri("/api/v1/admin/fraud-cases").headers(h->h.setBearerAuth(TestTokens.token(TestTokens.ISSUER,"fincore-api",List.of(role),Instant.now().plusSeconds(120)))).exchange().expectStatus().isForbidden();

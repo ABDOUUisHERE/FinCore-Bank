@@ -55,6 +55,7 @@ public class SecurityConfiguration {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/admin/customers/*").hasRole("ADMIN")
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/internal/v1/customers/risk-context").hasAuthority("customer.risk.read")
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me").hasRole("CUSTOMER")
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/customers/me/profile").hasRole("CUSTOMER")

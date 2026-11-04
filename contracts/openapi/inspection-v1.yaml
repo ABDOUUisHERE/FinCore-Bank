@@ -1,0 +1,119 @@
+openapi: 3.0.3
+info:
+  title: FinCore role-scoped business inspection
+  version: 0.8.1
+  description: Exact UUID lookup only. Gateway and owning Java services enforce explicit roles. No financial mutation, personal profile search or support business grant is provided.
+servers: [{url: 'http://localhost:8280'}]
+security: [{bearer: []}]
+paths:
+  /api/v1/admin/customers/{id}:
+    parameters: [{$ref: '#/components/parameters/id'}]
+    get:
+      summary: ADMIN reads operational onboarding status, excluding name, subject and country
+      responses:
+        '200': {description: Current customer status, content: {application/json: {schema: {$ref: '#/components/schemas/Customer'}}}}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/Missing'}
+  /api/v1/admin/transactions/{id}:
+    parameters: [{$ref: '#/components/parameters/id'}]
+    get:
+      summary: ADMIN reads payment state and a bounded processing history
+      description: Each page is one repeatable database snapshot. No cross-page snapshot guarantee. Actor, amount, currency, account IDs, reference, key, instructions, risk and worker internals are excluded. Only syntactically structured reason/result codes are returned.
+      parameters:
+        - name: beforeVersion
+          in: query
+          description: Exclusive version from nextCursor. Keep as a decimal string in JavaScript.
+          schema: {type: integer, format: int64, minimum: 1}
+      responses:
+        '200': {description: Payment status and up to 50 transitions, content: {application/json: {schema: {$ref: '#/components/schemas/Payment'}}}}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/Missing'}
+  /api/v1/admin/ledger/journals/{id}:
+    parameters: [{$ref: '#/components/parameters/id'}]
+    get:
+      summary: FINANCE_OPERATOR reads an authoritative immutable posted journal
+      description: ADMIN alone is forbidden. Reporting uses its machine credential with ledger.journal.read; Ledger additionally requires azp=fincore-reporting. No browser Ledger audience or technical write scope is added.
+      responses:
+        '200': {description: Journal and exact decimal debit/credit postings, content: {application/json: {schema: {$ref: '#/components/schemas/Journal'}}}}
+        '400': {$ref: '#/components/responses/Invalid'}
+        '401': {$ref: '#/components/responses/Unauthorized'}
+        '403': {$ref: '#/components/responses/Forbidden'}
+        '404': {$ref: '#/components/responses/Missing'}
+        '503': {description: Authoritative dependency unavailable or mismatched journal/source}
+components:
+  securitySchemes:
+    bearer: {type: http, scheme: bearer, bearerFormat: JWT}
+  parameters:
+    id: {name: id, in: path, required: true, schema: {type: string, format: uuid}}
+  schemas:
+    Version: {type: string, pattern: '^(0|[1-9][0-9]*)$', description: Decimal bigint without JavaScript precision loss}
+    Code: {type: string, nullable: true, pattern: '^[A-Z][A-Z0-9_]{2,79}$'}
+    Customer:
+      type: object
+      additionalProperties: false
+      required: [customerId, status, profileVersion, createdAt, observedAt]
+      properties:
+        customerId: {type: string, format: uuid}
+        status: {type: string, enum: [ACTIVE]}
+        profileVersion: {$ref: '#/components/schemas/Version'}
+        createdAt: {type: string, format: date-time}
+        observedAt: {type: string, format: date-time}
+    Transition:
+      type: object
+      additionalProperties: false
+      required: [version, from, to, reason, occurredAt]
+      properties:
+        version: {$ref: '#/components/schemas/Version'}
+        from: {type: string, nullable: true}
+        to: {type: string}
+        reason: {$ref: '#/components/schemas/Code'}
+        occurredAt: {type: string, format: date-time}
+    Payment:
+      type: object
+      additionalProperties: false
+      required: [paymentId, kind, status, version, terminalCode, journalId, originalPaymentId, createdAt, observedAt, history, nextCursor]
+      properties:
+        paymentId: {type: string, format: uuid}
+        kind: {type: string, enum: [TRANSFER, DEPOSIT, REVERSAL]}
+        status: {type: string, enum: [CREATED, VALIDATING, PENDING_RISK_REVIEW, PROCESSING, COMPLETED, FAILED, REJECTED, REVERSAL_PENDING, REVERSED]}
+        version: {$ref: '#/components/schemas/Version'}
+        terminalCode: {$ref: '#/components/schemas/Code'}
+        journalId: {type: string, format: uuid, nullable: true}
+        originalPaymentId: {type: string, format: uuid, nullable: true}
+        createdAt: {type: string, format: date-time}
+        observedAt: {type: string, format: date-time}
+        history: {type: array, maxItems: 50, items: {$ref: '#/components/schemas/Transition'}}
+        nextCursor: {type: string, nullable: true, pattern: '^[1-9][0-9]*$', description: Exclusive older-page version, or null at the end}
+    Journal:
+      type: object
+      additionalProperties: false
+      required: [journalId, operationId, currency, total, reversalOf, createdAt, entries, source, observedAt]
+      properties:
+        journalId: {type: string, format: uuid}
+        operationId: {type: string, format: uuid}
+        currency: {type: string, enum: [MAD, EUR, USD]}
+        total: {type: string, pattern: '^[0-9]+\.[0-9]{2}$', description: Exact positive total on each side}
+        reversalOf: {type: string, format: uuid, nullable: true}
+        createdAt: {type: string, format: date-time}
+        source: {type: string, enum: [ledger-postings]}
+        observedAt: {type: string, format: date-time, description: Ledger response observation time, not an accounting timestamp}
+        entries:
+          type: array
+          minItems: 2
+          items:
+            type: object
+            additionalProperties: false
+            required: [accountId, side, amount]
+            properties:
+              accountId: {type: string, format: uuid}
+              side: {type: string, enum: [DEBIT, CREDIT]}
+              amount: {type: string, pattern: '^[0-9]+\.[0-9]{2}$'}
+  responses:
+    Invalid: {description: Invalid UUID or version cursor}
+    Unauthorized: {description: Missing or invalid signed issuer, audience, expiry or subject}
+    Forbidden: {description: Explicit role absent; unlisted methods and list/search routes are denied}
+    Missing: {description: Exact business reference not found in its owning service}

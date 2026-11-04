@@ -18,6 +18,7 @@ public class PaymentConfiguration {
         var converter=new JwtAuthenticationConverter();converter.setJwtGrantedAuthoritiesConverter(jwt->ServiceSecurity.authorities(jwt,"payment-service"));
         return http.csrf(c->c.disable()).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a->a.requestMatchers("/actuator/health","/actuator/health/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/transactions/*").hasRole("ADMIN")
                 .requestMatchers(org.springframework.http.HttpMethod.POST,"/internal/v1/payments/funding").hasAuthority("payment.fund")
                 .requestMatchers(org.springframework.http.HttpMethod.POST,"/internal/v1/payments/*/reversal").hasAuthority("payment.reverse")
                 .requestMatchers(org.springframework.http.HttpMethod.POST,"/internal/v1/payments/*/decision").hasAuthority("payment.review")

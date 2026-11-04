@@ -2,11 +2,11 @@
 
 Distributed digital banking and payment processing **simulation**, using synthetic customers and simulated money exclusively.
 
-**Status: Phase 8 in progress — Audit and incident lot accepted.** The connected customer workspace now supports synthetic cards, merchant authorization with explainable Fraud review, Ledger-owned holds, full capture/release/refund and immutable monthly CSV/PDF statements. Finance reconciliation requires an explicit role. Existing account, transfer, notification and analyst journeys remain covered. See the [Phase 7 verification report](docs/verification/phase-7.md), [Card/Reporting demo and upgrade](docs/deployment/cards-phase-7.md) and [customer demo](docs/deployment/customer-demo.md).
+**Status: Phase 8 in progress — Audit/Incidents and exact-reference inspection lots accepted.** The connected customer workspace now supports synthetic cards, merchant authorization with explainable Fraud review, Ledger-owned holds, full capture/release/refund and immutable monthly CSV/PDF statements. Finance reconciliation requires an explicit role. Existing account, transfer, notification and analyst journeys remain covered. See the [Phase 7 verification report](docs/verification/phase-7.md), [Card/Reporting demo and upgrade](docs/deployment/cards-phase-7.md) and [customer demo](docs/deployment/customer-demo.md).
 
 GitHub's canonical repository is `ABDOUUisHERE/FinCore-Bank`. Local Docker validation is recorded in the [workstation verification report](docs/verification/local-docker-2026-10-23.md).
 
-Phase 8 lot 1 adds a Java/Spring Boot Audit service, retained domain facts and staff-scoped incident operations. Measured acceptance: see the [lot report](docs/verification/phase-8.md), [operations guide](docs/deployment/operations-phase-8.md) and [API contract](contracts/openapi/operations-v1.yaml). Complete security audit coverage, scoped business inspection, distributed tracing and six monitoring dashboards remain later Phase 8 lots.
+Phase 8 lot 1 adds a Java/Spring Boot Audit service, retained domain facts and staff-scoped incident operations. Measured acceptance: see the [lot report](docs/verification/phase-8.md), [operations guide](docs/deployment/operations-phase-8.md) and [API contract](contracts/openapi/operations-v1.yaml). Lot 2 adds role-scoped exact-reference customer/payment status and authoritative finance journal inspection; see the [inspection report](docs/verification/phase-8-inspection.md), [upgrade guide](docs/deployment/inspection-phase-8.md) and [contract](contracts/openapi/inspection-v1.yaml). Customer management/search, account status, scoped support business grants, complete security/read audit coverage, tracing and six monitoring dashboards remain later Phase 8 work.
 
 ## Quick start
 
@@ -118,7 +118,7 @@ npm run build
 npm audit --audit-level=high
 ```
 
-Use `mvnw.cmd` on Windows. Maven integration tests use real PostgreSQL through Docker; `-DskipITs` explicitly omits them. Once the stack is running, `docker compose run --rm --no-deps ledger-check` tests the private financial API with a real technical token. `python scripts/check-foundation.py` and `npm run test:e2e` check private Customer rejection and browser PKCE login (install Chromium with `npx playwright install chromium`). The browser suite also completes a two-customer financial API journey using real PKCE tokens and the private check runner. See the [test guide](docs/testing.md) and [current verification](docs/verification/phase-8.md) for actual outcomes. GitHub Actions runs backend, frontend and Compose/browser/ledger checks; no automatic deployment is configured.
+Use `mvnw.cmd` on Windows. Maven integration tests use real PostgreSQL through Docker; `-DskipITs` explicitly omits them. Once the stack is running, `docker compose run --rm --no-deps ledger-check` tests the private financial API with a real technical token. `python scripts/check-foundation.py` and `npm run test:e2e` check private Customer rejection and browser PKCE login (install Chromium with `npx playwright install chromium`). The browser suite also completes a two-customer financial API journey using real PKCE tokens and the private check runner. See the [test guide](docs/testing.md) and [current verification](docs/verification/phase-8-inspection.md) for actual outcomes. GitHub Actions runs backend, frontend and Compose/browser/ledger checks; no automatic deployment is configured.
 
 Do not use the Core5G simulator from the previously selected workspace as FinCore runtime or evidence: it is a separate project and repository.
 

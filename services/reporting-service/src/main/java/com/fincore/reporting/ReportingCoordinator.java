@@ -21,4 +21,9 @@ public class ReportingCoordinator {
   var snapshot=(com.fasterxml.jackson.databind.node.ObjectNode)source.deepCopy();snapshot.remove(List.of("ledgerAccountId","accountReference"));snapshot.put("accountId",id.toString());return store.save(actor,id,snapshot);
  }
  public JsonNode reconcile(){var source=remote.call("GET",ledger+"/reports/reconciliation",remote.serviceToken(),null);var result=(com.fasterxml.jackson.databind.node.ObjectNode)source.deepCopy();result.put("source","ledger-repeatable-read");result.put("observedAt",Instant.now().toString());result.put("reconciled",source.path("balanceDiscrepancies").isArray() && source.path("balanceDiscrepancies").isEmpty() && source.path("invalidJournals").isArray() && source.path("invalidJournals").isEmpty());return result;}
+ public JsonNode journal(UUID id){
+  var source=remote.call("GET",ledger+"/reports/journals/"+id,remote.serviceToken(),null);
+  if(!source.isObject() || !source.path("journalId").asText().equals(id.toString()) || !source.path("source").asText().equals("ledger-postings") || !source.path("entries").isArray())throw new ApiFailure(503,"INVALID_JOURNAL_SOURCE");
+  return source;
+ }
 }

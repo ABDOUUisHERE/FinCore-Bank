@@ -18,6 +18,7 @@ public class ReportingConfiguration {
         var converter=new JwtAuthenticationConverter();converter.setJwtGrantedAuthoritiesConverter(jwt->ServiceSecurity.authorities(jwt,"reporting-service"));
         return http.csrf(c->c.disable()).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a->a.requestMatchers("/actuator/health","/actuator/health/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/ledger/journals/*").hasRole("FINANCE_OPERATOR")
                 .requestMatchers("/api/v1/admin/reports/reconciliation").hasRole("FINANCE_OPERATOR")
                 .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/statements","/api/v1/statements/*","/api/v1/statements/*/csv","/api/v1/statements/*/pdf").hasRole("CUSTOMER")
                 .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/v1/statements").hasRole("CUSTOMER").anyRequest().denyAll())

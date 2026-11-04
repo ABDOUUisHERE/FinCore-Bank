@@ -56,6 +56,22 @@ class PaymentRecoveryIT {
     }
     String balance(UUID id){return LAB.runtime("ledger").queryForObject("select booked::text from ledger.balance where account_id=?",String.class,id);}
     void readyRetry(UUID id){LAB.owner("payment").update("update payment set lease_until=clock_timestamp()-interval '1 second',next_attempt=clock_timestamp() where id=?",id);}
+    @Test void operationalInspectionRedactsAndPaginatesRealVersionedHistoryWithoutFinancialEffects(){
+        var f=transfer("10.00");store.importInstruction(f.receipt());
+        for(int version=1;version<=52;version++)LAB.owner("payment").update("update payment set status=?,version=version+1,terminal_code='private free text' where id=?",version%2==1?"VALIDATING":"PENDING_RISK_REVIEW",f.id());
+        // Leave a terminal fixture: unrelated worker/lease tests must never claim this payment.
+        LAB.owner("payment").update("update payment set status='REJECTED',version=version+1 where id=?",f.id());
+        var before=balance(f.source());var page=store.inspection(f.id(),null);
+        assertThat(page.path("version").asText()).isEqualTo("53");assertThat(page.path("history").size()).isEqualTo(50);assertThat(page.path("nextCursor").asText()).isEqualTo("4");
+        assertThat(page.path("history").get(0).path("version").asText()).isEqualTo("53");
+        var older=store.inspection(f.id(),Long.valueOf(page.path("nextCursor").asText()));
+        assertThat(older.path("history").size()).isEqualTo(4);assertThat(older.path("history").get(3).path("version").asText()).isEqualTo("0");assertThat(older.path("nextCursor").isNull()).isTrue();
+        assertThat(page.path("terminalCode").isNull()).isTrue();
+        assertThat(page.toString()).doesNotContain("private free text","Synthetic transfer",ACTOR,"instruction","source_account_id","lease_token","amount","fingerprint");
+        assertThat(balance(f.source())).isEqualTo(before);assertThat(operations(f.id())).isZero();
+        assertThatThrownBy(()->store.inspection(UUID.randomUUID(),null)).isInstanceOf(ApiFailure.class).extracting("status").isEqualTo(404);
+        assertThatThrownBy(()->store.inspection(f.id(),0L)).isInstanceOf(ApiFailure.class).extracting("status").isEqualTo(400);
+    }
     long operations(UUID id){return LAB.runtime("ledger").queryForObject("select count(*) from ledger.operation where issuer='fincore-payment' and business_reference=?",Long.class,id.toString());}
     @Test void recoversAuthorizationAcceptedBeforePaymentPersistence(){var f=transfer("10.00");assertThat(store.exists(f.id())).isFalse();discover.set(true);worker.cycle();assertThat(store.get(f.id()).path("status").asText()).isEqualTo("COMPLETED");assertThat(operations(f.id())).isEqualTo(1);assertThat(balance(f.source())).isEqualTo("90.00");}
     @Test void lostResponseAfterLedgerCommitNeverDuplicatesMoney(){

@@ -14,6 +14,7 @@ public class PaymentController {
     public PaymentController(PaymentCoordinator coordinator,PaymentStore store){this.coordinator=coordinator;this.store=store;}
     public record Version(Long expectedVersion) {}
     public record Review(Long expectedVersion,Boolean approve,String reason) {}
+    @GetMapping("/api/v1/admin/transactions/{id}") public Object inspection(@PathVariable UUID id,@RequestParam(required=false)Long beforeVersion){return store.inspection(id,beforeVersion);}
     @PostMapping("/api/v1/transfers") public ResponseEntity<?> transfer(@RequestHeader("Idempotency-Key")String key,@RequestBody PaymentCoordinator.Transfer body,@AuthenticationPrincipal Jwt jwt){return accepted(coordinator.transfer(jwt.getSubject(),jwt.getTokenValue(),key,body));}
     @GetMapping("/api/v1/transfers/{id}") public Object get(@PathVariable UUID id,@AuthenticationPrincipal Jwt jwt){return PaymentStore.view(store.own(id,jwt.getSubject()));}
     @GetMapping("/api/v1/transfers") public Map<String,Object> list(@RequestParam(required=false)UUID after,@RequestParam(defaultValue="")String status,@AuthenticationPrincipal Jwt jwt){var rows=store.list(jwt.getSubject(),after,status);var result=new LinkedHashMap<String,Object>();result.put("items",rows.stream().map(PaymentStore::view).toList());result.put("nextCursor",rows.size()==50?rows.getLast().path("id").asText():null);return result;}
