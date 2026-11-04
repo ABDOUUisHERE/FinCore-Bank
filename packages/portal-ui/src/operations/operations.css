@@ -9,3 +9,9 @@
 .operations-fact .bank-facts { margin-top: 18px; }
 .operations-detail { display: contents; }
 .operations-workspace .bank-facts dd { overflow-wrap: anywhere; }
+.inspection-workspace .bank-panel { min-width: 0; }
+.inspection-table { max-width: 100%; overflow-x: auto; margin: 1rem 0; }
+.inspection-table table { width: 100%; border-collapse: collapse; text-align: left; font-size: .85rem; }
+.inspection-table caption { text-align: left; font-weight: 600; margin-bottom: .75rem; }
+.inspection-table th, .inspection-table td { padding: .75rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+.inspection-table code { overflow-wrap: anywhere; }
