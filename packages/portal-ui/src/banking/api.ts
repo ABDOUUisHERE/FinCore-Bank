@@ -47,8 +47,8 @@ export function query(values: Record<string, string | undefined>) {
 export async function request<T>(token: () => Promise<string>, path: string, options: { method?: string; body?: unknown; key?: string; signal?: AbortSignal } = {}): Promise<T> {
   const bearer = await token();
   // These routes allow a bounded chain of 5s owner calls, including cold identity lookup.
-  const delegated = ["/customers", "/accounts", "/cards", "/card-authorizations", "/card-merchants", "/statements", "/admin/reports", "/admin/ledger", "/admin/accounts"].some(prefix => path === prefix || path.startsWith(prefix + "/") || path.startsWith(prefix + "?"));
-  const signals = [AbortSignal.timeout(delegated ? 25_000 : 15_000), ...(options.signal ? [options.signal] : [])];
+  const delegated = /^\/admin\/incidents\/[a-f0-9-]{36}\/account-status$/i.test(path) || ["/customers", "/accounts", "/cards", "/card-authorizations", "/card-merchants", "/statements", "/admin/reports", "/admin/ledger", "/admin/accounts"].some(prefix => path === prefix || path.startsWith(prefix + "/") || path.startsWith(prefix + "?"));
+  const signals = [AbortSignal.timeout(/\/account-status$/.test(path) ? 30_000 : delegated ? 25_000 : 15_000), ...(options.signal ? [options.signal] : [])];
   let response: Response;
   try {
     response = await fetch((import.meta.env.VITE_API_URL ?? "http://localhost:8280") + "/api/v1" + path, {

@@ -6,7 +6,7 @@ export function readIncidentAttempt(owner: string): IncidentAttempt | null {
   try {
     const value = JSON.parse(sessionStorage.getItem(slot(owner)) ?? "null") as IncidentAttempt | null;
     return value?.owner === owner && uuid.test(value.key) &&
-      (value.method === "POST" && value.path === "/admin/incidents" || value.method === "PUT" && /^\/admin\/incidents\/[a-f0-9-]{36}\/status$/i.test(value.path)) &&
+      (value.method === "POST" && value.path === "/admin/incidents" || value.method === "PUT" && /^\/admin\/incidents\/[a-f0-9-]{36}\/(status|account-access)$/i.test(value.path)) &&
       typeof value.title === "string" && typeof value.description === "string" && typeof value.submitted === "boolean" &&
       value.body !== null && typeof value.body === "object" && !Array.isArray(value.body) ? value : null;
   } catch { return null; }

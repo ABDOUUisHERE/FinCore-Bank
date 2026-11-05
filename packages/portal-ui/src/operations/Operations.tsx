@@ -4,6 +4,7 @@ import { useSession } from "../auth";
 import { ApiError, page, query, request, uuid } from "../banking/api";
 import { Badge, Empty, Failure, Loading } from "../banking/Common";
 import { clearIncidentAttempt, readIncidentAttempt, saveIncidentAttempt, type IncidentAttempt } from "./incidentAttempt";
+import { SupportAccountAccess, type Grant } from "./SupportAccountAccess";
 import "../banking/banking.css";
 import "./operations.css";
 
@@ -11,7 +12,8 @@ type Identity = { subject: string; scope: "ALL_INCIDENTS" | "OWN_INCIDENTS" };
 type Incident = { incidentId: string; createdBy: string; resourceKind: string; resourceId: string; severity: string; status: string; version: number; reason: string; createdAt: string; updatedAt: string };
 type Fact = { recordId: string; sequence: string; source: string; eventType: string; aggregateId: string; aggregateVersion: number; actor: string | null; correlationId: string; occurredAt: string; observedAt: string; details: Record<string, string>; bodyHash: string; sourceTopic: string | null; sourcePartition: number | null; sourceOffset: string | null };
 type Quarantine = { sequence: string; sourceTopic: string; sourcePartition: number; sourceOffset: string; code: string; bodyHash: string; observedAt: string };
-type Draft = Pick<IncidentAttempt, "path" | "method" | "body" | "title" | "description">;
+export type IncidentDraft = Pick<IncidentAttempt, "path" | "method" | "body" | "title" | "description">;
+type Draft = IncidentDraft;
 const reasons = ["CUSTOMER_REPORTED", "SERVICE_DEGRADATION", "CONTROL_REVIEW", "INVESTIGATION_UPDATE", "ISSUE_CONFIRMED", "ISSUE_RESOLVED", "REOPENED_FOR_REVIEW"];
 function Reason({ value, change, disabled = false }: { value: string; change: (value: string) => void; disabled?: boolean }) {
   return <label>Reason code<select disabled={disabled} value={value} onChange={e => change(e.target.value)}>{reasons.map(reason => <option key={reason}>{reason}</option>)}</select></label>;
@@ -35,8 +37,8 @@ function Incidents({ identity }: { identity: Identity }) {
     queryFn: ({ signal, pageParam }) => page<Incident>(session.token, "/admin/incidents" + query({ after: pageParam }), signal), getNextPageParam: last => last.nextCursor ?? undefined });
   const commit = (next: IncidentAttempt) => { saveIncidentAttempt(next); setAttempt(next); };
   const draft = (next: Draft) => { try { setError(null); setNotice(""); commit({ ...next, owner: subject, key: crypto.randomUUID(), submitted: false }); } catch { setError(new Error("This browser could not retain the request. No submission was sent.")); } };
-  const send = useMutation({ mutationFn: async (current: IncidentAttempt) => { const locked = { ...current, submitted: true }; commit(locked); return request<Incident>(session.token, locked.path, { method: locked.method, key: locked.key, body: locked.body }); },
-    onSuccess: result => { clearIncidentAttempt(subject); setAttempt(null); select(result.incidentId); setNotice("Recorded result: " + result.status.toLowerCase() + " at version " + result.version + ". Current incident details are refreshed below."); void cache.invalidateQueries({ queryKey: ["operations", subject] }); } });
+  const send = useMutation({ mutationFn: async (current: IncidentAttempt) => { const locked = { ...current, submitted: true }; commit(locked); return request<Incident | Grant>(session.token, locked.path, { method: locked.method, key: locked.key, body: locked.body }); },
+    onSuccess: result => { clearIncidentAttempt(subject); setAttempt(null); select(result.incidentId); setNotice("permission" in result ? "Recorded access result: " + result.state.toLowerCase() + " at version " + result.version + ". Current permission is refreshed below." : "Recorded result: " + result.status.toLowerCase() + " at version " + result.version + ". Current incident details are refreshed below."); void cache.invalidateQueries({ queryKey: ["operations", subject] }); } });
   const definitive = send.variables?.submitted === false && send.error instanceof ApiError && [400, 403, 404, 409, 422].includes(send.error.status);
   const items = records.data?.pages.flatMap(p => p.items) ?? [];
   return <section className="bank-workspace operations-workspace" aria-label="Incident operations">
@@ -71,7 +73,8 @@ function IncidentDetail({ subject, id, draft, disabled }: { subject: string; id:
   const change = (status: string) => { if (current.data) draft({ path: "/admin/incidents/" + id + "/status", method: "PUT", body: { expectedVersion: current.data.version, status, reason }, title: "Change incident status", description: `Incident ${id}: ${current.data.status} to ${status}, expected version ${current.data.version}. Reason: ${reason}.` }); };
   return <section className="surface bank-panel" aria-label="Selected incident"><h3>Selected incident</h3><Failure error={current.error} retry={() => void current.refetch()} />
     {current.isPending ? <Loading /> : current.data && !current.error && <><dl className="bank-facts"><dt>Reference</dt><dd>{id}</dd><dt>Opened by</dt><dd>{current.data.createdBy}</dd><dt>Resource</dt><dd>{current.data.resourceKind} {current.data.resourceId}</dd><dt>Status</dt><dd><Badge status={current.data.status} /></dd><dt>Version</dt><dd>{current.data.version}</dd><dt>Reason</dt><dd>{current.data.reason}</dd><dt>Updated</dt><dd>{new Date(current.data.updatedAt).toLocaleString()}</dd></dl>
-      <div className="bank-form"><Reason disabled={disabled} value={reason} change={setReason} /></div><div className="bank-actions">{current.data.status === "INVESTIGATING" ? <button className="button" disabled={disabled} onClick={() => change("RESOLVED")}>Review resolution</button> : <button className="button" disabled={disabled} onClick={() => change("INVESTIGATING")}>{current.data.status === "RESOLVED" ? "Review reopening" : "Review investigation"}</button>}</div></>}
+      <div className="bank-form"><Reason disabled={disabled} value={reason} change={setReason} /></div><div className="bank-actions">{current.data.status === "INVESTIGATING" ? <button className="button" disabled={disabled} onClick={() => change("RESOLVED")}>Review resolution</button> : <button className="button" disabled={disabled} onClick={() => change("INVESTIGATING")}>{current.data.status === "RESOLVED" ? "Review reopening" : "Review investigation"}</button>}</div>
+      {current.data.resourceKind === "ACCOUNT" && <SupportAccountAccess subject={subject} incident={current.data} draft={draft} disabled={disabled} />}</>}
     <h3>Immutable incident history</h3><Failure error={history.error} retry={() => void history.refetch()} />{history.isPending ? <Loading /> : <Facts items={history.data?.pages.flatMap(p => p.items) ?? []} />}
     {history.hasNextPage && <button className="button secondary" disabled={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>Load older incident history</button>}
   </section>;
