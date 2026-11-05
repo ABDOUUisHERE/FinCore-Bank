@@ -214,6 +214,7 @@ services:
       FRAUD_ANALYST_PASSWORD: ${FRAUD_ANALYST_PASSWORD:?Run local bootstrap first}
       CARD_CLIENT_SECRET: ${CARD_CLIENT_SECRET:?Run local bootstrap first}
       REPORTING_CLIENT_SECRET: ${REPORTING_CLIENT_SECRET:?Run local bootstrap first}
+      AUDIT_CLIENT_SECRET: ${AUDIT_CLIENT_SECRET:?Run local bootstrap first}
       FINANCE_PASSWORD: ${FINANCE_PASSWORD:?Run local bootstrap first}
       SUPPORT_PASSWORD: ${SUPPORT_PASSWORD:?Run local bootstrap first}
       SUPPORT_SECOND_PASSWORD: ${SUPPORT_SECOND_PASSWORD:?Run local bootstrap first}
@@ -703,6 +704,9 @@ services:
       PGUSER: fincore_bootstrap
       PGPASSWORD: ${POSTGRES_PASSWORD:?Run local bootstrap first}
       AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:?Run local bootstrap first}
+      AUDIT_CLIENT_SECRET: ${AUDIT_CLIENT_SECRET:?Run local bootstrap first}
+      TOKEN_ENDPOINT: http://keycloak:8180/realms/fincore/protocol/openid-connect/token
+      ACCOUNT_SERVICE_URL: http://account-service:8080
       AUDIT_MIGRATION_PASSWORD: ${AUDIT_MIGRATION_PASSWORD:?Run local bootstrap first}
     volumes: ["./infrastructure/docker/postgres/init-audit.sh:/bootstrap/init-audit.sh:ro"]
     depends_on:

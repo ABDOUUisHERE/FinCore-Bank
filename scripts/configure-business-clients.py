@@ -45,6 +45,7 @@ def main():
     ledger_roles = {name: ensure_role(resource, name) for name in ("ledger.prepare", "ledger.prepare.fund", "ledger.prepare.reverse", "ledger.execute", "ledger.instructions.read", "ledger.provision", "ledger.guard", "ledger.read", "ledger.card.manage", "ledger.card.inspect", "ledger.card.reserve", "ledger.statement.read", "ledger.reconcile.read", "ledger.journal.read")}
     account_resource = client("account-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
     account_lookup = ensure_role(account_resource, "account.lookup")
+    support_read = ensure_role(account_resource, "account.support.read")
     payment_resource = client("payment-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
     operator_roles = [ensure_role(payment_resource, name) for name in ("payment.fund", "payment.reverse", "payment.review", "payment.inspect")]
     # CUSTOMER is the only realm role that can prepare a customer transfer.
@@ -73,6 +74,10 @@ def main():
     assign(account_client, resource, [ledger_roles[name] for name in ("ledger.provision", "ledger.guard", "ledger.read")])
     audience(account_client, "ledger-service")
     role_claim(account_client, "ledger-service")
+    audit_client = machine("fincore-audit", "AUDIT_CLIENT_SECRET")
+    assign(audit_client, account_resource, [support_read])
+    audience(audit_client, "account-service")
+    role_claim(audit_client, "account-service")
     beneficiary_client = machine("fincore-beneficiary", "BENEFICIARY_CLIENT_SECRET")
     assign(beneficiary_client, account_resource, [account_lookup])
     audience(beneficiary_client, "account-service")
