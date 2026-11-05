@@ -1,0 +1,140 @@
+{
+  "checkedAt": "2026-11-05T11:29:00.826Z",
+  "phase": 8,
+  "lot": 5,
+  "projectComplete": false,
+  "source": "5eff6db63f2b9360e3a649fae48f62d5896455e5",
+  "previousMain": "9da186b26f06f0a7525ee86d632fc550f042b30a",
+  "feature": [
+    {
+      "id": 42016766075,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "5eff6db63f2b9360e3a649fae48f62d5896455e5",
+      "head_branch": "feature/fincore-support-account-access",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42016766075",
+      "created_at": "2026-11-05T11:10:20Z",
+      "updated_at": "2026-11-05T11:11:43Z",
+      "jobs": [
+        {
+          "id": 127209121083,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42016766075/job/127209121083"
+        }
+      ]
+    },
+    {
+      "id": 42016766038,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "5eff6db63f2b9360e3a649fae48f62d5896455e5",
+      "head_branch": "feature/fincore-support-account-access",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42016766038",
+      "created_at": "2026-11-05T11:10:20Z",
+      "updated_at": "2026-11-05T11:14:36Z",
+      "jobs": [
+        {
+          "id": 127209405155,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42016766038/job/127209405155"
+        }
+      ]
+    },
+    {
+      "id": 42016766139,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "5eff6db63f2b9360e3a649fae48f62d5896455e5",
+      "head_branch": "feature/fincore-support-account-access",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42016766139",
+      "created_at": "2026-11-05T11:10:20Z",
+      "updated_at": "2026-11-05T11:23:33Z",
+      "jobs": [
+        {
+          "id": 127209774216,
+          "name": "compose",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42016766139/job/127209774216"
+        }
+      ]
+    }
+  ],
+  "backend": {
+    "tests": 255,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 50,
+    "buildSuccess": true
+  },
+  "frontend": {
+    "tests": 49,
+    "files": 10,
+    "typecheck": true,
+    "lint": true,
+    "productionBuilds": 2,
+    "ciHighSeverityAuditGate": true,
+    "developmentAdvisories": {
+      "moderate": 7,
+      "high": 0,
+      "critical": 0
+    }
+  },
+  "native": {
+    "javaUniqueCases": 32,
+    "javaScope": "GatewaySecurityTest 10, AccountInspectionSecurityTest 3, AuditSecurityTest 5, SupportAccessSecurityTest 2, SupportAccountAccessTest 3, SupportAccessDatabaseIT 9; unit class deduplicated across runs",
+    "postgresGrantCases": 9,
+    "frontendCases": 49,
+    "frontendHardwareBudget": "One worker, 20 second test budget and 10 second asynchronous DOM wait through ignored native configuration; CI uses repository defaults",
+    "browserJourneys": 2,
+    "browserSpecs": [
+      "operations.spec.ts",
+      "support-access.spec.ts"
+    ],
+    "preservedUpgrade": {
+      "existingSecretsUnchanged": true,
+      "credentialsUnchanged": true,
+      "appendedSecretKeys": [
+        "AUDIT_CLIENT_SECRET"
+      ],
+      "auditMigrations": [
+        "1",
+        "2"
+      ],
+      "domainAndIncidentCountsUnchangedBeforeBrowser": true
+    },
+    "productionAudit": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    }
+  },
+  "provisioningRegression": {
+    "tests": 2,
+    "framework": "Python unittest for the existing Keycloak setup utility only; business services remain Java 21/Spring Boot"
+  },
+  "attribution": {
+    "githubLogin": "ABDOUUisHERE",
+    "defaultBranch": "main",
+    "fork": false,
+    "sourceCommits": 12,
+    "allSourceCommitsAttributed": true
+  },
+  "limitations": [
+    "Central broker is trusted for dynamic object authorization; Account checks signed machine client and narrow redacted-read authority",
+    "Disclosure is an authorization decision, not proof of browser receipt or a distributed Account/Ledger snapshot",
+    "No support customer search, payment metadata, journal or financial mutation",
+    "Complete critical-action/read/security audit coverage, tracing and six Grafana dashboards remain later Phase 8 work"
+  ]
+}
