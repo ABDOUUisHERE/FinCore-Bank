@@ -1,6 +1,6 @@
 # Phase 8 lot 4 — customer name search
 
-Implementation and feature CI: 2026-11-04 UTC. Final local/integration verification: 2026-11-05 UTC. Starting main: `08afb392c9576018d8b7cf191b9d62c9a4918fca`. Application/test source: `f41324f1f2790ee354a1f0919b39217f8285fb74`. **Feature validation passed; main integration is pending.** Phase 8 remains in progress.
+Implementation and feature CI: 2026-11-04 UTC. Final local/integration verification: 2026-11-05 UTC. Starting main: `08afb392c9576018d8b7cf191b9d62c9a4918fca`. Application/test source: `f41324f1f2790ee354a1f0919b39217f8285fb74`. **Lot 4 is accepted and merged into main; all three main workflows passed.** Phase 8 remains in progress.
 
 ## Delivered scope
 
@@ -57,4 +57,14 @@ Generated credentials, names/identifiers from authenticated sessions, tokens, ra
 
 ## Main integration
 
-Pending merge and independent main workflows on the eventual merge SHA. Feature validation alone is not main acceptance.
+Merged as `4d367045d7669eb75aedc19666dceb8392cf12a6` on 2026-11-05 UTC. Application and tests are identical to feature-tested source `f41324f1f2790ee354a1f0919b39217f8285fb74`; intervening feature acceptance and this final proof contain documentation only. Independent main checks passed:
+
+| Workflow | Main result |
+| --- | --- |
+| [Backend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42004867240) | 239 passed in 47 classes; zero failure/error/skip |
+| [Frontend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42004867214) | 44 passed; types, lint, both production builds and high-severity audit gate passed |
+| [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42004867273) | 11 journeys; fresh Compose, direct authentication, Ledger smoke, ACL/DLQ/replay passed |
+
+Seven implementation/scope/test commits, one feature acceptance commit and the merge retain their history on main. This final documentation proof records the observed main results. No force push, history rewrite or artificial contribution commit was used.
+
+Main dependency audit reports **7 moderate development advisories** on the unchanged lockfile; the high-severity gate passes. The separate production-only audit on November 5 reports **0 advisories**. Feature CI's earlier 11-advisory observation remains historical.
