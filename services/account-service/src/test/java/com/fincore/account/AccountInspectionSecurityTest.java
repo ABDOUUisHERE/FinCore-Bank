@@ -30,6 +30,21 @@ class AccountInspectionSecurityTest {
         when(inspection.inspect(id)).thenReturn(new AccountInspection.Status(id,UUID.randomUUID(),"MAD","ACTIVE","9007199254740993",null,null,"0",Instant.now(),"UNAVAILABLE",null));
         http.perform(get(path).header("Authorization","Bearer "+token("ADMIN"))).andExpect(status().isOk()).andExpect(jsonPath("$.accountVersion").value("9007199254740993")).andExpect(jsonPath("$.accountObservedAt").isString()).andExpect(jsonPath("$.ledgerState").value("UNAVAILABLE")).andExpect(jsonPath("$.ownerSubject").doesNotExist());
     }
+    @Test void supportRouteRequiresBothNarrowAuthorityAndTheSignedAuditClient()throws Exception{
+        String path="/internal/v1/accounts/"+id+"/support-status";
+        for(String client:List.of("fincore-payment","fincore-admin","fincore-audit"))for(String scope:List.of("account.lookup","account.support.read")) {
+            boolean allowed=client.equals("fincore-audit")&&scope.equals("account.support.read");
+            if(allowed)continue;
+            var bearer=SignedTokens.token("account-service","worker",client,List.of("ADMIN"),Map.of("account-service",Map.of("roles",List.of(scope))));
+            http.perform(get(path).header("Authorization","Bearer "+bearer).header("X-Client-ID","fincore-audit")).andExpect(status().isForbidden());
+        }
+        verifyNoInteractions(inspection);
+        var bearer=SignedTokens.token("account-service","worker","fincore-audit",List.of(),Map.of("account-service",Map.of("roles",List.of("account.support.read"))));
+        when(inspection.inspect(id)).thenReturn(new AccountInspection.Status(id,UUID.randomUUID(),"MAD","ACTIVE","1",null,null,"0",Instant.now(),"UNAVAILABLE",null));
+        http.perform(get(path).header("Authorization","Bearer "+bearer)).andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"))
+            .andExpect(jsonPath("$.accountId").value(id.toString())).andExpect(jsonPath("$.accountObservedAt").isString()).andExpect(jsonPath("$.customerId").doesNotExist()).andExpect(jsonPath("$.balance").doesNotExist());
+        http.perform(get("/api/v1/admin/accounts/"+id).header("Authorization","Bearer "+bearer)).andExpect(status().isForbidden());
+    }
     @Test void wrongAudienceAndMalformedReferenceCannotReachInspection()throws Exception{
         http.perform(get("/api/v1/admin/accounts/"+id).header("Authorization","Bearer "+SignedTokens.token("wrong-api","admin","browser",List.of("ADMIN"),Map.of()))).andExpect(status().isUnauthorized());
         http.perform(get("/api/v1/admin/accounts/invalid").header("Authorization","Bearer "+token("ADMIN"))).andExpect(status().isBadRequest());verifyNoInteractions(inspection);

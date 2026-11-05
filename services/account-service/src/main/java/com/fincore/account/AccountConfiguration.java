@@ -19,6 +19,12 @@ public class AccountConfiguration {
         return http.csrf(c->c.disable()).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a->a.requestMatchers("/actuator/health","/actuator/health/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/accounts/*").hasRole("ADMIN")
+                .requestMatchers(org.springframework.http.HttpMethod.GET,"/internal/v1/accounts/*/support-status").access((auth,context)-> {
+                    var authentication=auth.get();boolean allowed=authentication instanceof org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken token
+                        && "fincore-audit".equals(token.getToken().getClaimAsString("azp"))
+                        && authentication.getAuthorities().stream().anyMatch(v->v.getAuthority().equals("account.support.read"));
+                    return new org.springframework.security.authorization.AuthorizationDecision(allowed);
+                })
                 .requestMatchers(org.springframework.http.HttpMethod.GET,"/internal/v1/accounts/*").hasAuthority("account.lookup")
                 .requestMatchers("/api/v1/accounts","/api/v1/accounts/*","/api/v1/accounts/*/balance","/api/v1/accounts/*/transactions","/api/v1/accounts/*/activity","/api/v1/accounts/*/guard").hasRole("CUSTOMER").anyRequest().denyAll())
             .oauth2ResourceServer(o->o.jwt(j->j.jwtAuthenticationConverter(converter)).authenticationEntryPoint((q,r,e)->WebSupport.denied(q,r,401)))
