@@ -20,8 +20,8 @@ public class AuditStore {
 
     // One lock is taken before all fact/quarantine sequence allocation and held through commit.
     // This provides commit-order cursors, not a distributed transaction with Kafka.
-    private void factLock() { db.execute("select pg_advisory_xact_lock(808801)"); }
-    private void commandLock(String actor, String key) {
+    void factLock() { db.execute("select pg_advisory_xact_lock(808801)"); }
+    void commandLock(String actor, String key) {
         Identifiers.key(key);
         db.queryForObject("select pg_advisory_xact_lock(hashtextextended(?,0))", String.class, Json.text(List.of(actor,key)));
     }
@@ -62,7 +62,7 @@ public class AuditStore {
         return page(rows, rows.size()==50 ? rows.getLast().path("incidentId").asText() : null);
     }
     public JsonNode incident(UUID id, String actor, boolean admin) { return own(id,actor,admin,false); }
-    private JsonNode own(UUID id, String actor, boolean admin, boolean lock) {
+    JsonNode own(UUID id, String actor, boolean admin, boolean lock) {
         var rows = db.query("select " + INCIDENT + " from incident where id=? and (? or created_by=?)" + (lock ? " for update" : ""),JSON,id,admin,actor);
         if (rows.isEmpty()) throw new ApiFailure(404,"INCIDENT_NOT_FOUND");
         return rows.getFirst();
@@ -96,7 +96,7 @@ public class AuditStore {
         db.update("update incident set status=?,version=version+1,reason=?,updated_at=clock_timestamp() where id=?",request.status(),request.reason(),id);
         return record(actor,key,fingerprint,correlation,id,"incident.status.changed",request.reason());
     }
-    private JsonNode receipt(String actor, boolean admin, String key, String fingerprint) {
+    JsonNode receipt(String actor, boolean admin, String key, String fingerprint) {
         var rows=db.query("select jsonb_build_object('fingerprint',fingerprint,'response',response)::text from incident_command where actor=? and key=?",JSON,actor,key);
         if(rows.isEmpty())return null;var row=rows.getFirst();
         var response=row.path("response");own(UUID.fromString(response.path("incidentId").asText()),actor,admin,false);
@@ -106,12 +106,18 @@ public class AuditStore {
     private JsonNode record(String actor,String key,String fingerprint,String correlation,UUID id,String type,String reason) {
         var incident=own(id,actor,true,false);var recordId=UUID.randomUUID();
         var details=Map.of("resourceKind",incident.path("resourceKind").asText(),"resourceId",incident.path("resourceId").asText(),"severity",incident.path("severity").asText(),"status",incident.path("status").asText(),"reason",reason);
+        appendFact(recordId,type,id,incident.path("version").asLong(),actor,correlation,details);
+        var response=(com.fasterxml.jackson.databind.node.ObjectNode)incident.deepCopy();response.put("auditRecordId",recordId.toString());
+        saveReceipt(actor,key,fingerprint,id,response);
+        return response;
+    }
+    void saveReceipt(String actor,String key,String fingerprint,UUID id,JsonNode response) {
+        db.update("insert into incident_command(actor,key,fingerprint,incident_id,response) values(?,?,?,?,?::jsonb)",actor,key,fingerprint,id,response.toString());
+    }
+    void appendFact(UUID recordId,String type,UUID incident,long version,String actor,String correlation,Map<String,?> details) {
         factLock();
         db.update("insert into audit_record(id,source,event_type,aggregate_id,aggregate_version,actor,correlation_id,occurred_at,details,body_hash) values(?,'OPERATIONS',?,?,?,?,?,clock_timestamp(),?::jsonb,?)",
-            recordId,type,id,incident.path("version").asLong(),actor,correlation,Json.text(details),AuditEvent.hash(Json.text(details)));
-        var response=(com.fasterxml.jackson.databind.node.ObjectNode)incident.deepCopy();response.put("auditRecordId",recordId.toString());
-        db.update("insert into incident_command(actor,key,fingerprint,incident_id,response) values(?,?,?,?,?::jsonb)",actor,key,fingerprint,id,response.toString());
-        return response;
+            recordId,type,incident,version,actor,correlation,Json.text(details),AuditEvent.hash(Json.text(details)));
     }
     private static void reason(String value) { if(value==null || !value.matches("[A-Z][A-Z0-9_]{2,59}"))throw new ApiFailure(400,"INVALID_REASON_CODE"); }
     private static void cursor(Long value) { if(value!=null && value<=0)throw new ApiFailure(400,"INVALID_CURSOR"); }
