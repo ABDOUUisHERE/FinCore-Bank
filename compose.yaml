@@ -214,6 +214,7 @@ services:
       FRAUD_ANALYST_PASSWORD: ${FRAUD_ANALYST_PASSWORD:?Run local bootstrap first}
       CARD_CLIENT_SECRET: ${CARD_CLIENT_SECRET:?Run local bootstrap first}
       REPORTING_CLIENT_SECRET: ${REPORTING_CLIENT_SECRET:?Run local bootstrap first}
+      AUDIT_CLIENT_SECRET: ${AUDIT_CLIENT_SECRET:?Run local bootstrap first}
       FINANCE_PASSWORD: ${FINANCE_PASSWORD:?Run local bootstrap first}
       SUPPORT_PASSWORD: ${SUPPORT_PASSWORD:?Run local bootstrap first}
       SUPPORT_SECOND_PASSWORD: ${SUPPORT_SECOND_PASSWORD:?Run local bootstrap first}
@@ -727,6 +728,9 @@ services:
       AUDIT_DATABASE_URL: jdbc:postgresql://postgres:5432/audit
       AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:?Run local bootstrap first}
       AUDIT_MESSAGING_ENABLED: 'true'
+      AUDIT_CLIENT_SECRET: ${AUDIT_CLIENT_SECRET:?Run local bootstrap first}
+      TOKEN_ENDPOINT: http://keycloak:8180/realms/fincore/protocol/openid-connect/token
+      ACCOUNT_SERVICE_URL: http://account-service:8080
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_USER: audit
       KAFKA_PASSWORD: ${KAFKA_AUDIT_PASSWORD:?Run local bootstrap first}
