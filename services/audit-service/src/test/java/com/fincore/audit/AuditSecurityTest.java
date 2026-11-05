@@ -18,7 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(AuditController.class)
 @Import({AuditConfiguration.class,AuditSecurityTest.Decoders.class})
 class AuditSecurityTest {
-    @Autowired MockMvc http;@MockitoBean AuditStore store;
+    @Autowired MockMvc http;@MockitoBean AuditStore store;@MockitoBean Remote remote;
     @TestConfiguration(proxyBeanMethods=false)static class Decoders {
         @Bean @Primary JwtDecoder decoder()throws Exception{var d=NimbusJwtDecoder.withPublicKey(SignedTokens.KEY.toRSAPublicKey()).build();d.setJwtValidator(ServiceSecurity.validator(SignedTokens.ISSUER,Set.of("fincore-api","audit-service")));return d;}
     }

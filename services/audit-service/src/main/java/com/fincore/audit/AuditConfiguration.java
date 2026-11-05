@@ -25,8 +25,14 @@ public class AuditConfiguration {
                 .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/operations/me","/api/v1/admin/incidents","/api/v1/admin/incidents/*","/api/v1/admin/incidents/*/history").hasAnyRole("ADMIN","SUPPORT_AGENT")
                 .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/v1/admin/incidents").hasAnyRole("ADMIN","SUPPORT_AGENT")
                 .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/v1/admin/incidents/*/status").hasAnyRole("ADMIN","SUPPORT_AGENT")
+                .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/incidents/*/account-access").hasAnyRole("ADMIN","SUPPORT_AGENT")
+                .requestMatchers(org.springframework.http.HttpMethod.PUT,"/api/v1/admin/incidents/*/account-access").hasRole("ADMIN")
+                .requestMatchers(org.springframework.http.HttpMethod.POST,"/api/v1/admin/incidents/*/account-status").hasRole("SUPPORT_AGENT")
                 .anyRequest().denyAll())
             .oauth2ResourceServer(o->o.jwt(j->j.jwtAuthenticationConverter(converter)).authenticationEntryPoint((q,r,e)->WebSupport.denied(q,r,401)))
             .exceptionHandling(e->e.authenticationEntryPoint((q,r,x)->WebSupport.denied(q,r,401)).accessDeniedHandler((q,r,x)->WebSupport.denied(q,r,403))).build();
+    }
+    @Bean Remote accountClient(@Value("${TOKEN_ENDPOINT:http://localhost:8180/realms/fincore/protocol/openid-connect/token}")String endpoint,@Value("${AUDIT_CLIENT_SECRET}")String secret) {
+        return new Remote(endpoint,"fincore-audit",secret);
     }
 }
