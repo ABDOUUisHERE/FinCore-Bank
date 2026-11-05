@@ -1,6 +1,6 @@
 # Phase 8 lot 4: customer name search
 
-Planned acceptance scope: ADMIN searches Customer's authoritative profile storage by a case-insensitive **name prefix**, then opens the existing exact-reference inspection. Backend remains Java 21/Spring Boot. The [contract](../../contracts/openapi/customer-search-v1.yaml) is additive; prior inspection responses remain unchanged.
+Delivered scope: ADMIN searches Customer's authoritative profile storage by a case-insensitive **name prefix**, then opens the existing exact-reference inspection. Backend remains Java 21/Spring Boot. The [contract](../../contracts/openapi/customer-search-v1.yaml) is additive; prior inspection responses remain unchanged.
 
 `POST /api/v1/admin/customers/search` accepts `namePrefix` and optional `afterId`. The stripped prefix must contain 3–80 UTF-16 code units and no control character. Percent, underscore, exclamation mark and apostrophe are literal characters, not search operators. Matching uses PostgreSQL lower-case semantics; it is not accent-insensitive or fuzzy search. A valid request returns at most 20 matches in ascending UUID order, with `nextAfterId` only when another match was observed. Repeat the same prefix with that UUID for the next page. There is no total count or empty-prefix directory listing. Names shorter than three characters remain accessible through an exact customer UUID.
 
@@ -17,4 +17,4 @@ docker compose build customer-service api-gateway admin-portal
 docker compose up -d --no-deps --wait --wait-timeout 600 customer-service api-gateway admin-portal
 ```
 
-Implementation, permission tests, real PostgreSQL pagination/escaping checks, browser evidence and feature/main CI results must be recorded before acceptance. This document defines the lot; it does not claim it has passed.
+Measured permission, PostgreSQL, frontend, stack/browser and CI outcomes are recorded in the [verification report](../verification/phase-8-customer-search.md). Main acceptance is recorded separately from feature validation.
