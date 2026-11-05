@@ -1,0 +1,106 @@
+openapi: 3.1.0
+info:
+  title: FinCore temporary support account access
+  version: 1.0.0
+  description: >-
+    Additive Phase 8 contract. ADMIN issues or revokes permission for the immutable
+    ACCOUNT incident creator and resource. Only a current SUPPORT_AGENT recipient
+    can consult. Versions are decimal strings. Commands share actor-global keys
+    with incident mutations. Replay returns the original receipt, never current permission.
+    All responses use Cache-Control no-store. Signed roles are checked by Gateway and Audit.
+security: [{ bearer: [] }]
+paths:
+  /api/v1/admin/incidents/{id}/account-access:
+    parameters: [{ $ref: '#/components/parameters/Incident' }]
+    get:
+      summary: Current permission for ADMIN or the incident creator with SUPPORT_AGENT
+      responses:
+        '200':
+          description: Current permission, including NONE at version zero
+          content: { application/json: { schema: { $ref: '#/components/schemas/Grant' } } }
+        '404': { description: Incident absent or outside the recipient scope }
+    put:
+      summary: ADMIN changes permission after explicit confirmation
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, pattern: '^[A-Za-z0-9._:-]{1,120}$' }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: '#/components/schemas/Command' } } }
+      responses:
+        '200':
+          description: Original immutable receipt (Grant plus auditRecordId)
+          content: { application/json: { schema: { $ref: '#/components/schemas/Receipt' } } }
+        '400': { description: Invalid body, duration, reason or version }
+        '403': { description: ADMIN role required }
+        '409': { description: Key reuse, stale grant version, resolved incident, non-account incident or non-revocable grant }
+        '503': { description: No confirmed command result; retry exactly the same key and body }
+  /api/v1/admin/incidents/{id}/account-status:
+    parameters: [{ $ref: '#/components/parameters/Incident' }]
+    post:
+      summary: SUPPORT_AGENT explicitly consults the account status under a current grant
+      description: >-
+        Checks ownership, active incident, permission and database-clock expiry before
+        the Account call and before recording disclosure. Remote calls hold no database
+        lock. Failure to commit the final audit decision withholds the observation.
+        Admission and final outcomes share an attemptId. No account contents are retained
+        in audit facts. Missing and foreign incident observations return the same denial.
+        Resolution revokes the grant atomically and its incident status fact records that
+        invalidation; reopening requires a new ADMIN grant. No automatic client retry.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: false } } }
+      responses:
+        '200':
+          description: >-
+            Redacted accountId, currency, recordedStatus, accountVersion,
+            pendingStatus, lastGuardError, recordedGuardRevision, accountObservedAt,
+            ledgerState and nullable ledger (status, guardRevision, observedAt).
+            Same independent observation semantics as inspection-v1.yaml; excludes customerId.
+            Ledger failure may produce an explicit partial UNAVAILABLE observation.
+        '403': { description: Current SUPPORT_AGENT and incident grant required; no observation disclosed }
+        '503': { description: Owner, identity, invalid source or audit storage unavailable; no observation disclosed }
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    Incident:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    Command:
+      type: object
+      additionalProperties: false
+      required: [expectedVersion, action, reason]
+      properties:
+        expectedVersion: { type: string, pattern: '^(0|[1-9][0-9]{0,18})$' }
+        action: { type: string, enum: [ISSUE, REVOKE] }
+        minutes: { type: [integer, 'null'], enum: [5, 15, 30, 60, null] }
+        reason: { type: string, pattern: '^[A-Z][A-Z0-9_]{2,59}$' }
+      description: ISSUE requires minutes; REVOKE requires minutes absent or null. Maximum signed bigint version minus one.
+    Grant:
+      type: object
+      required: [incidentId, accountId, recipient, permission, version, state, issuedBy, issuedAt, expiresAt, revokedAt, reason]
+      properties:
+        incidentId: { type: string, format: uuid }
+        accountId: { type: string, format: uuid }
+        recipient: { type: string }
+        permission: { const: ACCOUNT_STATUS_READ }
+        version: { type: string, pattern: '^(0|[1-9][0-9]{0,18})$' }
+        state: { enum: [NONE, ACTIVE, EXPIRED, REVOKED, RESOLVED] }
+        issuedBy: { type: [string, 'null'] }
+        issuedAt: { type: [string, 'null'], format: date-time }
+        expiresAt: { type: [string, 'null'], format: date-time }
+        revokedAt: { type: [string, 'null'], format: date-time }
+        reason: { type: [string, 'null'] }
+    Receipt:
+      allOf:
+        - { $ref: '#/components/schemas/Grant' }
+        - type: object
+          required: [auditRecordId]
+          properties:
+            auditRecordId: { type: string, format: uuid }
