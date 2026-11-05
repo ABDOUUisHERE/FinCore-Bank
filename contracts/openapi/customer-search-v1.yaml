@@ -1,0 +1,57 @@
+openapi: 3.0.3
+info:
+  title: FinCore ADMIN customer name search
+  version: 0.8.0
+  description: Bounded case-insensitive literal name-prefix search. No support grant, profile mutation, directory count or financial data.
+servers: [{url: 'http://localhost:8280'}]
+security: [{bearer: []}]
+paths:
+  /api/v1/admin/customers/search:
+    post:
+      summary: ADMIN finds up to 20 customer profiles by literal name prefix
+      description: Prefix is stripped and validated as 3–80 UTF-16 code units with no controls. PostgreSQL lower-case matching is not fuzzy or accent-insensitive. Percent and underscore are literal. UUID ordering is stable, but separate pages are later observations. Repeat the same prefix with nextAfterId. No profile or outbox mutation occurs. Read/security audit completion remains subsequent work.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [namePrefix]
+              properties:
+                namePrefix: {type: string, minLength: 3, maxLength: 80}
+                afterId: {type: string, format: uuid, nullable: true}
+      responses:
+        '200':
+          description: A separately observed page, including an empty page; no total count
+          headers:
+            Cache-Control: {schema: {type: string, enum: [no-store]}}
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [items, nextAfterId, observedAt]
+                properties:
+                  items: {type: array, maxItems: 20, items: {$ref: '#/components/schemas/CustomerMatch'}}
+                  nextAfterId: {type: string, format: uuid, nullable: true}
+                  observedAt: {type: string, format: date-time}
+        '400': {description: Invalid prefix/cursor or malformed/unknown JSON fields}
+        '401': {description: Missing or invalid signed identity}
+        '403': {description: ADMIN is required independently at Gateway and Customer}
+        '413': {description: JSON body exceeds 16 KiB}
+        '503': {description: Storage unavailable or bounded query expired; raw error is suppressed}
+components:
+  securitySchemes:
+    bearer: {type: http, scheme: bearer, bearerFormat: JWT}
+  schemas:
+    CustomerMatch:
+      type: object
+      additionalProperties: false
+      required: [customerId, displayName, status, profileVersion, createdAt]
+      properties:
+        customerId: {type: string, format: uuid}
+        displayName: {type: string, maxLength: 80}
+        status: {type: string, enum: [ACTIVE]}
+        profileVersion: {type: string, pattern: '^(0|[1-9][0-9]*)$'}
+        createdAt: {type: string, format: date-time}

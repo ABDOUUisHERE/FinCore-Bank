@@ -20,6 +20,10 @@ spring:
             - id: customer-inspection
               uri: ${CUSTOMER_SERVICE_URL:http://localhost:8081}
               predicates: ["Path=/api/v1/admin/customers/*"]
+              filters:
+                - name: RequestSize
+                  args:
+                    maxSize: 16KB
             - id: payment-inspection
               uri: ${PAYMENT_SERVICE_URL:http://localhost:8084}
               predicates: ["Path=/api/v1/admin/transactions/*"]

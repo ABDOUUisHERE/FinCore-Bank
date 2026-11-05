@@ -1,0 +1,142 @@
+{
+  "date": "2026-11-04",
+  "localVerifiedAt": "2026-11-05T09:41:31.240Z",
+  "lot": "Phase 8 lot 4: customer name search",
+  "base": "08afb392c9576018d8b7cf191b9d62c9a4918fca",
+  "applicationSource": "f41324f1f2790ee354a1f0919b39217f8285fb74",
+  "branch": "feature/fincore-customer-search",
+  "acceptance": "feature validated; main integration pending",
+  "featureCi": [
+    {
+      "id": 41882121968,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "f41324f1f2790ee354a1f0919b39217f8285fb74",
+      "head_branch": "feature/fincore-customer-search",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41882121968",
+      "created_at": "2026-11-04T17:57:22Z",
+      "updated_at": "2026-11-04T18:09:20Z",
+      "jobs": [
+        {
+          "id": 126756991655,
+          "name": "compose",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41882121968/job/126756991655"
+        }
+      ]
+    },
+    {
+      "id": 41882121921,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "f41324f1f2790ee354a1f0919b39217f8285fb74",
+      "head_branch": "feature/fincore-customer-search",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41882121921",
+      "created_at": "2026-11-04T17:57:22Z",
+      "updated_at": "2026-11-04T17:58:13Z",
+      "jobs": [
+        {
+          "id": 126756989980,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41882121921/job/126756989980"
+        }
+      ]
+    },
+    {
+      "id": 41882121793,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "f41324f1f2790ee354a1f0919b39217f8285fb74",
+      "head_branch": "feature/fincore-customer-search",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41882121793",
+      "created_at": "2026-11-04T17:57:22Z",
+      "updated_at": "2026-11-04T18:00:47Z",
+      "jobs": [
+        {
+          "id": 126756989657,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/41882121793/job/126756989657"
+        }
+      ]
+    }
+  ],
+  "results": {
+    "fullBackend": {
+      "passed": 239,
+      "classes": 47,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "frontend": {
+      "passed": 44,
+      "files": 9,
+      "typecheck": "passed",
+      "lint": "passed",
+      "productionBuilds": 2
+    },
+    "fullBrowserJourneys": 11,
+    "nativeFocusedJava": {
+      "passed": 29,
+      "classes": 8,
+      "gateway": 12,
+      "customer": 17
+    },
+    "nativeFrontend": {
+      "baselineFullPassed": 44,
+      "baselineSource": "58c1821c3a47464e35809808285f0be878e38e23",
+      "finalFocusedSearchPassed": 6,
+      "finalSourceCiFullPassed": 44
+    },
+    "nativeBrowserJourneys": 2,
+    "newBrowserJourneys": 1,
+    "nativeHealthyRuntimes": 16,
+    "nativeCredentialsPreserved": true,
+    "nativeResponsiveWidths": [
+      1440,
+      390,
+      320
+    ],
+    "productionDependencyAdvisories": 0,
+    "contractPaths": 1,
+    "resolvedContractReferences": 1
+  },
+  "observations": [
+    "Initial native PostgreSQL invocation stopped before database startup because Docker Desktop was manually paused. User resumed it; unchanged PostgreSQL suite passed.",
+    "Full native frontend suite passed 44 cases before the singular-label correction. A focused assertion reproduced the copy issue, then all six search cases passed after correction; final-source CI passed all 44.",
+    "Superseded feature workflows were automatically cancelled; latest-source jobs initially waited for scheduling. No claim of product failure or confirmed external incident is inferred from queue status.",
+    "Only Customer, Gateway and Admin images replaced. No schema/identity upgrade, credential rotation, volume deletion or unrelated project restart.",
+    "The follow-up native image build was interrupted on November 4 and not counted as a pass. Final local stack/browser acceptance completed on November 5, including existing account inspection and actual Ledger stop/restoration."
+  ],
+  "semantics": {
+    "search": "PostgreSQL case-insensitive literal name prefix, 3–80 UTF-16 code units, no controls",
+    "pagination": "At most 20 rows in ascending UUID order; repeat prefix with nextAfterId; separate observations, no total or cross-page snapshot",
+    "privacy": "ADMIN-only POST JSON, no query term in URL, no-store response and no persistent search cache",
+    "mutation": "No profile or outbox mutation from search",
+    "performance": "Three-second database query timeout; no large-corpus latency acceptance"
+  },
+  "remaining": [
+    "scoped support business grants",
+    "complete critical-action/security/read audit",
+    "further customer/payment administration",
+    "aggregate monitoring",
+    "distributed tracing",
+    "six Grafana dashboards",
+    "Phases 9–11"
+  ],
+  "publicArtifactsExclude": [
+    "credentials",
+    "tokens",
+    "authenticated profile names/identifiers",
+    "raw logs",
+    "authenticated screenshots"
+  ]
+}

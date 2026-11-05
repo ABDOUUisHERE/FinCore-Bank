@@ -5,12 +5,13 @@ Backend implementation remains Java 21/Spring Boot. This lot implements a delibe
 | Signed role | Available lookup | Excluded data |
 | --- | --- | --- |
 | ADMIN | Customer UUID: onboarding status, profile version and timestamps | Subject, name, country/contact details |
+| ADMIN (lot 4, separate search route) | Literal name prefix: up to 20 names and references, then existing status inspection | Subject, country/contact, accounts and financial data |
 | ADMIN (lot 3) | Account UUID: recorded intent and separately observed Ledger status/revision | Subject, internal Ledger ID, balance, postings, keys and raw dependency responses |
 | ADMIN | Payment UUID: status/version, structured result/reason codes, journal/original payment references and 50-transition pages | Actor, amounts, currency, account IDs, free reference, idempotency key, instruction/risk/lease details |
 | FINANCE_OPERATOR | Journal UUID: authoritative operation reference, exact decimal debit/credit postings and currency | Customer profile, payment intent, financial mutation |
 | SUPPORT_AGENT, CUSTOMER, FRAUD_ANALYST | No new inspection access | An incident resource UUID is not a business authorization grant |
 
-Multi-role users receive only the union of their explicit roles. ADMIN alone still cannot read journals or reconciliation. Support retains its existing own-incident access. Scoped support grants, customer/name search, aggregate financial dashboards and reversal workflows are subsequent work. The additive lot 3 account read has its own [upgrade and observation semantics](account-status-phase-8.md).
+Multi-role users receive only the union of their explicit roles. ADMIN alone still cannot read journals or reconciliation. Support retains its existing own-incident access. Scoped support grants, further customer/payment administration, aggregate financial dashboards and reversal workflows are subsequent work. The additive lot 3 account read has its own [upgrade and observation semantics](account-status-phase-8.md); lot 4 has a separate [bounded name-search guide](customer-search-phase-8.md).
 
 ## Local upgrade
 
@@ -36,4 +37,4 @@ Journal reads use immutable authoritative Ledger postings and preserve decimal s
 
 The response `X-Correlation-ID` identifies the current HTTP request. Payment does not store historic request correlation IDs in its status table, so the inspection does not invent a historical correlation timeline. Existing retained domain facts remain available through Audit. Inspection reads do not yet generate new audit events; complete sensitive-read/security auditing belongs to the remaining Phase 8 audit work.
 
-The [OpenAPI contract](../../contracts/openapi/inspection-v1.yaml) now documents four routes, including the additive Account read. [Lot 2 verification](../verification/phase-8-inspection.md) records its original three-route acceptance separately from the earlier Audit/Incidents lot and later [Account verification](../verification/phase-8-account-status.md).
+The [inspection OpenAPI contract](../../contracts/openapi/inspection-v1.yaml) documents four exact-reference routes, including the additive Account read. The separate [search contract](../../contracts/openapi/customer-search-v1.yaml) adds the POST name-prefix route. [Lot 2 verification](../verification/phase-8-inspection.md) records its original three-route acceptance separately from the earlier Audit/Incidents lot and later [Account verification](../verification/phase-8-account-status.md) and [search verification](../verification/phase-8-customer-search.md).
