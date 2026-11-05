@@ -1,6 +1,6 @@
 # Phase 8 lot 5 — temporary support account access
 
-Date: 2026-11-05 UTC. Lot 5 is accepted on its feature branch; main integration is pending. Phase 8 remains in progress.
+Date: 2026-11-05 UTC. Lot 5 is accepted and merged on main. Phase 8 remains in progress.
 
 Application source: `5eff6db63f2b9360e3a649fae48f62d5896455e5`, based on the previously accepted customer search lot. All business changes use Java 21/Spring Boot. The existing Python Keycloak setup utility gains token renewal and two provisioning-only regression tests.
 
@@ -42,3 +42,17 @@ Initial Windows frontend runs exceeded default five-second test/one-second async
 Admission is not disclosure; a DISCLOSED fact records a decision rather than proof of browser receipt. Account and Ledger are separate observations. Revocation cannot retract delivered data. Grant changes and consultation decisions are retained locally; authentication/role/malformed-body denials precede this domain check. Historical grant receipts retain original expiry after reissue or revocation. Complete cross-service critical-action/read/security audit, additional customer/payment support scope, tracing and six Grafana dashboards remain Phase 8 work. Later roadmap phases are not accepted by this lot.
 
 Generated credentials, authenticated identifiers/screenshots, raw logs and temporary diagnostics remain private. No force push, history rewrite, empty commit or artificial contribution was used.
+
+## Main integration
+
+Merged as `62bb8f28d3eb2bdc3ccebc33c87f624e87140d8d` on November 5 UTC. Application, configuration and tests are identical to feature-tested source `5eff6db63f2b9360e3a649fae48f62d5896455e5`; subsequent acceptance/proof changes contain documentation only. All independent main checks passed:
+
+| Workflow | Observed main result |
+| --- | --- |
+| [Backend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42019456850) | 255 passed in 50 classes; no failures, errors or skips |
+| [Frontend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42019456866) | 49 passed; types, lint, both builds and high-severity audit gate pass |
+| [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42019456955) | 12 journeys passed; fresh Compose, authentication, Ledger smoke and Kafka ACL/DLQ/replay pass |
+
+A further native probe used actual Keycloak client credentials: fincore-audit has only the account.support.read business authority and no staff/customer realm role. Its redacted Account route succeeds; Account lookup/list/ADMIN routes, the existing lookup worker at the new route, and Ledger audience access are denied. No token or account payload is published. All 16 local runtimes remained healthy after acceptance.
+
+At the merge, GitHub associated all 14 new commits with ABDOUUisHERE and its API reported 17 contributions for November 5 UTC, up from 3 before merging. This final proof is one additional documentation commit. The contribution target of 100 has not been reached. Phase 8 remains in progress.

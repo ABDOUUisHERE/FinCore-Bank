@@ -136,5 +136,97 @@
     "Disclosure is an authorization decision, not proof of browser receipt or a distributed Account/Ledger snapshot",
     "No support customer search, payment metadata, journal or financial mutation",
     "Complete critical-action/read/security audit coverage, tracing and six Grafana dashboards remain later Phase 8 work"
-  ]
+  ],
+  "mainIntegration": {
+    "checkedAt": "2026-11-05T11:43:31.226Z",
+    "merge": "62bb8f28d3eb2bdc3ccebc33c87f624e87140d8d",
+    "sourceUnchanged": true,
+    "workflows": [
+      {
+        "id": 42019456866,
+        "name": "Frontend quality",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "62bb8f28d3eb2bdc3ccebc33c87f624e87140d8d",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42019456866",
+        "created_at": "2026-11-05T11:30:08Z",
+        "updated_at": "2026-11-05T11:31:13Z",
+        "jobs": [
+          {
+            "id": 127218271413,
+            "name": "verify",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42019456866/job/127218271413"
+          }
+        ]
+      },
+      {
+        "id": 42019456850,
+        "name": "Backend quality",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "62bb8f28d3eb2bdc3ccebc33c87f624e87140d8d",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42019456850",
+        "created_at": "2026-11-05T11:30:08Z",
+        "updated_at": "2026-11-05T11:32:40Z",
+        "jobs": [
+          {
+            "id": 127218271966,
+            "name": "verify",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42019456850/job/127218271966"
+          }
+        ]
+      },
+      {
+        "id": 42019456955,
+        "name": "Foundation integration",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "62bb8f28d3eb2bdc3ccebc33c87f624e87140d8d",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42019456955",
+        "created_at": "2026-11-05T11:30:08Z",
+        "updated_at": "2026-11-05T11:42:00Z",
+        "jobs": [
+          {
+            "id": 127218272091,
+            "name": "compose",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42019456955/job/127218272091"
+          }
+        ]
+      }
+    ],
+    "backend": {
+      "tests": 255,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "classes": 50,
+      "buildSuccess": true
+    },
+    "frontendCases": 49,
+    "browserJourneys": 12,
+    "nativeTechnicalIdentity": {
+      "realClientCredentials": true,
+      "narrowAccountRoleOnly": true,
+      "noStaffOrCustomerRealmRole": true,
+      "redactedStatusRead": true,
+      "lookupListAdminRoutesDenied": true,
+      "existingLookupWorkerDenied": true,
+      "ledgerAudienceDenied": true
+    },
+    "activityObservedAtMerge": {
+      "checkedAt": "2026-11-05T11:31:00.161414+00:00",
+      "newCommits": 14,
+      "allCommitsAttributed": true,
+      "commitContributionsToday": 17
+    }
+  }
 }
