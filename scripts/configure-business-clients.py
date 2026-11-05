@@ -1,6 +1,7 @@
 """Configure account/payment clients and standard token exchange on fresh AND persisted realms; no secrets printed."""
 import json
 import os
+import time
 from pathlib import Path
 import urllib.error
 import urllib.parse
@@ -17,15 +18,28 @@ def main():
                 values.setdefault(key, value)
     base = values.get("KEYCLOAK_URL", "http://localhost:8180").rstrip("/")
     form = urllib.parse.urlencode({"client_id": "admin-cli", "grant_type": "password", "username": "platform-admin", "password": values["KEYCLOAK_ADMIN_PASSWORD"]}).encode()
-    with urllib.request.urlopen(base + "/realms/master/protocol/openid-connect/token", form, timeout=15) as response:
-        token = json.load(response)["access_token"]
+    def authenticate():
+        with urllib.request.urlopen(base + "/realms/master/protocol/openid-connect/token", form, timeout=15) as response:
+            grant = json.load(response)
+        return grant["access_token"], time.monotonic() + max(0, int(grant["expires_in"]) - 5)
+
+    token, deadline = authenticate()
 
     def api(method, path, body=None):
+        nonlocal token, deadline
         data = None if body is None else json.dumps(body).encode()
-        request = urllib.request.Request(base + "/admin/realms/fincore" + path, data, {"Authorization": "Bearer " + token, "Content-Type": "application/json"}, method=method)
-        with urllib.request.urlopen(request, timeout=15) as response:
-            raw = response.read()
-            return json.loads(raw) if raw else None
+        if time.monotonic() >= deadline:
+            token, deadline = authenticate()
+        for attempt in range(2):
+            request = urllib.request.Request(base + "/admin/realms/fincore" + path, data, {"Authorization": "Bearer " + token, "Content-Type": "application/json"}, method=method)
+            try:
+                with urllib.request.urlopen(request, timeout=15) as response:
+                    raw = response.read()
+                    return json.loads(raw) if raw else None
+            except urllib.error.HTTPError as failure:
+                if failure.code != 401 or attempt:
+                    raise
+                token, deadline = authenticate()
 
     def client(client_id, config):
         existing = api("GET", "/clients?clientId=" + client_id)
