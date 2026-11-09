@@ -1,6 +1,6 @@
 # Phase 8 lot 6 — temporary support payment access
 
-Date: 2026-11-09 UTC. Lot 6 is accepted on the feature branch; main integration is recorded separately below. Phase 8 remains in progress. Baseline main: `2055889dab72817f0fa7b889579b822c13d29e3e`. Tested application source: `fac25b9eb641fca9d629fd893b82d27b3219701d`.
+Date: 2026-11-09 UTC. Lot 6 is accepted and merged on main. Phase 8 remains in progress. Baseline main: `2055889dab72817f0fa7b889579b822c13d29e3e`. Tested application source: `fac25b9eb641fca9d629fd893b82d27b3219701d`.
 
 This lot adds ADMIN-issued PAYMENT_STATUS_READ for the creator and immutable resource of an active PAYMENT incident. The support observation includes only payment reference, kind, status, exact string version and observation/creation times. It excludes amounts, actors, account and journal links, free-text reference, risk assessment and worker internals. SUPPORT_AGENT cannot search payments or initiate, approve, cancel, fund or reverse them.
 
@@ -39,3 +39,17 @@ The local stack was initially stopped. Dependencies were started without deletin
 ## Scope limits
 
 Payment processing status does not certify a Ledger posting. DISCLOSED records an authorization decision, not proof of browser receipt. Delivered information cannot be withdrawn retroactively. Authentication, role and malformed-body denials precede the domain audit decision path. Customer support scope, complete critical/read/security audit coverage, tracing and six observed dashboards remain later Phase 8 work. Phases 9–11 remain unaccepted. Authenticated identifiers, screenshots, credentials and raw logs remain private.
+
+## Main integration
+
+Merged as `35549b53b4927eb0b7bd400b024b6c08ba1c4a53` on November 9 UTC. Application, configuration and tests are identical to tested source `fac25b9eb641fca9d629fd893b82d27b3219701d`. Later acceptance, roadmap and proof changes contain documentation only. All independent main workflows pass:
+
+| Workflow | Observed result |
+| --- | --- |
+| [Frontend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42600004877) | 55 cases; types, lint, both builds and dependency gate pass |
+| [Backend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42600004717) | 270 cases in 53 classes; zero failure/error/skip |
+| [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42600004728) | 13 browser journeys; fresh Compose, independent auth, Ledger and Kafka ACL/DLQ/replay pass |
+
+The positive Payment observation was also inspected on desktop and mobile using hosted PKCE; layout checks pass at 1440/390/320 px and authenticated captures remain private. The temporary verification grant was revoked. All 16 local runtimes were healthy.
+
+Before this final proof, GitHub associated all 12 new commits with ABDOUUisHERE and reported 11 contributions for November 9 UTC, up from zero before main integration. The earlier scope commit keeps its original November 5 date. This proof is an additional documentation commit. The target of one hundred contributions has not been reached; no dates or empty commits were manufactured. Phase 8 remains incomplete.
