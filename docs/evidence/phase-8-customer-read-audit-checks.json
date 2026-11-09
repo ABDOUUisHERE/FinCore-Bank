@@ -100,7 +100,78 @@
     "nativeDatabaseStartup": "An existing DatabaseIsolationIT container startup exceeded its log readiness deadline during concurrent image compilation. Its later isolated five-case run passed.",
     "nativeAssertion": "The first immutability assertion inspected the Spring wrapper message rather than the SQL cause. It now checks the permission SQLSTATE."
   },
-  "mainIntegration": null,
+  "mainIntegration": {
+    "checkedAt": "2026-11-09T15:24:10.615Z",
+    "merge": "11707a27c3f9c8b6b781ad53611b70faa717907e",
+    "checks": [
+      {
+        "name": "Frontend quality",
+        "id": 42642070434,
+        "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42642070434",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "id": 129245466840,
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "name": "Backend quality",
+        "id": 42642070457,
+        "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42642070457",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "id": 129245468080,
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "name": "Foundation integration",
+        "id": 42642070440,
+        "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42642070440",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "id": 129245466483,
+            "conclusion": "success"
+          }
+        ]
+      }
+    ],
+    "backend": {
+      "tests": 303,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "classes": 60,
+      "buildSuccess": true
+    },
+    "frontendCases": 64,
+    "browserCases": 14,
+    "freshComposeAndBrokerRecovery": true,
+    "finalNativeHealthyServices": 16,
+    "environmentAndCredentialsStillUnchanged": true,
+    "githubAtMerge": {
+      "checkedAt": "2026-11-09T15:21:38.034793+00:00",
+      "head": "11707a27c3f9c8b6b781ad53611b70faa717907e",
+      "authorLogin": "ABDOUUisHERE",
+      "authorDate": "2026-11-09T15:10:53Z",
+      "defaultBranch": "main",
+      "fork": false,
+      "commitsSincePreviousMain": 13,
+      "githubAttributedCommits": 13,
+      "allComparedCommitsAttributed": true,
+      "observedToday": {
+        "totalCommitContributions": 38,
+        "contributionCalendar": {
+          "totalContributions": 38
+        }
+      }
+    }
+  },
   "remaining": [
     "Security/read audit outside the two Customer ADMIN routes",
     "Other administrative and scoped-assistance behavior",

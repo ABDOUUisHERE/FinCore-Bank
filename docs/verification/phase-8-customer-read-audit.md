@@ -1,6 +1,6 @@
 # Phase 8 lot 8 — Customer administrative read audit
 
-Accepted feature application source `e0d2a60ddf26e3571ca675849e59151b6458a7e8` on November 9, 2026 UTC. Phase 8 remains incomplete. Main integration is recorded separately after its independent checks. [Machine-readable evidence](../evidence/phase-8-customer-read-audit-checks.json).
+Accepted feature application source `e0d2a60ddf26e3571ca675849e59151b6458a7e8` on November 9, 2026 UTC. Phase 8 remains incomplete. Integrated as `11707a27c3f9c8b6b781ad53611b70faa717907e` on main; all three independent main checks pass. [Machine-readable evidence](../evidence/phase-8-customer-read-audit-checks.json).
 
 Customer ADMIN name search and single-reference inspection now buffer their bounded synchronous responses until an immutable owner audit receipt commits. Anonymous/invalid credentials, signed role denials, invalid input, missing references and server outcomes use a finite registry. Audit storage failure replaces the prepared response with sanitized 503; broker/central outages leave a durable outbox source for retry. Names, prefixes, bodies, credentials and raw URLs are absent from the source projection.
 
@@ -30,3 +30,13 @@ An early native PostgreSQL assertion examined the wrapper exception instead of i
 ## Scope and remaining work
 
 Customer migration V4 preserves the old domain envelope and acknowledged delivery bytes, adding a separate append-only receipt source to the existing publisher. The runtime cannot update/delete/truncate receipts or disable their guards; schema/database administrators remain trusted. Synthetic conflict and invalid-record probes retain only hashes/coordinates in central quarantine. This acceptance does not certify Gateway-denied attempts, early servlet/firewall/body-limit rejections, other owner reads/actions, identity-provider events, historical reconstruction, independent immutable backups, tracing or dashboards. The [audit inventory](phase-8-audit-coverage.md) and [Phase 8 coverage](phase-8-progress.md) retain those gaps.
+
+## Independent main integration
+
+Merged and pushed as [11707a2](https://github.com/ABDOUUisHERE/FinCore-Bank/commit/11707a27c3f9c8b6b781ad53611b70faa717907e). Main independently reran 303 Java cases / 60 classes, 64 frontend cases / 13 files and all 14 hosted browser journeys, plus the actual audit storage/replay probe, Ledger smoke and broker ACL/DLQ/replay checks. All passed. Final native observation still has 16 healthy running services and the original environment/credential bytes. No financial/source/runtime changes were introduced by this documentation proof.
+
+- [Frontend quality on main](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42642070434) — success.
+- [Backend quality on main](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42642070457) — success.
+- [Foundation integration on main](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42642070440) — success.
+
+GitHub REST attributes all 13 commits since the previous main to ABDOUUisHERE on the non-fork default branch. The contribution calendar is an independently observed value recorded with its timestamp in the evidence; it is not inferred from the number of commits. The final documentation proof is created after that merge observation.

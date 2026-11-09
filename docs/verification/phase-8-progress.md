@@ -1,6 +1,6 @@
 # Phase 8 requirement coverage and remaining acceptance
 
-Checkpoint: November 9, 2026 UTC. Application source `e0d2a60ddf26e3571ca675849e59151b6458a7e8` passes feature acceptance for Customer administrative read audit. Phase 8 is incomplete. The [lot 8 report](phase-8-customer-read-audit.md) and its evidence distinguish feature acceptance from subsequent independent main integration; previous lot reports retain their own measurements.
+Checkpoint: November 9, 2026 UTC. Application source `e0d2a60ddf26e3571ca675849e59151b6458a7e8`, integrated as `11707a27c3f9c8b6b781ad53611b70faa717907e` with all independent main checks passing. Phase 8 is incomplete. The [Customer administrative read audit report](phase-8-customer-read-audit.md) separates feature and main validation; previous lot reports retain their own measurements.
 
 The baseline is the supplied [specification](../fincore/specification.md), especially user roles, Observability and Phase 8. Earlier phase reports remain the evidence for earlier functionality.
 
