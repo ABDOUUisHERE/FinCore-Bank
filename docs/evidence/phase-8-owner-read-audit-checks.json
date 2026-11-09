@@ -1,0 +1,127 @@
+{
+  "checkedAt": "2026-11-09T16:04:49.120Z",
+  "applicationSource": "ced831a9750084e50e5e1fd269997e07fb7116df",
+  "baselineMain": "254281d1c24b72ff4a8b194c4310d4cc5e7fad24",
+  "phase": 8,
+  "lot": 9,
+  "phaseComplete": false,
+  "featureChecks": [
+    {
+      "name": "Backend quality",
+      "id": 42648209420,
+      "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42648209420",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 129267122465,
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "Frontend quality",
+      "id": 42648209679,
+      "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42648209679",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 129267133322,
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "Foundation integration",
+      "id": 42648209179,
+      "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42648209179",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 129267121735,
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "backend": {
+    "tests": 323,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 63,
+    "buildSuccess": true
+  },
+  "frontend": {
+    "cases": 64,
+    "files": 13,
+    "typecheck": true,
+    "lint": true,
+    "builds": 2,
+    "auditSeverityGatePassed": true
+  },
+  "hostedBrowser": {
+    "cases": 14,
+    "passed": 14
+  },
+  "native": {
+    "tests": 52,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 11,
+    "buildSuccess": true,
+    "browserCases": 5,
+    "owners": [
+      "customer",
+      "account",
+      "payment"
+    ],
+    "brokerDeliveryReplayQuarantineAndStorageRecovery": true,
+    "crossOwnerProducerDenials": true,
+    "healthyRuntimeServices": 16,
+    "preservedUpgrade": {
+      "migrations": {
+        "customer": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "account": [
+          "1",
+          "2",
+          "3"
+        ],
+        "payment": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ]
+      },
+      "credentialsAndEnvironmentUnchanged": true,
+      "businessRowsUnchanged": true,
+      "oldDomainEnvelopesAndDeliveriesUnchanged": true,
+      "existingCustomerReadReceiptsUnchanged": true,
+      "allThreeGrantFamiliesAndOriginalReceiptsUnchanged": true,
+      "originalReceiptCount": 67,
+      "countsUnchangedBeforeBrowser": {
+        "customer": 48,
+        "account": 90,
+        "payment": 152,
+        "ledger": 120,
+        "audit": 13
+      },
+      "newOwnerReceiptBackfill": 0
+    }
+  },
+  "mainIntegration": null,
+  "remaining": [
+    "Critical actions, sensitive reads and security events outside the three finite ADMIN owner registries",
+    "Remaining administration and scoped assistance",
+    "Collected cross-service HTTP and asynchronous Kafka traces",
+    "Six observed monitoring dashboards",
+    "Phases 9–11"
+  ]
+}
