@@ -10,7 +10,7 @@ function compose(args, input) {
   return spawnSync("docker", ["compose", ...args], { input, encoding: "utf8", timeout: 90_000, maxBuffer: 2 * 1024 * 1024 });
 }
 function sql(database, statement) {
-  assert(["customer", "account", "payment", "audit"].includes(database));
+  assert(["customer", "account", "payment", "reporting", "audit"].includes(database));
   const result = compose(["exec", "-T", "postgres", "sh", "-c",
     'PGPASSWORD="$POSTGRES_PASSWORD" psql -X -v ON_ERROR_STOP=1 -U fincore_bootstrap -d ' + database + " -At"], statement);
   assert.equal(result.status, 0, "Private database verification failed");
@@ -35,26 +35,28 @@ function publish(domain, key, body) {
     "--bootstrap-server", "kafka:9092", "--producer.config", "/etc/kafka/secrets/" + domain + ".properties", "--topic", "fincore." + domain + ".access.recorded.v1",
     "--sync", "--property", "parse.key=true", "--property", "key.separator=|", "--producer-property", "max.block.ms=10000",
     "--producer-property", "request.timeout.ms=5000", "--producer-property", "delivery.timeout.ms=12000"], key + "|" + body + "\n");
-  assert.equal(result.status, 0, "Customer access broker publication failed");
+  assert.equal(result.status, 0, "Owner access broker publication failed");
 }
 const hash = body => createHash("sha256").update(body).digest("hex");
 export async function verifyReadAudit(domain, exerciseStorageFailure = false) {
-  assert(["customer", "account", "payment"].includes(domain));
+  assert(["customer", "account", "payment", "reporting"].includes(domain));
   const reference = domain === "customer" ? null : randomUUID();
-  const action = domain === "customer" ? "CUSTOMER_SEARCH" : domain.toUpperCase() + "_INSPECT";
-  const route = { domain, path: domain === "customer" ? "/api/v1/admin/customers/search" : "/api/v1/admin/" + (domain === "account" ? "accounts/" : "transactions/") + reference };
+  const action = domain === "customer" ? "CUSTOMER_SEARCH" : domain === "reporting" ? "STATEMENT_EXPORT_PDF" : domain.toUpperCase() + "_INSPECT";
+  const referenceColumn = domain === "reporting" ? "resource_id" : domain + "_id";
+  const referenceField = domain === "reporting" ? "statementId" : domain + "Id";
+  const route = { domain, path: domain === "reporting" ? "/api/v1/statements/" + reference + "/pdf" : domain === "customer" ? "/api/v1/admin/customers/search" : "/api/v1/admin/" + (domain === "account" ? "accounts/" : "transactions/") + reference };
 const correlation = randomUUID();
 assert.match(direct(correlation, route), /HTTP\/1\.[01] 401(?:\s|$)/, "Direct owner credentials must be independently enforced");
 const local = JSON.parse(sql(domain, "select row_to_json(a)::text from " + domain + "_access_audit a where correlation_id='" + correlation + "';"));
 assert.equal(local.action, action); assert.equal(local.http_status, 401); assert.equal(local.outcome, "UNAUTHENTICATED");
-assert.equal(local.actor_subject, null); assert.equal(local.actor_provenance, "UNAVAILABLE"); assert.equal(local[domain + "_id"], reference);
+assert.equal(local.actor_subject, null); assert.equal(local.actor_provenance, "UNAVAILABLE"); assert.equal(local[referenceColumn], reference);
 const raw = sql(domain, "select envelope::text from fincore_event_source where event_id='" + local.id + "';");
 const retained = await until(() => sql("audit", "select count(*) from audit_record where id='" + local.id + "';"), v => v === "1", "Owner receipt was not delivered centrally");
 assert.equal(retained, "1");
 const fact = JSON.parse(sql("audit", "select to_jsonb(r)::text from audit_record r where id='" + local.id + "';"));
 assert.equal(fact.actor, null); assert.equal(fact.body_hash, hash(raw)); assert.equal(fact.source_topic, "fincore." + domain + ".access.recorded.v1");
 assert(Number.isInteger(fact.source_partition)); assert.notEqual(fact.source_offset, null);
-assert.deepEqual(fact.details, { action: action, httpMethod: "GET", httpStatus: 401, outcome: "UNAUTHENTICATED", actorProvenance: "UNAVAILABLE", ...(reference ? { [domain + "Id"]: reference } : {}) });
+assert.deepEqual(fact.details, { action: action, httpMethod: "GET", httpStatus: 401, outcome: "UNAUTHENTICATED", actorProvenance: "UNAVAILABLE", ...(reference ? { [referenceField]: reference } : {}) });
 publish(domain, local.id, raw); // Byte-identical duplicate, then a conflicting same-key record in the same partition.
 const conflict = JSON.stringify({ ...JSON.parse(raw), privateCanary: "PRIVATE_AUDIT_CANARY" });
 publish(domain, local.id, conflict);
@@ -87,9 +89,9 @@ if (exerciseStorageFailure) {
 }
 
 export function verifyReadAuditProducerIsolation() {
-  for (const [domain, foreign] of [["account", "payment"], ["payment", "account"]]) {
+  for (const [domain, foreign] of [["account", "payment"], ["payment", "account"], ["reporting", "payment"], ["payment", "reporting"], ["reporting", "ledger"], ["audit", "reporting"]]) {
     const result = compose(["exec", "-T", "-e", "KAFKA_HEAP_OPTS=-Xms32m -Xmx128m", "kafka", "/opt/kafka/bin/kafka-console-producer.sh", "--bootstrap-server", "kafka:9092", "--producer.config", "/etc/kafka/secrets/" + domain + ".properties", "--topic", "fincore." + foreign + ".access.recorded.v1", "--sync", "--producer-property", "max.block.ms=10000", "--producer-property", "request.timeout.ms=5000", "--producer-property", "delivery.timeout.ms=12000"], "{\"mustNeverPublish\":true}\n");
-    assert.match(result.stderr + result.stdout, /TopicAuthorizationException/, "Owner producer must be denied foreign receipts");
+    assert.match(result.stderr + result.stdout, /TopicAuthorizationException|ClusterAuthorizationException/, "Owner producer must be denied foreign receipts");
   }
-  console.info("PASS: Account and Payment producer identities cannot forge each other's access receipts");
+  console.info("PASS: Account/Payment/Reporting producer isolation and Audit non-producer authority confirmed");
 }
