@@ -10,28 +10,19 @@ import org.springframework.stereotype.Service;
 /** Network observation is deliberately outside both database decision transactions. */
 @Service
 public class SupportAccountAccess {
-    private final SupportAccessStore grants;
+    private final SupportObservation observation;
     private final Remote account;
     private final String base;
     public SupportAccountAccess(SupportAccessStore grants,Remote account,@Value("${ACCOUNT_SERVICE_URL:http://localhost:8083}")String base) {
-        this.grants=grants;this.account=account;this.base=base;
+        this.observation=new SupportObservation(grants);this.account=account;this.base=base;
     }
     public record Ledger(String status,String guardRevision,Instant observedAt) {}
     public record Status(UUID accountId,String currency,String recordedStatus,String accountVersion,String pendingStatus,
                          String lastGuardError,String recordedGuardRevision,Instant accountObservedAt,String ledgerState,Ledger ledger) {}
     public Status inspect(UUID incident,String actor,String correlation) {
-        var admission=grants.admit(incident,actor,correlation);
-        if(admission==null)throw denied();
-        Status status;
-        try { status=validate(admission.accountId(),account.call("GET",base+"/internal/v1/accounts/"+admission.accountId()+"/support-status",account.serviceToken(),null)); }
-        catch(RuntimeException failure) {
-            if(!grants.finish(admission,correlation,"SOURCE_UNAVAILABLE"))throw denied();
-            throw new ApiFailure(503,"SUPPORT_ACCOUNT_UNAVAILABLE");
-        }
-        if(!grants.finish(admission,correlation,"DISCLOSED"))throw denied();
-        return status;
+        return observation.read(incident,actor,correlation,SupportAccessStore.Resource.ACCOUNT,
+            id->validate(id,account.call("GET",base+"/internal/v1/accounts/"+id+"/support-status",account.serviceToken(),null)));
     }
-    private static ApiFailure denied() {return new ApiFailure(403,"SUPPORT_ACCESS_UNAVAILABLE");}
     static Status validate(UUID expected,JsonNode source) {
         try {
             if(source==null || !source.isObject() || !text(source,"accountId").equals(expected.toString()))throw new IllegalArgumentException();

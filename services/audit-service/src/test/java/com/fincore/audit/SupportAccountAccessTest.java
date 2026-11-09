@@ -27,13 +27,13 @@ class SupportAccountAccessTest {
     @Test void noGrantOrFailedAdmissionAuditNeverCallsTheOwner() {
         var grants=mock(SupportAccessStore.class);var remote=mock(Remote.class);var access=new SupportAccountAccess(grants,remote,"http://account");var id=UUID.randomUUID();
         assertThatThrownBy(()->access.inspect(id,"support","c")).hasMessage("SUPPORT_ACCESS_UNAVAILABLE");verifyNoInteractions(remote);
-        when(grants.admit(id,"support","c")).thenThrow(new DataAccessResourceFailureException("private-db-message"));
+        when(grants.admit(id,"support","c",SupportAccessStore.Resource.ACCOUNT)).thenThrow(new DataAccessResourceFailureException("private-db-message"));
         assertThatThrownBy(()->access.inspect(id,"support","c")).isInstanceOf(DataAccessResourceFailureException.class);verifyNoInteractions(remote);
     }
     @Test void unavailableSourceIsAuditedAndDoesNotBecomeAnEmptySuccessfulObservation() {
         var grants=mock(SupportAccessStore.class);var remote=mock(Remote.class);var id=UUID.randomUUID();
         var admission=new SupportAccessStore.Admission(id,UUID.randomUUID(),"support","1",UUID.randomUUID());
-        when(grants.admit(id,"support","c")).thenReturn(admission);when(remote.serviceToken()).thenThrow(new ApiFailure(503,"PRIVATE_ERROR"));
+        when(grants.admit(id,"support","c",SupportAccessStore.Resource.ACCOUNT)).thenReturn(admission);when(remote.serviceToken()).thenThrow(new ApiFailure(503,"PRIVATE_ERROR"));
         when(grants.finish(admission,"c","SOURCE_UNAVAILABLE")).thenReturn(true);
         assertThatThrownBy(()->new SupportAccountAccess(grants,remote,"http://account").inspect(id,"support","c")).hasMessage("SUPPORT_ACCOUNT_UNAVAILABLE");
         verify(grants).finish(admission,"c","SOURCE_UNAVAILABLE");
