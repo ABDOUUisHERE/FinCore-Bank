@@ -116,7 +116,80 @@
       "newOwnerReceiptBackfill": 0
     }
   },
-  "mainIntegration": null,
+  "mainIntegration": {
+    "checkedAt": "2026-11-09T16:19:15.531Z",
+    "merge": "90874ca99b3a02732f92b1bdee50e5413291283e",
+    "checks": [
+      {
+        "name": "Backend quality",
+        "id": 42651203598,
+        "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42651203598",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "id": 129277707839,
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "name": "Frontend quality",
+        "id": 42651203554,
+        "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42651203554",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "id": 129277706607,
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "name": "Foundation integration",
+        "id": 42651203481,
+        "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42651203481",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "id": 129277708264,
+            "conclusion": "success"
+          }
+        ]
+      }
+    ],
+    "backend": {
+      "tests": 323,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "classes": 63,
+      "buildSuccess": true
+    },
+    "frontendCases": 64,
+    "browserCases": 14,
+    "allThreeOwnerStorageRecoveryAndCrossOwnerACLChecks": true,
+    "finalNativeHealthyServices": 16,
+    "environmentAndCredentialsStillUnchanged": true,
+    "githubAtMerge": {
+      "checkedAt": "2026-11-09T16:19:11.376197+00:00",
+      "head": "90874ca99b3a02732f92b1bdee50e5413291283e",
+      "authorLogin": "ABDOUUisHERE",
+      "authorDate": "2026-11-09T16:05:16Z",
+      "defaultBranch": "main",
+      "fork": false,
+      "commitsSincePreviousMain": 12,
+      "publicRepository": true,
+      "allComparedCommitAuthorDatesTodayUTC": true,
+      "githubAttributedCommits": 12,
+      "allComparedCommitsAttributed": true,
+      "observedToday": {
+        "totalCommitContributions": 51,
+        "contributionCalendar": {
+          "totalContributions": 51
+        }
+      }
+    }
+  },
   "remaining": [
     "Critical actions, sensitive reads and security events outside the three finite ADMIN owner registries",
     "Remaining administration and scoped assistance",
