@@ -49,10 +49,12 @@ public class SecurityConfiguration {
     }
 
     @Bean
-    SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    SecurityFilterChain securityFilterChain(HttpSecurity http, CustomerAccessAudit accessAudit) throws Exception {
         var converter = new JwtAuthenticationConverter();
         converter.setJwtGrantedAuthoritiesConverter(SecurityConfiguration::roles);
-        return http.csrf(csrf -> csrf.disable())
+        return http.addFilterBefore(new CustomerAccessAuditFilter(accessAudit), org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
+            .addFilterAfter(new CustomerAccessAuditFilter.VerifiedActorFilter(), org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
+            .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
