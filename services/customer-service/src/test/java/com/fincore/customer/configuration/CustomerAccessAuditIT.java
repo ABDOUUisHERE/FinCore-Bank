@@ -28,7 +28,7 @@ class CustomerAccessAuditIT {
     JdbcTemplate runtime() { Flyway.configure().dataSource(POSTGRES.getJdbcUrl().replace("/bootstrap","/customer"),"customer_migrator",PASSWORD).load().migrate();return db("customer_runtime"); }
     @Test void runtimeCanAppendButCannotAlterEraseOrTruncateReceipts() {
         var jdbc=runtime();String correlation=UUID.randomUUID().toString();
-        new CustomerAccessAudit(jdbc).retain(new CustomerAccessAudit.Target("CUSTOMER_INSPECT",UUID.randomUUID()),"GET",403,new CustomerAccessAudit.Actor("signed-subject"),correlation);
+        new CustomerAccessAudit(jdbc,new DataSourceTransactionManager(jdbc.getDataSource())).retain(new CustomerAccessAudit.Target("CUSTOMER_INSPECT",UUID.randomUUID()),"GET",403,new CustomerAccessAudit.Actor("signed-subject"),correlation);
         assertThat(jdbc.queryForObject("select outcome from customer_access_audit where correlation_id=?",String.class,correlation)).isEqualTo("FORBIDDEN");
         for(String sql:List.of("update customer_access_audit set outcome='SERVER_ERROR'","delete from customer_access_audit","truncate customer_access_audit","alter table customer_access_audit disable trigger all"))
             assertThatThrownBy(()->jdbc.execute(sql)).isInstanceOf(org.springframework.dao.DataAccessException.class).rootCause()
@@ -36,7 +36,7 @@ class CustomerAccessAuditIT {
         assertThatThrownBy(()->db("customer_migrator").update("delete from customer_access_audit where correlation_id=?",correlation)).rootCause().hasMessageContaining("CUSTOMER_ACCESS_AUDIT_IMMUTABLE");
     }
     @Test void databaseRejectsUnboundedMetadataWithoutCreatingAnOutboxSource() {
-        var jdbc=runtime();var audit=new CustomerAccessAudit(jdbc);long before=jdbc.queryForObject("select count(*) from customer_access_audit",Long.class);
+        var jdbc=runtime();var audit=new CustomerAccessAudit(jdbc,new DataSourceTransactionManager(jdbc.getDataSource()));long before=jdbc.queryForObject("select count(*) from customer_access_audit",Long.class);
         for(var target:List.of(new CustomerAccessAudit.Target("PRIVATE_ACTION",null),new CustomerAccessAudit.Target("CUSTOMER_SEARCH",UUID.randomUUID())))
             assertThatThrownBy(()->audit.retain(target,"POST",200,null,"safe-correlation")).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         assertThatThrownBy(()->audit.retain(new CustomerAccessAudit.Target("CUSTOMER_SEARCH",null),"POST",200,new CustomerAccessAudit.Actor("person@example.invalid"),"safe-correlation")).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
@@ -46,7 +46,7 @@ class CustomerAccessAuditIT {
     @Test void typedReceiptProducesOneRedactedEnvelopeWithoutChangingProfiles() {
         var jdbc=runtime();String correlation=UUID.randomUUID().toString();
         long profiles=jdbc.queryForObject("select count(*) from customer_profile",Long.class),domain=jdbc.queryForObject("select count(*) from customer_outbox",Long.class);
-        new CustomerAccessAudit(jdbc).retain(new CustomerAccessAudit.Target("CUSTOMER_SEARCH",null),"POST",401,null,correlation);
+        new CustomerAccessAudit(jdbc,new DataSourceTransactionManager(jdbc.getDataSource())).retain(new CustomerAccessAudit.Target("CUSTOMER_SEARCH",null),"POST",401,null,correlation);
         var raw=jdbc.queryForObject("select s.envelope::text from fincore_event_source s join customer_access_audit a on a.id=s.event_id where a.correlation_id=?",String.class,correlation);
         var event=EventEnvelope.parse(raw);
         assertThat(event.eventType()).isEqualTo("customer.access.recorded");assertThat(event.aggregateId()).isEqualTo(event.eventId());assertThat(event.aggregateVersion()).isEqualTo(1);
@@ -58,7 +58,7 @@ class CustomerAccessAuditIT {
         var producer=new MockProducer<String,String>(true,new StringSerializer(),new StringSerializer());
         var normal=new OutboxPublisher(jdbc,tx,producer,new SimpleMeterRegistry(),()->{});
         while(normal.publishOne()) { /* Drain any receipts produced by other cases. */ }
-        String correlation=UUID.randomUUID().toString();new CustomerAccessAudit(jdbc).retain(new CustomerAccessAudit.Target("CUSTOMER_SEARCH",null),"POST",200,new CustomerAccessAudit.Actor("signed-subject"),correlation);
+        String correlation=UUID.randomUUID().toString();new CustomerAccessAudit(jdbc,new DataSourceTransactionManager(jdbc.getDataSource())).retain(new CustomerAccessAudit.Target("CUSTOMER_SEARCH",null),"POST",200,new CustomerAccessAudit.Actor("signed-subject"),correlation);
         var interrupted=new OutboxPublisher(jdbc,tx,producer,new SimpleMeterRegistry(),()->{throw new IllegalStateException("SIMULATED_AFTER_ACK_CRASH");});
         assertThat(interrupted.publishOne()).isTrue();var first=producer.history().getLast();
         assertThat(first.topic()).isEqualTo("fincore.customer.access.recorded.v1");assertThat(EventEnvelope.parse(first.value()).correlationId()).isEqualTo(correlation);
