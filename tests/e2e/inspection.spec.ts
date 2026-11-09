@@ -28,6 +28,18 @@ test("staff inspect redacted business state and finance reads a real immutable j
     const response = await identity.page.request.fetch("http://localhost:8280/api/v1" + path, { method, headers: { Authorization: "Bearer " + identity.token, "Idempotency-Key": crypto.randomUUID() }, ...(body ? { data: body } : {}), timeout: 30_000 });
     expect(response.status(), "Business inspection request " + path).toBe(expected); return response.json();
   };
+  const signedStaff=(await call(admin,"GET","/admin/operations/me")).subject;
+  const auditedRead=async(domain:"account"|"payment",path:string,expected=200)=>{
+    const correlation=crypto.randomUUID(),resource=path.split("?")[0].split("/").at(-1)!;
+    const response=await admin.page.request.get("http://localhost:8280/api/v1"+path,{headers:{Authorization:"Bearer "+admin.token,"X-Correlation-ID":correlation,"X-User-ID":"FORGED_ORIGINAL_PAYER"},timeout:30_000});
+    expect(response.status()).toBe(expected);expect(response.headers()["x-correlation-id"]).toBe(correlation);
+    const facts=async()=> (await call(admin,"GET","/admin/audit/records?eventType="+domain+".access.recorded")).items as {actor:string;correlationId:string;details:Record<string,unknown>;sourceTopic:string}[];
+    await expect.poll(async()=>(await facts()).filter(f=>f.correlationId===correlation).length,{timeout:90_000,intervals:[1000,2000]}).toBe(1);
+    const fact=(await facts()).find(f=>f.correlationId===correlation)!;expect(fact.actor).toBe(signedStaff);expect(fact.sourceTopic).toBe("fincore."+domain+".access.recorded.v1");
+    expect(fact.details).toEqual({[domain+"Id"]:resource,action:domain.toUpperCase()+"_INSPECT",httpMethod:"GET",httpStatus:expected,outcome:expected===200?"RESPONSE_READY":expected===404?"NOT_FOUND":"INVALID_REQUEST",actorProvenance:"SIGNED_JWT"});
+    expect(JSON.stringify(fact)).not.toContain("FORGED_ORIGINAL_PAYER");expect(JSON.stringify(fact)).not.toContain("Private inspection canary");
+    return response.json();
+  };
   const profileResponse = await customer.page.request.get("http://localhost:8280/api/v1/customers/me/profile", { headers: { Authorization: "Bearer " + customer.token } });
   if (profileResponse.status() === 404) await call(customer, "POST", "/customers/me/onboarding", { displayName: "Synthetic Inspection Customer", countryCode: "MA" }); else expect(profileResponse.status()).toBe(200);
   const profile = await call(customer, "GET", "/customers/me/profile");
@@ -45,7 +57,8 @@ test("staff inspect redacted business state and finance reads a real immutable j
   const balances = await Promise.all(accounts.map(id => call(customer, "GET", "/accounts/" + id + "/balance")));
   const status = await call(admin, "GET", "/admin/customers/" + profile.customerId);
   expect(Object.keys(status).sort()).toEqual(["createdAt", "customerId", "observedAt", "profileVersion", "status"]);
-  const inspected = await call(admin, "GET", "/admin/transactions/" + accepted.paymentId);
+  const inspected = await auditedRead("payment", "/admin/transactions/" + accepted.paymentId+"?beforeVersion=9007199254740993");
+  await auditedRead("payment","/admin/transactions/"+accepted.paymentId+"?beforeVersion=0",400);
   expect(inspected.journalId).toBe(payment.journalId); expect(inspected.status).toBe("COMPLETED"); expect(inspected.history.length).toBeGreaterThan(2);
   for (const field of ["actor", "key", "reference", "instruction", "initial_response", "amount", "currency", "sourceAccountId", "destinationAccountId", "lease_token", "fingerprint"]) expect(inspected).not.toHaveProperty(field);
   expect(JSON.stringify(inspected)).not.toContain("Private inspection canary");
@@ -58,8 +71,8 @@ test("staff inspect redacted business state and finance reads a real immutable j
   await call(admin, "GET", paths[3], undefined, 403);
   for (const path of paths) await call(admin, "POST", path, {}, 403);
   await call(admin, "GET", "/admin/customers/" + crypto.randomUUID(), undefined, 404);
-  await call(admin, "GET", "/admin/transactions/" + crypto.randomUUID(), undefined, 404);
-  await call(admin, "GET", "/admin/accounts/" + crypto.randomUUID(), undefined, 404);
+  await auditedRead("payment", "/admin/transactions/" + crypto.randomUUID(), 404);
+  await auditedRead("account", "/admin/accounts/" + crypto.randomUUID(), 404);
   await call(finance, "GET", "/admin/ledger/journals/" + crypto.randomUUID(), undefined, 404);
   async function lookup(identity: typeof admin, kind: string, id: string, region: string) {
     await identity.page.getByRole("button", { name: "Inspection", exact: true }).click();
@@ -82,7 +95,7 @@ test("staff inspect redacted business state and finance reads a real immutable j
   const restricted = await customer.page.request.put("http://localhost:8280/api/v1/accounts/" + accounts[0] + "/guard", { headers: { Authorization: "Bearer " + customer.token }, data: { status: "FROZEN", expectedVersion: ownAccount.version }, timeout: 30_000 });
   expect([200, 202]).toContain(restricted.status());
   await expect.poll(async () => (await call(customer, "GET", "/accounts/" + accounts[0])).status, { timeout: 60_000 }).toBe("FROZEN");
-  const accountStatus = await call(admin, "GET", paths[2]);
+  const accountStatus = await auditedRead("account", paths[2]);
   expect(accountStatus.recordedStatus).toBe("FROZEN"); expect(accountStatus.ledgerState).toBe("OBSERVED"); expect(accountStatus.ledger.status).toBe("FROZEN");
   expect(accountStatus.ledger.guardRevision).toBe(accountStatus.recordedGuardRevision); expect(typeof accountStatus.accountVersion).toBe("string");
   for (const field of ["ownerSubject", "ledgerId", "key", "balance", "booked", "available"]) expect(accountStatus).not.toHaveProperty(field);
@@ -92,7 +105,7 @@ test("staff inspect redacted business state and finance reads a real immutable j
   // A dedicated FinCore outage must not be represented as an effective status. Always restore it.
   try {
     ledgerStopped = true; const stopped = spawnSync("docker", ["stop", ledgerContainer()], { encoding: "utf8", timeout: 60_000 }); expect(stopped.status).toBe(0);
-    const partial = await call(admin, "GET", paths[2]); expect(partial.ledgerState).toBe("UNAVAILABLE"); expect(partial.ledger).toBeNull(); expect(partial.recordedStatus).toBe("FROZEN");
+    const partial = await auditedRead("account", paths[2]); expect(partial.ledgerState).toBe("UNAVAILABLE"); expect(partial.ledger).toBeNull(); expect(partial.recordedStatus).toBe("FROZEN");
     await admin.page.getByRole("button", { name: "Refresh account", exact: true }).click();
     await expect(admin.page.getByText("Ledger status is unavailable. The recorded account status is not confirmation of its effective state.", { exact: true })).toBeVisible();
     await expect(admin.page.getByRole("region", { name: "Observed Ledger status" })).toHaveCount(0);
@@ -102,6 +115,6 @@ test("staff inspect redacted business state and finance reads a real immutable j
   await admin.page.getByRole("button", { name: "Refresh account", exact: true }).click(); await expect(admin.page.getByRole("region", { name: "Observed Ledger status" })).toBeVisible();
   const recovered = await call(admin, "GET", paths[2]); expect(recovered.accountVersion).toBe(accountStatus.accountVersion); expect(recovered.ledger.guardRevision).toBe(accountStatus.ledger.guardRevision);
   for (let n = 0; n < accounts.length; n++) expect((await call(customer, "GET", "/accounts/" + accounts[n] + "/balance")).booked).toBe(balances[n].booked);
-  console.info("Business inspection: real customer/payment/journal/account status, exact decimals, role isolation, unchanged money, real Ledger outage/restore and responsive staff screens confirmed.");
+  console.info("Business inspection: redacted Account/Payment receipts with current signed staff, bigint cursor, invalid/missing resource outcomes, unchanged money, separately observed/unavailable Ledger state and responsive staff screens confirmed.");
   for (const identity of [customer, admin, finance, support]) await identity.context.close();
 });

@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Account and Payment administrative read receipt v1",
+  "description": "Owner producer contract for fincore.account.access.recorded.v1 and fincore.payment.access.recorded.v1. Key/aggregateId/eventId equality, status/outcome consistency and producer-bound action/reference are independently checked at ingestion. RESPONSE_READY is a prepared response, not transport receipt or effective financial status. Actor provenance is the producing owner assertion.",
+  "allOf": [
+    {
+      "$ref": "domain-event-v1.json"
+    },
+    {
+      "properties": {
+        "eventType": {
+          "enum": [
+            "account.access.recorded",
+            "payment.access.recorded"
+          ]
+        },
+        "aggregateVersion": {
+          "const": 1
+        },
+        "correlationId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]{1,64}$"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "outcome",
+            "httpMethod",
+            "httpStatus",
+            "actorProvenance"
+          ],
+          "properties": {
+            "action": {
+              "enum": [
+                "ACCOUNT_INSPECT",
+                "PAYMENT_INSPECT"
+              ]
+            },
+            "outcome": {
+              "enum": [
+                "RESPONSE_READY",
+                "INVALID_REQUEST",
+                "UNAUTHENTICATED",
+                "FORBIDDEN",
+                "NOT_FOUND",
+                "SERVER_ERROR"
+              ]
+            },
+            "httpMethod": {
+              "enum": [
+                "GET",
+                "POST",
+                "OTHER"
+              ]
+            },
+            "httpStatus": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 599
+            },
+            "actorProvenance": {
+              "enum": [
+                "SIGNED_JWT",
+                "UNAVAILABLE"
+              ]
+            },
+            "actorSubject": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9:_-]{1,200}$"
+            },
+            "accountId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "paymentId": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "actorProvenance": {
+                    "const": "SIGNED_JWT"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "actorSubject"
+                ]
+              },
+              "else": {
+                "not": {
+                  "required": [
+                    "actorSubject"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "eventType": {
+                "const": "account.access.recorded"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "action": {
+                    "const": "ACCOUNT_INSPECT"
+                  }
+                },
+                "not": {
+                  "required": [
+                    "paymentId"
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "eventType": {
+                "const": "payment.access.recorded"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "action": {
+                    "const": "PAYMENT_INSPECT"
+                  }
+                },
+                "not": {
+                  "required": [
+                    "accountId"
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
