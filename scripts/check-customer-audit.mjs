@@ -39,7 +39,7 @@ function publish(key, body) {
 }
 const hash = body => createHash("sha256").update(body).digest("hex");
 const correlation = randomUUID();
-assert.match(direct(correlation), /401 Unauthorized/, "Direct owner credentials must be independently enforced");
+assert.match(direct(correlation), /HTTP\/1\.[01] 401(?:\s|$)/, "Direct owner credentials must be independently enforced");
 const local = JSON.parse(sql("customer", "select row_to_json(a)::text from customer_access_audit a where correlation_id='" + correlation + "';"));
 assert.equal(local.action, "CUSTOMER_SEARCH"); assert.equal(local.http_status, 401); assert.equal(local.outcome, "UNAUTHENTICATED");
 assert.equal(local.actor_subject, null); assert.equal(local.actor_provenance, "UNAVAILABLE"); assert.equal(local.customer_id, null);
@@ -69,12 +69,12 @@ if (process.argv.includes("--exercise-storage-failure")) {
   const unavailable = randomUUID();
   try {
     sql("customer", "revoke insert on customer_access_audit from customer_runtime;");
-    assert.match(direct(unavailable), /503 Service Unavailable/, "An unretained denial must be replaced with an unavailable response");
+    assert.match(direct(unavailable), /HTTP\/1\.[01] 503(?:\s|$)/, "An unretained denial must be replaced with an unavailable response");
     assert.equal(sql("customer", "select count(*) from customer_access_audit where correlation_id='" + unavailable + "';"), "0");
   } finally {
     sql("customer", "grant insert on customer_access_audit to customer_runtime;");
   }
-  const recovered = randomUUID(); assert.match(direct(recovered), /401 Unauthorized/);
+  const recovered = randomUUID(); assert.match(direct(recovered), /HTTP\/1\.[01] 401(?:\s|$)/);
   assert.equal(sql("customer", "select count(*) from customer_access_audit where correlation_id='" + recovered + "';"), "1");
   console.info("PASS: unavailable owner audit storage returns 503 without claiming retention; runtime INSERT privilege restored and recovery confirmed");
 }
