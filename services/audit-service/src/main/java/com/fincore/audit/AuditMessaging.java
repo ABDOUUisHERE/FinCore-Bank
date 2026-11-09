@@ -42,7 +42,7 @@ public class AuditMessaging {
     public static class AuditListener {
         private final AuditStore store;
         AuditListener(AuditStore store) { this.store=store; }
-        @KafkaListener(topicPattern="fincore\\.(customer|account|ledger|payment|fraud|card)\\..*\\.v1",groupId="fincore-audit-v1",containerFactory="auditKafkaFactory")
+        @KafkaListener(topicPattern="fincore\\.(customer|account|ledger|payment|fraud|card|reporting)\\..*\\.v1",groupId="fincore-audit-v1",containerFactory="auditKafkaFactory")
         public void accept(ConsumerRecord<String,String> record) { store.accept(record.topic(),record.key(),record.value(),record.partition(),record.offset()); }
     }
 }
