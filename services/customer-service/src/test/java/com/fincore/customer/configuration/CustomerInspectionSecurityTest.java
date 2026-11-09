@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({SecurityConfiguration.class, CorrelationFilter.class, CustomerRiskSecurityTest.Decoders.class})
 class CustomerInspectionSecurityTest {
     @Autowired MockMvc http;
+    @MockitoBean CustomerAccessAudit accessAudit;
     @MockitoBean CustomerInspectionController.Inspection store;
     final UUID id = UUID.randomUUID();
     String token(String role) { return SignedTokens.token("fincore-api", "staff", "fincore-admin", List.of(role), Map.of()); }

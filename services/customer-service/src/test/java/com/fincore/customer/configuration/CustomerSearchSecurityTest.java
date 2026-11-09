@@ -20,6 +20,7 @@ import static org.hamcrest.Matchers.*;
 @Import({SecurityConfiguration.class, CorrelationFilter.class, JsonConfiguration.class, CustomerRiskSecurityTest.Decoders.class})
 class CustomerSearchSecurityTest {
     @Autowired MockMvc http;
+    @MockitoBean CustomerAccessAudit accessAudit;
     @MockitoBean Search search;
     final String path = "/api/v1/admin/customers/search";
     String token(String role) { return SignedTokens.token("fincore-api","staff","fincore-admin",List.of(role),Map.of()); }

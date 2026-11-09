@@ -18,7 +18,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(CustomerSupportController.class)
 @Import({SecurityConfiguration.class,CorrelationFilter.class,JsonConfiguration.class,CustomerRiskSecurityTest.Decoders.class})
 class CustomerSupportSecurityTest {
-    @Autowired MockMvc http;@MockitoBean Store store;
+    @Autowired MockMvc http;
+    @MockitoBean CustomerAccessAudit accessAudit;@MockitoBean Store store;
     final UUID id=UUID.randomUUID();final String profile="/internal/v1/customers/"+id+"/support-profile",search="/internal/v1/customers/support-search";
     String machine(String audience,String client,String scope){return SignedTokens.token(audience,"worker",client,List.of(),Map.of("customer-service",Map.of("roles",List.of(scope))));}
     String body(){return "{\"namePrefix\":\"Private\",\"customerIds\":[\""+id+"\"]}";}
