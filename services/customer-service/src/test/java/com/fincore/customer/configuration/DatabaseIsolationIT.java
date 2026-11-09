@@ -4,6 +4,7 @@ import java.nio.file.Path;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.UUID;
+import java.util.List;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
@@ -32,6 +33,20 @@ class DatabaseIsolationIT {
         String url=POSTGRES.getJdbcUrl().replace("/bootstrap","/customer");
         Flyway.configure().dataSource(url,"customer_migrator",PASSWORD).load().migrate();
         return new JdbcTemplate(new DriverManagerDataSource(url,"customer_runtime",PASSWORD));
+    }
+    @Test void supportSearchIsLiteralBoundedAndRestrictedToTheServerSuppliedCustomerSet() {
+        var db=runtime();var store=new com.fincore.customer.adapter.in.web.CustomerSupportController.Store(db);
+        String prefix="Scoped'_%!"+UUID.randomUUID();var ids=java.util.stream.IntStream.range(0,24).mapToObj(n->UUID.randomUUID()).sorted(java.util.Comparator.comparing(UUID::toString)).toList();
+        for(var id:ids)db.update("insert into customer_profile(id,subject,display_name,country_code,version) values(?,?,?,'MA',9007199254740993)",id,"PRIVATE_SUBJECT-"+id,prefix+" Synthetic");
+        var before=db.queryForObject("select jsonb_agg(to_jsonb(p) order by id)::text from customer_profile p",String.class);var outbox=db.queryForObject("select count(*) from customer_outbox",Long.class);
+        var allowed=ids.subList(0,22);var page=store.search(new com.fincore.customer.adapter.in.web.CustomerSupportController.Input("  "+prefix.toLowerCase(java.util.Locale.ROOT)+"  ",allowed));
+        assertThat(page.items()).hasSize(20);assertThat(page.hasMore()).isTrue();assertThat(page.items()).extracting(com.fincore.customer.adapter.in.web.CustomerSupportController.Profile::customerId).containsExactlyElementsOf(allowed.subList(0,20));
+        var narrow=store.search(new com.fincore.customer.adapter.in.web.CustomerSupportController.Input(prefix,List.of(ids.getLast())));assertThat(narrow.items()).hasSize(1);assertThat(narrow.hasMore()).isFalse();
+        assertThat(narrow.items().getFirst().profileVersion()).isEqualTo("9007199254740993");assertThat(narrow.toString()).doesNotContain("PRIVATE_SUBJECT","countryCode");
+        assertThat(store.search(new com.fincore.customer.adapter.in.web.CustomerSupportController.Input("Absent' OR TRUE --",allowed)).items()).isEmpty();
+        assertThat(db.queryForObject("select jsonb_agg(to_jsonb(p) order by id)::text from customer_profile p",String.class)).isEqualTo(before);assertThat(db.queryForObject("select count(*) from customer_outbox",Long.class)).isEqualTo(outbox);
+        assertThat(store.profile(ids.getFirst()).displayName()).isEqualTo(prefix+" Synthetic");
+        assertThatThrownBy(()->store.profile(UUID.randomUUID())).isInstanceOf(org.springframework.web.server.ResponseStatusException.class).hasMessageContaining("CUSTOMER_NOT_FOUND");
     }
 
     @Test void nameSearchPagesRealProfilesWithoutChangingProfileOrOutbox() {

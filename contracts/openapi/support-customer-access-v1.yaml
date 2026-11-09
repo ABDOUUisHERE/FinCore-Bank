@@ -1,0 +1,138 @@
+openapi: 3.1.0
+info:
+  title: FinCore scoped support customer discovery
+  version: 1.0.0
+  description: >-
+    ADMIN grants CUSTOMER_PROFILE_READ for the immutable creator/customer of an
+    active CUSTOMER incident. Current SUPPORT_AGENT recipients may explicitly
+    inspect or search their authorized customer set. Account/Payment contracts
+    and actor-global immutable command receipts retain their previous behavior.
+    Every response uses Cache-Control no-store. Names/prefixes are not retained
+    in audit facts or browser persistence. Audit is the trusted object broker.
+security: [{ bearer: [] }]
+paths:
+  /api/v1/admin/incidents/{id}/customer-access:
+    parameters: [{ $ref: './support-account-access-v1.yaml#/components/parameters/Incident' }]
+    get:
+      summary: ADMIN or the SUPPORT_AGENT creator reads current permission
+      responses:
+        '200':
+          description: Current grant, including NONE at string version zero
+          content: { application/json: { schema: { $ref: '#/components/schemas/Grant' } } }
+        '404': { description: Incident absent or outside recipient scope }
+        '409': { description: CUSTOMER incident required }
+    put:
+      summary: ADMIN issues or revokes the fixed customer/recipient permission
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, pattern: '^[A-Za-z0-9._:-]{1,120}$' }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: './support-account-access-v1.yaml#/components/schemas/Command' } } }
+      responses:
+        '200':
+          description: Original immutable grant receipt plus auditRecordId; never current permission
+          content: { application/json: { schema: { $ref: '#/components/schemas/Receipt' } } }
+        '400': { description: Invalid version, action, reason or duration }
+        '403': { description: ADMIN required }
+        '409': { description: Key reuse, wrong kind, stale grant, resolved incident or non-revocable grant }
+  /api/v1/admin/incidents/{id}/customer-profile:
+    parameters: [{ $ref: './support-account-access-v1.yaml#/components/parameters/Incident' }]
+    post:
+      summary: SUPPORT_AGENT explicitly reads one incident-authorized profile
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: false } } }
+      responses:
+        '200':
+          description: Six authorized profile fields; no subject, country, accounts or financial contents
+          content: { application/json: { schema: { $ref: '#/components/schemas/Profile' } } }
+        '403': { description: Current role, incident ownership and grant required }
+        '503': { description: Source, identity, invalid response or final audit failure; no profile }
+  /api/v1/admin/support/customers/search:
+    post:
+      summary: SUPPORT_AGENT searches only the server-selected current customer grant set
+      description: >-
+        The prefix is trimmed, case-insensitive and literal, including SQL LIKE
+        metacharacters. No client-selected IDs, actor, cursor or global count.
+        Audit admits at most 100 current incident grants and Customer returns at
+        most 20 matching distinct customers from their union. All admitted grants
+        are rechecked before disclosure, including those without a displayed match.
+        Any cohort expiry/revocation/replacement/resolution withholds the entire
+        response. A newly issued grant enters the next search. HTTP holds no DB lock.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [namePrefix]
+              properties:
+                namePrefix: { type: string, minLength: 3, maxLength: 80 }
+      responses:
+        '200':
+          description: Bounded authorized matches; hasMore concerns only that authorized set
+          content: { application/json: { schema: { $ref: '#/components/schemas/Results' } } }
+        '400': { description: Invalid prefix or unknown fields }
+        '403': { description: No active scope, more than 100 incident grants, or changed scope }
+        '503': { description: No confirmed final audit decision or valid owner result; no names }
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+  schemas:
+    Grant:
+      type: object
+      required: [incidentId, customerId, recipient, permission, version, state, issuedBy, issuedAt, expiresAt, revokedAt, reason]
+      properties:
+        incidentId: { type: string, format: uuid }
+        customerId: { type: string, format: uuid }
+        recipient: { type: string }
+        permission: { const: CUSTOMER_PROFILE_READ }
+        version: { type: string, pattern: '^(0|[1-9][0-9]{0,18})$' }
+        state: { enum: [NONE, ACTIVE, EXPIRED, REVOKED, RESOLVED] }
+        issuedBy: { type: [string, 'null'] }
+        issuedAt: { type: [string, 'null'], format: date-time }
+        expiresAt: { type: [string, 'null'], format: date-time }
+        revokedAt: { type: [string, 'null'], format: date-time }
+        reason: { type: [string, 'null'] }
+    Receipt:
+      allOf:
+        - { $ref: '#/components/schemas/Grant' }
+        - type: object
+          required: [auditRecordId]
+          properties:
+            auditRecordId: { type: string, format: uuid }
+    Profile:
+      type: object
+      additionalProperties: false
+      required: [customerId, displayName, status, profileVersion, createdAt, observedAt]
+      properties:
+        customerId: { type: string, format: uuid }
+        displayName: { type: string, minLength: 1, maxLength: 80 }
+        status: { const: ACTIVE }
+        profileVersion: { type: string, pattern: '^(0|[1-9][0-9]{0,18})$' }
+        createdAt: { type: string, format: date-time }
+        observedAt: { type: string, format: date-time }
+    Results:
+      type: object
+      additionalProperties: false
+      required: [items, hasMore, expiresAt, observedAt]
+      properties:
+        items:
+          type: array
+          maxItems: 20
+          items:
+            type: object
+            additionalProperties: false
+            required: [customerId, displayName, status, incidentId]
+            properties:
+              customerId: { type: string, format: uuid }
+              displayName: { type: string, maxLength: 80 }
+              status: { const: ACTIVE }
+              incidentId: { type: string, format: uuid }
+        hasMore: { type: boolean }
+        expiresAt: { type: string, format: date-time, description: Earliest deadline of the complete admitted cohort }
+        observedAt: { type: string, format: date-time }

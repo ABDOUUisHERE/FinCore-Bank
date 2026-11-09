@@ -14,7 +14,7 @@ export function useSupportObservation<T>(subject: string, grant: Grant, kind: Su
   }, [grant.expiresAt]);
   async function inspect() {
     setResult(null); setError(null); setBusy(true); const controller = new AbortController(); pending.current = controller;
-    try { setResult(await request<T>(session.token, "/admin/incidents/" + grant.incidentId + "/" + kind + "-status", { method: "POST", body: {}, signal: controller.signal })); }
+    try { setResult(await request<T>(session.token, "/admin/incidents/" + grant.incidentId + "/" + (kind === "customer" ? "customer-profile" : kind + "-status"), { method: "POST", body: {}, signal: controller.signal })); }
     catch (failure) { setError(failure instanceof Error ? failure : new Error("Status is unavailable.")); }
     finally { setBusy(false); void cache.invalidateQueries({ queryKey: ["operations", subject, "history", grant.incidentId] }); }
   }

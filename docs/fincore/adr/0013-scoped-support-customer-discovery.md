@@ -1,0 +1,7 @@
+# Search only the current incident-authorized customer set
+
+Support customer discovery uses the union of current CUSTOMER_PROFILE_READ grants on the requesting agent's active CUSTOMER incidents, bounded at 100 incidents per search. Audit selects this set and Customer performs a literal name-prefix search only inside it; the browser supplies a prefix, and the broker remains the trusted object-authorization authority described in ADR 0012.
+
+Admission and finalization lock all selected incidents in UUID order before taking the retained-fact lock, with HTTP outside both transactions. The final decision rechecks the entire admitted set and its earliest expiry; any replacement, revocation, resolution or expiry withholds the whole response. This favors a simple complete authorization decision over partial results whose counts could reveal a withdrawn match. Newly issued grants are considered on the next search. Duplicate customer references are deduplicated for the owner request.
+
+The owner and broker project names and limited profile metadata without subjects, country, accounts or financial contents. Names and search prefixes stay out of retained facts and browser persistence. Per-incident checks and a separate aggregate search decision record outcomes and counts; a DISCLOSED decision records authorization, not proof of browser delivery. This does not revoke information already delivered.

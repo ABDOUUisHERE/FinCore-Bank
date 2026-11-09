@@ -1,0 +1,165 @@
+{
+  "checkedAt": "2026-11-09T11:18:03.147Z",
+  "phase": 8,
+  "lot": 7,
+  "projectComplete": false,
+  "source": "1ff018b6a4c2dbfb2951d36299ade7b50cdab58d",
+  "previousMain": "0892b3131a4ef91d7d0143a6b7a80e1df2c78d4e",
+  "feature": [
+    {
+      "id": 42605432520,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "1ff018b6a4c2dbfb2951d36299ade7b50cdab58d",
+      "head_branch": "feature/fincore-support-customer-discovery",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42605432520",
+      "created_at": "2026-11-09T11:00:10Z",
+      "updated_at": "2026-11-09T11:01:28Z",
+      "jobs": [
+        {
+          "id": 129120112556,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42605432520/job/129120112556"
+        }
+      ]
+    },
+    {
+      "id": 42605432612,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "1ff018b6a4c2dbfb2951d36299ade7b50cdab58d",
+      "head_branch": "feature/fincore-support-customer-discovery",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42605432612",
+      "created_at": "2026-11-09T11:00:10Z",
+      "updated_at": "2026-11-09T11:03:07Z",
+      "jobs": [
+        {
+          "id": 129120113137,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42605432612/job/129120113137"
+        }
+      ]
+    },
+    {
+      "id": 42605432549,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "1ff018b6a4c2dbfb2951d36299ade7b50cdab58d",
+      "head_branch": "feature/fincore-support-customer-discovery",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42605432549",
+      "created_at": "2026-11-09T11:00:10Z",
+      "updated_at": "2026-11-09T11:09:21Z",
+      "jobs": [
+        {
+          "id": 129120113269,
+          "name": "compose",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42605432549/job/129120113269"
+        }
+      ]
+    }
+  ],
+  "backend": {
+    "tests": 287,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 57,
+    "buildSuccess": true
+  },
+  "frontend": {
+    "tests": 64,
+    "files": 13,
+    "typecheck": true,
+    "lint": true,
+    "productionBuilds": 2,
+    "ciHighSeverityAuditGate": true
+  },
+  "native": {
+    "javaUniqueCases": 45,
+    "javaScope": "GatewaySecurityTest 10, CustomerSupportSecurityTest 2, CustomerSupportValidationTest 1, DatabaseIsolationIT 5, SupportCustomerAccessTest 6, SupportCustomerSecurityTest 2, SupportAccessDatabaseIT 19",
+    "postgresGrantCases": 19,
+    "frontendCases": 64,
+    "frontendHardwareBudget": "Ignored one-worker native configuration; repository defaults pass on GitHub",
+    "browserJourneys": 3,
+    "browserSpecs": [
+      "support-access.spec.ts: account",
+      "support-access.spec.ts: payment",
+      "support-customer.spec.ts"
+    ],
+    "preservedUpgrade": {
+      "existingSecretsAndEnvUnchanged": true,
+      "credentialsUnchanged": true,
+      "datasetCountsUnchangedBeforeBrowser": true,
+      "legacyAccountGrantsUnchanged": true,
+      "legacyPaymentGrantsUnchanged": true,
+      "existingReceiptsUnchanged": true,
+      "legacyGrantCount": 2,
+      "legacyPaymentGrantCount": 2,
+      "legacyReceiptCount": 39,
+      "auditMigrations": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ]
+    },
+    "machineIdentity": {
+      "realClientCredentials": true,
+      "onlyNarrowAccountPaymentCustomerBusinessRoles": true,
+      "noStaffCustomerRealmRole": true,
+      "exactSixFieldProfile": true,
+      "restrictedCustomerSearch": true,
+      "riskWorkerCannotUseSupportRoutes": true,
+      "adminDirectoryRiskAndMutationDenied": true
+    },
+    "productionAudit": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "runtimes": {
+      "checkedAt": "2026-11-09T11:16:20.084Z",
+      "running": 16,
+      "healthy": 16
+    },
+    "visual": {
+      "positiveProfileInspected": true,
+      "widths": [
+        1440,
+        390,
+        320
+      ],
+      "privateCaptures": [
+        1440,
+        390
+      ]
+    }
+  },
+  "integration": {
+    "browserJourneys": 14,
+    "freshCompose": true,
+    "independentAuthentication": true,
+    "ledgerSmoke": true,
+    "kafkaACLAndDLQReplay": true
+  },
+  "limitations": [
+    "Search rechecks every admitted incident, including unmatched and duplicate customer scopes; new grants enter the next search",
+    "Names and prefixes stay out of audit facts and browser persistence",
+    "Audit is trusted for dynamic per-object authorization; Customer separately checks signed narrow machine authority",
+    "Disclosure records authorization, not proof of browser receipt; delivered names cannot be withdrawn retroactively",
+    "No unscoped directory, subject, country, account, financial contents or profile mutation",
+    "Full cross-service critical/read/security audit coverage, tracing and six dashboards remain later Phase 8 work"
+  ]
+}
