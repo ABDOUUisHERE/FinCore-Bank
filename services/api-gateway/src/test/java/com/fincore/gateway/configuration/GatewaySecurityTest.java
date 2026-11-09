@@ -32,9 +32,9 @@ class GatewaySecurityTest {
 
     @RestController
     static class Endpoint {
-        @GetMapping("/api/v1/admin/incidents/test/account-access") Map<String,Object> grant(){return Map.of("state","NONE");}
-        @org.springframework.web.bind.annotation.PutMapping("/api/v1/admin/incidents/test/account-access") Map<String,Object> issue(){return Map.of("state","ACTIVE");}
-        @org.springframework.web.bind.annotation.PostMapping("/api/v1/admin/incidents/test/account-status") Map<String,Object> support(){return Map.of("ledgerState","UNAVAILABLE");}
+        @GetMapping({"/api/v1/admin/incidents/test/account-access","/api/v1/admin/incidents/test/payment-access"}) Map<String,Object> grant(){return Map.of("state","NONE");}
+        @org.springframework.web.bind.annotation.PutMapping({"/api/v1/admin/incidents/test/account-access","/api/v1/admin/incidents/test/payment-access"}) Map<String,Object> issue(){return Map.of("state","ACTIVE");}
+        @org.springframework.web.bind.annotation.PostMapping({"/api/v1/admin/incidents/test/account-status","/api/v1/admin/incidents/test/payment-status"}) Map<String,Object> support(){return Map.of("state","synthetic");}
         @org.springframework.web.bind.annotation.PostMapping("/api/v1/admin/customers/search") Map<String,Object> search(){return Map.of("items",List.of());}
         @GetMapping({"/api/v1/admin/customers/test","/api/v1/admin/accounts/test","/api/v1/admin/transactions/test","/api/v1/admin/ledger/journals/test"}) Map<String,Object> inspection(){return Map.of("status","synthetic");}
         @GetMapping({"/api/v1/admin/audit/records","/api/v1/admin/audit/summary","/api/v1/admin/audit/quarantine","/api/v1/admin/incidents","/api/v1/admin/operations/me"}) Map<String,Object> operations(){return Map.of("items",List.of());}
@@ -95,15 +95,17 @@ class GatewaySecurityTest {
     }
 
     @Test void supportGrantRoutesNeverInheritUnrestrictedAdministrativeOrFinancialAccess() {
+        for(String kind:List.of("account","payment")) {
         for(String role:List.of("CUSTOMER","FRAUD_ANALYST","FINANCE_OPERATOR","SUPPORT_AGENT","ADMIN")) {
             String token=TestTokens.token(TestTokens.ISSUER,"fincore-api",List.of(role),Instant.now().plusSeconds(120));
-            var read=http.get().uri("/api/v1/admin/incidents/test/account-access").headers(h->h.setBearerAuth(token)).exchange();
+            var read=http.get().uri("/api/v1/admin/incidents/test/"+kind+"-access").headers(h->h.setBearerAuth(token)).exchange();
             if(List.of("ADMIN","SUPPORT_AGENT").contains(role))read.expectStatus().isOk();else read.expectStatus().isForbidden();
-            var write=http.put().uri("/api/v1/admin/incidents/test/account-access").headers(h->h.setBearerAuth(token)).bodyValue("{}").exchange();
+            var write=http.put().uri("/api/v1/admin/incidents/test/"+kind+"-access").headers(h->h.setBearerAuth(token)).bodyValue("{}").exchange();
             if(role.equals("ADMIN"))write.expectStatus().isOk();else write.expectStatus().isForbidden();
-            var inspect=http.post().uri("/api/v1/admin/incidents/test/account-status").headers(h->h.setBearerAuth(token)).bodyValue("{}").exchange();
+            var inspect=http.post().uri("/api/v1/admin/incidents/test/"+kind+"-status").headers(h->h.setBearerAuth(token)).bodyValue("{}").exchange();
             if(role.equals("SUPPORT_AGENT"))inspect.expectStatus().isOk();else inspect.expectStatus().isForbidden();
-            http.get().uri("/api/v1/admin/incidents/test/account-status").headers(h->h.setBearerAuth(token)).exchange().expectStatus().isForbidden();
+            http.get().uri("/api/v1/admin/incidents/test/"+kind+"-status").headers(h->h.setBearerAuth(token)).exchange().expectStatus().isForbidden();
+        }
         }
     }
     @Test void validatesSignedIssuerAudienceExpiryAndRole() {

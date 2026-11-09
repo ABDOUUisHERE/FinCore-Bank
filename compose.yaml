@@ -731,6 +731,7 @@ services:
       AUDIT_CLIENT_SECRET: ${AUDIT_CLIENT_SECRET:?Run local bootstrap first}
       TOKEN_ENDPOINT: http://keycloak:8180/realms/fincore/protocol/openid-connect/token
       ACCOUNT_SERVICE_URL: http://account-service:8080
+      PAYMENT_SERVICE_URL: http://payment-service:8080
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_USER: audit
       KAFKA_PASSWORD: ${KAFKA_AUDIT_PASSWORD:?Run local bootstrap first}
