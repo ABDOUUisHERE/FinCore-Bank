@@ -175,6 +175,9 @@ def main():
         finance_users = api("GET", "/users?username=finance.demo&exact=true")
     api("POST", f"/users/{finance_users[0]['id']}/role-mappings/realm", [api("GET", "/roles/FINANCE_OPERATOR")])
     customer_resource = client("customer-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
+    assign(audit_client, customer_resource, [ensure_role(customer_resource, "customer.support.read")])
+    audience(audit_client, "customer-service")
+    role_claim(audit_client, "customer-service")
     beneficiary_resource = client("beneficiary-service", {"protocol": "openid-connect", "bearerOnly": True, "enabled": True})
     for target, client_id, scope in [(payment_resource, "payment-service", "payment.risk.read"),
             (customer_resource, "customer-service", "customer.risk.read"),
