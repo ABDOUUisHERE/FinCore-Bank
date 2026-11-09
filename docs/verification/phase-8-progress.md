@@ -1,6 +1,6 @@
 # Phase 8 requirement coverage and remaining acceptance
 
-Checkpoint: November 9, 2026 UTC. Application source `1ff018b6a4c2dbfb2951d36299ade7b50cdab58d`; Customer lot main integration is tracked in its report. Phase 8 is incomplete. The [customer support report](phase-8-support-customer.md) separates feature validation from independent main validation. This inventory does not certify unimplemented requirements or estimate a completion percentage.
+Checkpoint: November 9, 2026 UTC. Application source `1ff018b6a4c2dbfb2951d36299ade7b50cdab58d`, integrated as `fd312bfa53fa9c620e2f7a260bb8a74fb9b0b6ae` with all independent main checks passing. Phase 8 is incomplete. The [customer support report](phase-8-support-customer.md) separates feature validation from independent main validation. This inventory does not certify unimplemented requirements or estimate a completion percentage.
 
 The baseline is the supplied [specification](../fincore/specification.md), especially user roles, Observability and Phase 8. Earlier phase reports remain the evidence for earlier functionality.
 

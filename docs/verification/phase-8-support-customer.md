@@ -1,6 +1,6 @@
 # Phase 8 lot 7 — scoped support customer discovery
 
-Date: 2026-11-09 UTC. Lot 7 is accepted on the feature branch; independent main integration is recorded separately. Phase 8 remains in progress. Baseline main: `0892b3131a4ef91d7d0143a6b7a80e1df2c78d4e`. Tested application source: `1ff018b6a4c2dbfb2951d36299ade7b50cdab58d`.
+Date: 2026-11-09 UTC. Lot 7 is accepted and merged on main. Phase 8 remains in progress. Baseline main: `0892b3131a4ef91d7d0143a6b7a80e1df2c78d4e`. Tested application source: `1ff018b6a4c2dbfb2951d36299ade7b50cdab58d`.
 
 ADMIN may grant CUSTOMER_PROFILE_READ to the creator and immutable resource of an active CUSTOMER incident. SUPPORT_AGENT may explicitly read that customer's limited profile and search a literal name prefix only inside the current set of such grants. The owner requires signed fincore-audit plus customer.support.read. No subject, country, account, financial content or profile mutation is exposed. Account/Payment tables, identities and original receipts remain unchanged.
 
@@ -34,3 +34,17 @@ The preserved draft contained a nested-lambda variable name collision; a new fix
 Audit is trusted for dynamic object authorization; its signed machine role can technically read the redacted owner projection without a grant if compromised. Customer independently enforces machine identity and narrow authority. A DISCLOSED record is an authorization decision, not proof of browser receipt, and previously delivered names cannot be withdrawn retroactively. Authentication, role and malformed-input denials precede this domain decision path.
 
 The new [audit coverage inventory](phase-8-audit-coverage.md) identifies missing security/read/export sources; it does not implement or certify full coverage. Complete critical-action/security/read audit, collected distributed tracing and six observed dashboards remain Phase 8 work. Phases 9–11 are not accepted by this lot. GitHub contribution totals are measured after main integration; empty commits and altered dates are not used.
+
+## Main integration
+
+Merged as `fd312bfa53fa9c620e2f7a260bb8a74fb9b0b6ae` on November 9 UTC. Application, configuration and tests are identical to tested source `1ff018b6a4c2dbfb2951d36299ade7b50cdab58d`. Later acceptance, roadmap and proof changes contain documentation only. All independent main workflows pass:
+
+| Workflow | Observed result |
+| --- | --- |
+| [Backend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42608210164) | 287 cases in 57 classes; zero failure/error/skip |
+| [Frontend quality](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42608210160) | 64 cases; types, lint, both builds and dependency gate pass |
+| [Foundation integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42608210156) | 14 browser journeys; fresh Compose, independent auth, Ledger and Kafka ACL/DLQ/replay pass |
+
+The positive Customer observation was also inspected on desktop and mobile using hosted PKCE; layout checks pass at 1440/390/320 px and authenticated captures remain private. The verification grant remains revoked after incident reopening. All 16 local runtimes were healthy.
+
+Before this final proof, GitHub associated all 12 new commits with ABDOUUisHERE and reported 24 contributions for November 9 UTC, up from 12 before this lot. This proof is an additional documentation commit. The target of one hundred contributions has not been reached; no dates or empty commits were manufactured. Phase 8 remains incomplete.
