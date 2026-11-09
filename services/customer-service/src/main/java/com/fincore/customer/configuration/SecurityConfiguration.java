@@ -43,7 +43,8 @@ public class SecurityConfiguration {
             .filter(allowed::contains).distinct()
             .<GrantedAuthority>map(role -> new SimpleGrantedAuthority("ROLE_" + role)).toList());
         var resources=jwt.getClaimAsMap("resource_access");
-        if(resources!=null && resources.get("customer-service") instanceof Map<?,?> resource && resource.get("roles") instanceof List<?> scopes && scopes.contains("customer.risk.read"))result.add(new SimpleGrantedAuthority("customer.risk.read"));
+        if(resources!=null && resources.get("customer-service") instanceof Map<?,?> resource && resource.get("roles") instanceof List<?> scopes)
+            for(String scope:List.of("customer.risk.read","customer.support.read"))if(scopes.contains(scope))result.add(new SimpleGrantedAuthority(scope));
         return List.copyOf(result);
     }
 
@@ -55,6 +56,14 @@ public class SecurityConfiguration {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                .requestMatchers(org.springframework.http.HttpMethod.GET,"/internal/v1/customers/*/support-profile").access((authentication,context)-> {
+                    var signed=authentication.get();boolean client=signed.getPrincipal() instanceof Jwt jwt && "fincore-audit".equals(jwt.getClaimAsString("azp"));
+                    return new org.springframework.security.authorization.AuthorizationDecision(client && signed.getAuthorities().stream().anyMatch(a->a.getAuthority().equals("customer.support.read")));
+                })
+                .requestMatchers(org.springframework.http.HttpMethod.POST,"/internal/v1/customers/support-search").access((authentication,context)-> {
+                    var signed=authentication.get();boolean client=signed.getPrincipal() instanceof Jwt jwt && "fincore-audit".equals(jwt.getClaimAsString("azp"));
+                    return new org.springframework.security.authorization.AuthorizationDecision(client && signed.getAuthorities().stream().anyMatch(a->a.getAuthority().equals("customer.support.read")));
+                })
                 .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/admin/customers/search").hasRole("ADMIN")
                 .requestMatchers("/api/v1/admin/customers/search").denyAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/admin/customers/*").hasRole("ADMIN")
