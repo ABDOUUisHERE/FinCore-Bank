@@ -35,7 +35,7 @@ public class AdministrativeReadAuditFilter extends OncePerRequestFilter {
         try {
             audit.retain(target, request.getMethod(), failure == null ? buffered.getStatus() : 500,
                 (AdministrativeReadAudit.Actor) request.getAttribute(ACTOR), correlation);
-        } catch (DataAccessException unavailable) {
+        } catch (DataAccessException | org.springframework.transaction.TransactionException unavailable) {
             buffered.resetBuffer();
             buffered.setStatus(503);
             buffered.setHeader("WWW-Authenticate", null);
