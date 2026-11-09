@@ -90,7 +90,7 @@ if (exerciseStorageFailure) {
 
 export function verifyReadAuditProducerIsolation() {
   for (const [domain, foreign] of [["account", "payment"], ["payment", "account"], ["reporting", "payment"], ["payment", "reporting"], ["reporting", "ledger"], ["audit", "reporting"]]) {
-    const result = compose(["exec", "-T", "-e", "KAFKA_HEAP_OPTS=-Xms32m -Xmx128m", "kafka", "/opt/kafka/bin/kafka-console-producer.sh", "--bootstrap-server", "kafka:9092", "--producer.config", "/etc/kafka/secrets/" + domain + ".properties", "--topic", "fincore." + foreign + ".access.recorded.v1", "--sync", "--producer-property", "max.block.ms=10000", "--producer-property", "request.timeout.ms=5000", "--producer-property", "delivery.timeout.ms=12000"], "{\"mustNeverPublish\":true}\n");
+    const result = compose(["exec", "-T", "-e", "KAFKA_HEAP_OPTS=-Xms32m -Xmx128m", "kafka", "/opt/kafka/bin/kafka-console-producer.sh", "--bootstrap-server", "kafka:9092", "--producer.config", "/etc/kafka/secrets/" + domain + ".properties", "--topic", "fincore." + foreign + (foreign === "ledger" ? ".journal.posted.v1" : ".access.recorded.v1"), "--sync", "--producer-property", "max.block.ms=10000", "--producer-property", "request.timeout.ms=5000", "--producer-property", "delivery.timeout.ms=12000"], "{\"mustNeverPublish\":true}\n");
     assert.match(result.stderr + result.stdout, /TopicAuthorizationException|ClusterAuthorizationException/, "Owner producer must be denied foreign receipts");
   }
   console.info("PASS: Account/Payment/Reporting producer isolation and Audit non-producer authority confirmed");
