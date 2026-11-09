@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(value=AccountInspectionController.class,properties="ACCOUNT_CLIENT_SECRET=synthetic-test-secret")
 @Import({AccountConfiguration.class,AccountSecurityTest.Decoders.class})
 class AccountInspectionSecurityTest {
+    @org.springframework.test.context.bean.override.mockito.MockitoBean com.fincore.support.AdministrativeReadAudit readAudit;
     @Autowired MockMvc http;@MockitoBean AccountInspection inspection;@MockitoBean Remote remote;
     final UUID id=UUID.randomUUID();
     String token(String role){return SignedTokens.token("fincore-api","staff","fincore-admin",List.of(role),Map.of());}

@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(value=AccountController.class,properties="ACCOUNT_CLIENT_SECRET=synthetic-test-secret")
 @Import({AccountConfiguration.class,AccountSecurityTest.Decoders.class})
 class AccountSecurityTest {
+    @org.springframework.test.context.bean.override.mockito.MockitoBean com.fincore.support.AdministrativeReadAudit readAudit;
     @Autowired MockMvc http;
     @MockitoBean AccountStore store;
     @MockitoBean AccountCoordinator coordinator;
