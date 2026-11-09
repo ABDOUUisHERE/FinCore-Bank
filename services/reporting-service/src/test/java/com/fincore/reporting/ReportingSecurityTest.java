@@ -28,6 +28,7 @@ class ReportingSecurityTest {
   verifyNoInteractions(store,coordinator,remote);
   when(coordinator.journal(id)).thenReturn(Json.read("{\"journalId\":\""+id+"\"}"));http.perform(get(path).header("Authorization","Bearer "+finance)).andExpect(status().isOk());verify(coordinator).journal(id);
  }
+ @MockitoBean AdministrativeReadAudit readAudit;
  @Autowired MockMvc http;@MockitoBean StatementStore store;@MockitoBean ReportingCoordinator coordinator;@MockitoBean Remote remote;
  @TestConfiguration(proxyBeanMethods=false)static class Decoders{@Bean @Primary JwtDecoder decoder()throws Exception{var d=NimbusJwtDecoder.withPublicKey(SignedTokens.KEY.toRSAPublicKey()).build();d.setJwtValidator(ServiceSecurity.validator(SignedTokens.ISSUER,Set.of("fincore-api","reporting-service")));return d;}}
  @Test void reconciliationRequiresExplicitFinanceAndAdminDoesNotInheritIt()throws Exception{for(String token:List.of(SignedTokens.customer(),SignedTokens.token("fincore-api","admin","browser",List.of("ADMIN"),Map.of())))http.perform(get("/api/v1/admin/reports/reconciliation").header("Authorization","Bearer "+token)).andExpect(status().isForbidden());verifyNoInteractions(coordinator);when(coordinator.reconcile()).thenReturn(Json.read("{\"reconciled\":true}"));http.perform(get("/api/v1/admin/reports/reconciliation").header("Authorization","Bearer "+SignedTokens.token("fincore-api","finance","fincore-admin",List.of("FINANCE_OPERATOR"),Map.of()))).andExpect(status().isOk());}

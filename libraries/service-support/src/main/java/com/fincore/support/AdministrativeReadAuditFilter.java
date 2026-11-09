@@ -62,9 +62,10 @@ public class AdministrativeReadAuditFilter extends OncePerRequestFilter {
         private ServletOutputStream bounded;
         private java.io.PrintWriter writer;
         BufferedResponse(HttpServletResponse response,int limit) { super(response);this.limit=limit; }
+        private void checkDeclaredLength(long length){if(length>limit){limitExceeded=true;throw new IllegalStateException("PREPARED_RESPONSE_TOO_LARGE");}}
         private void checkLength(long length){if(length>limit-getContentSize()){limitExceeded=true;throw new IllegalStateException("PREPARED_RESPONSE_TOO_LARGE");}}
-        @Override public void setContentLength(int length){checkLength(length);super.setContentLength(length);}
-        @Override public void setContentLengthLong(long length){checkLength(length);super.setContentLengthLong(length);}
+        @Override public void setContentLength(int length){checkDeclaredLength(length);super.setContentLength(length);}
+        @Override public void setContentLengthLong(long length){checkDeclaredLength(length);super.setContentLengthLong(length);}
         @Override public ServletOutputStream getOutputStream() throws IOException {
             if(bounded==null){var delegate=super.getOutputStream();bounded=new ServletOutputStream(){
                 @Override public void write(int value)throws IOException{checkLength(1);delegate.write(value);}

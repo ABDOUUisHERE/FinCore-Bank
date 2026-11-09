@@ -11,12 +11,15 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtAut
 import org.springframework.security.web.SecurityFilterChain;
 
 @Configuration
-@Import(SupportConfiguration.class)
+@Import({SupportConfiguration.class,com.fincore.messaging.OutboxConfiguration.class})
 public class ReportingConfiguration {
     @Bean JwtDecoder jwtDecoder(@Value("${fincore.security.jwk-set-uri}")String jwks,@Value("${fincore.security.issuer}")String issuer){return ServiceSecurity.decoder(jwks,issuer,Set.of("fincore-api","reporting-service"));}
-    @Bean SecurityFilterChain security(HttpSecurity http)throws Exception{
+    @Bean AdministrativeReadAudit readAudit(org.springframework.jdbc.core.JdbcTemplate db,org.springframework.transaction.PlatformTransactionManager transactions){return new AdministrativeReadAudit(db,transactions,AdministrativeReadAudit.Owner.REPORTING);}
+    @Bean SecurityFilterChain security(HttpSecurity http,AdministrativeReadAudit readAudit)throws Exception{
         var converter=new JwtAuthenticationConverter();converter.setJwtGrantedAuthoritiesConverter(jwt->ServiceSecurity.authorities(jwt,"reporting-service"));
         return http.csrf(c->c.disable()).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .addFilterBefore(new AdministrativeReadAuditFilter(readAudit,AdministrativeReadAudit.Owner.REPORTING),org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
+            .addFilterAfter(new AdministrativeReadAuditFilter.VerifiedActorFilter(),org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter.class)
             .authorizeHttpRequests(a->a.requestMatchers("/actuator/health","/actuator/health/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/ledger/journals/*").hasRole("FINANCE_OPERATOR")
                 .requestMatchers("/api/v1/admin/reports/reconciliation").hasRole("FINANCE_OPERATOR")
