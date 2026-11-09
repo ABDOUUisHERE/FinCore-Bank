@@ -5,6 +5,7 @@ import { ApiError, page, query, request, uuid } from "../banking/api";
 import { Badge, Empty, Failure, Loading } from "../banking/Common";
 import { clearIncidentAttempt, readIncidentAttempt, saveIncidentAttempt, type IncidentAttempt } from "./incidentAttempt";
 import { SupportAccountAccess, type Grant } from "./SupportAccountAccess";
+import { SupportPaymentAccess } from "./SupportPaymentAccess";
 import "../banking/banking.css";
 import "./operations.css";
 
@@ -74,7 +75,8 @@ function IncidentDetail({ subject, id, draft, disabled }: { subject: string; id:
   return <section className="surface bank-panel" aria-label="Selected incident"><h3>Selected incident</h3><Failure error={current.error} retry={() => void current.refetch()} />
     {current.isPending ? <Loading /> : current.data && !current.error && <><dl className="bank-facts"><dt>Reference</dt><dd>{id}</dd><dt>Opened by</dt><dd>{current.data.createdBy}</dd><dt>Resource</dt><dd>{current.data.resourceKind} {current.data.resourceId}</dd><dt>Status</dt><dd><Badge status={current.data.status} /></dd><dt>Version</dt><dd>{current.data.version}</dd><dt>Reason</dt><dd>{current.data.reason}</dd><dt>Updated</dt><dd>{new Date(current.data.updatedAt).toLocaleString()}</dd></dl>
       <div className="bank-form"><Reason disabled={disabled} value={reason} change={setReason} /></div><div className="bank-actions">{current.data.status === "INVESTIGATING" ? <button className="button" disabled={disabled} onClick={() => change("RESOLVED")}>Review resolution</button> : <button className="button" disabled={disabled} onClick={() => change("INVESTIGATING")}>{current.data.status === "RESOLVED" ? "Review reopening" : "Review investigation"}</button>}</div>
-      {current.data.resourceKind === "ACCOUNT" && <SupportAccountAccess subject={subject} incident={current.data} draft={draft} disabled={disabled} />}</>}
+      {current.data.resourceKind === "ACCOUNT" && <SupportAccountAccess subject={subject} incident={current.data} draft={draft} disabled={disabled} />}
+      {current.data.resourceKind === "PAYMENT" && <SupportPaymentAccess subject={subject} incident={current.data} draft={draft} disabled={disabled} />}</>}
     <h3>Immutable incident history</h3><Failure error={history.error} retry={() => void history.refetch()} />{history.isPending ? <Loading /> : <Facts items={history.data?.pages.flatMap(p => p.items) ?? []} />}
     {history.hasNextPage && <button className="button secondary" disabled={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>Load older incident history</button>}
   </section>;

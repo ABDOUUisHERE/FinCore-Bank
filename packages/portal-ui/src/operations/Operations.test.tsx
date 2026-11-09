@@ -59,26 +59,28 @@ it("keeps the incident reason selector accessible through investigation and reso
   await selected.findByText("resolved", { selector: ".bank-badge" });
   expect(mutations).toEqual([{ expectedVersion: 0, status: "INVESTIGATING", reason: "INVESTIGATION_UPDATE" }, { expectedVersion: 1, status: "RESOLVED", reason: "ISSUE_RESOLVED" }]);
 });
-it("confirms a fixed-scope grant and replays its exact request after a lost response and remount", async () => {
+it.each(["account", "payment"])("confirms a fixed-scope %s grant and replays its exact request after a lost response and remount", async kind => {
   mocks.session.roles = ["ADMIN"];
+  const scopedIncident = { ...incident, resourceKind: kind.toUpperCase() };
+  const scopedGrant = kind === "account" ? noGrant : { ...noGrant, accountId: undefined, paymentId: resource, permission: "PAYMENT_STATUS_READ" };
   const submissions: { key: string; body: unknown }[] = [];
-  const issued = { ...noGrant, version: "1", state: "ACTIVE" };
+  const issued = { ...scopedGrant, version: "1", state: "ACTIVE" };
   vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string, options: RequestInit) => {
     if (url.endsWith("/operations/me")) return response({ subject: "signed-admin", scope: "ALL_INCIDENTS" });
     if (options.method === "PUT") { submissions.push({ key: (options.headers as Record<string, string>)["Idempotency-Key"], body: JSON.parse(options.body as string) }); return submissions.length === 1 ? Promise.reject(new TypeError("lost response")) : response(issued); }
-    if (url.endsWith("/account-access")) return response(submissions.length ? { ...issued, state: "REVOKED", version: "2" } : noGrant);
-    if (url.endsWith("/incidents/" + resource)) return response(incident);
-    return response({ items: url.endsWith("/incidents") ? [incident] : [], nextCursor: null });
+    if (url.endsWith("/" + kind + "-access")) return response(submissions.length ? { ...issued, state: "REVOKED", version: "2" } : scopedGrant);
+    if (url.endsWith("/incidents/" + resource)) return response(scopedIncident);
+    return response({ items: url.endsWith("/incidents") ? [scopedIncident] : [], nextCursor: null });
   }));
   const first = open(); await userEvent.click(await screen.findByRole("button", { name: "Open incident " + resource.slice(-8) }));
   await userEvent.click(await screen.findByRole("button", { name: "Review temporary access" })); expect(submissions).toHaveLength(0);
-  expect(screen.getByText(/Allow status consultation for 15 minutes/)).toHaveTextContent("Recipient: signed-support. Account: " + resource);
+  expect(screen.getByText(/Allow status consultation for 15 minutes/)).toHaveTextContent("Recipient: signed-support. " + (kind === "account" ? "Account" : "Payment") + ": " + resource);
   await userEvent.click(screen.getByRole("button", { name: "Confirm incident request" })); await screen.findByRole("button", { name: "Retry same incident request" });
   expect(readIncidentAttempt("signed-admin")?.submitted).toBe(true); expect(readIncidentAttempt("signed-support")).toBeNull();
   first.unmount(); open(); await userEvent.click(await screen.findByRole("button", { name: "Retry same incident request" }));
   await screen.findByText("Recorded access result: active at version 1. Current permission is refreshed below.");
   expect(submissions).toHaveLength(2); expect(submissions[1]).toEqual(submissions[0]);
   expect(submissions[0].body).toEqual({ expectedVersion: "0", action: "ISSUE", minutes: 15, reason: "INCIDENT_INVESTIGATION" });
-  const access = within(await screen.findByRole("region", { name: "Temporary account access" }));
+  const access = within(await screen.findByRole("region", { name: "Temporary " + kind + " access" }));
   await access.findByText("revoked"); expect(access.getByRole("button", { name: "Review access revocation" })).toBeDisabled(); expect(readIncidentAttempt("signed-admin")).toBeNull();
 });
