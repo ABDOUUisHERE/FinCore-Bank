@@ -35,7 +35,12 @@ class SupportAccessDatabaseIT {
         var legacyReceipt=tx.execute(s->v2.command(legacy,"admin",legacyKey,"test-correlation",legacyCommand));
         String oldFingerprint=AuditEvent.hash(Json.text(Arrays.asList("SUPPORT_ACCOUNT_GRANT",legacy,"0","ISSUE",60,"CONTROL_REVIEW")));
         assertThat(db.queryForObject("select fingerprint from incident_command where actor='admin' and key=?",String.class,legacyKey)).isEqualTo(oldFingerprint);
+        Flyway.configure().dataSource(PG.getJdbcUrl(),"audit_migrator",password).target("3").load().migrate();
+        UUID legacyPayment=createPayment("legacy-payment-support");String paymentKey=key();
+        var paymentReceipt=tx.execute(s->v2.command(legacyPayment,"admin",paymentKey,"c",legacyCommand,SupportAccessStore.Resource.PAYMENT));
         Flyway.configure().dataSource(PG.getJdbcUrl(),"audit_migrator",password).load().migrate();
+        JsonNode replayedPayment=tx.execute(s->v2.command(legacyPayment,"admin",paymentKey,"c",legacyCommand,SupportAccessStore.Resource.PAYMENT));
+        assertThat(replayedPayment).isEqualTo(paymentReceipt);
         assertThat(audit.incident(legacy,"legacy-support",false).path("status").asText()).isEqualTo("OPEN");
         JsonNode replayed=tx.execute(s->v2.command(legacy,"admin",legacyKey,"test-correlation",legacyCommand));
         assertThat(replayed).isEqualTo(legacyReceipt);
@@ -45,6 +50,8 @@ class SupportAccessDatabaseIT {
             @Override public Admission admit(UUID id,String actor,String correlation){return tx.execute(s->super.admit(id,actor,correlation));}
             @Override public Admission admit(UUID id,String actor,String correlation,Resource resource){return tx.execute(s->super.admit(id,actor,correlation,resource));}
             @Override public boolean finish(Admission a,String c,String outcome){return Boolean.TRUE.equals(tx.execute(s->super.finish(a,c,outcome)));}
+            @Override public SearchAdmission admitCustomerSearch(String actor,String c){return tx.execute(s->super.admitCustomerSearch(actor,c));}
+            @Override public boolean finishCustomerSearch(SearchAdmission a,String c,String outcome,int count){return Boolean.TRUE.equals(tx.execute(s->super.finishCustomerSearch(a,c,outcome,count)));}
         };
     }
     @AfterAll static void stop(){PG.stop();}
@@ -54,6 +61,8 @@ class SupportAccessDatabaseIT {
     static JsonNode paymentCommand(UUID id,String key,String version,String action,Integer minutes){return tx.execute(s->grants.command(id,"admin",key,"test-correlation",new SupportAccessStore.Command(version,action,minutes,"CONTROL_REVIEW"),SupportAccessStore.Resource.PAYMENT));}
     static JsonNode command(UUID id,String key,String version,String action,Integer minutes){return tx.execute(s->grants.command(id,"admin",key,"test-correlation",new SupportAccessStore.Command(version,action,minutes,"CONTROL_REVIEW")));}
     static JsonNode issue(UUID id){return command(id,key(),"0","ISSUE",15);}
+    static UUID createCustomer(String actor){return tx.execute(s->UUID.fromString(audit.create(actor,false,key(),"c",new AuditStore.Create("CUSTOMER",UUID.randomUUID(),"MEDIUM","CUSTOMER_REPORTED")).path("incidentId").asText()));}
+    static JsonNode customerCommand(UUID id,String key,String version,String action,Integer minutes){return tx.execute(s->grants.command(id,"admin",key,"c",new SupportAccessStore.Command(version,action,minutes,"CONTROL_REVIEW"),SupportAccessStore.Resource.CUSTOMER));}
     static void status(UUID id,String actor,long version,String status){tx.execute(s->audit.change(id,actor,false,key(),"test-correlation",new AuditStore.Change(version,status,"INVESTIGATION_UPDATE")));}
     static void expire(UUID id){owner.update("update support_account_grant set version=version+1,issued_at=clock_timestamp()-interval '1 hour',expires_at=clock_timestamp()-interval '30 minutes' where incident_id=?",id);}
     static JsonNode history(UUID id){return Json.read(Json.text(audit.history(id,null,"admin",true))).path("items");}
@@ -203,5 +212,58 @@ class SupportAccessDatabaseIT {
         assertThat(audit.incident(id,"support",false).path("status").asText()).isEqualTo("INVESTIGATING");
         assertThat(grants.current(id,"support",false,SupportAccessStore.Resource.PAYMENT).path("state").asText()).isEqualTo("ACTIVE");
         assertThat(grants.admit(id,"support","c",SupportAccessStore.Resource.PAYMENT)).isNotNull();
+    }
+    @Test void discoverySelectsOnlyCurrentOwnedCustomerGrantsAndSharesTheGlobalReceiptNamespace() {
+        String actor=key();assertThat(grants.admitCustomerSearch(actor,"c")).isNull();
+        UUID own=createCustomer(actor),foreign=createCustomer("foreign-"+actor),account=create(actor),payment=createPayment(actor);
+        customerCommand(foreign,key(),"0","ISSUE",15);issue(account);paymentCommand(payment,key(),"0","ISSUE",15);
+        String shared=key();command(account,shared,"1","ISSUE",15);
+        assertThatThrownBy(()->customerCommand(own,shared,"0","ISSUE",15)).hasMessage("IDEMPOTENCY_CONFLICT");
+        String issuedKey=key();var issued=customerCommand(own,issuedKey,"0","ISSUE",15);
+        var admission=grants.admitCustomerSearch(actor,"c");assertThat(admission.grants()).hasSize(1);
+        assertThat(admission.grants().getFirst().incidentId()).isEqualTo(own);
+        assertThat(grants.admit(own,actor,"c",SupportAccessStore.Resource.ACCOUNT)).isNull();
+        status(own,actor,0,"INVESTIGATING");status(own,actor,1,"RESOLVED");
+        assertThat(grants.finishCustomerSearch(admission,"c","DISCLOSED",1)).isFalse();
+        assertThat(customerCommand(own,issuedKey,"0","ISSUE",15)).isEqualTo(issued);
+        status(own,actor,2,"INVESTIGATING");assertThat(grants.admitCustomerSearch(actor,"c")).isNull();
+        for(var connection:List.of(db,owner))for(String sql:List.of("delete from support_customer_grant","truncate support_customer_grant","update support_customer_grant set version=version+2"))assertThatThrownBy(()->connection.execute(sql)).isInstanceOf(DataAccessException.class);
+    }
+    @Test void anInFlightCustomerRevocationCommitsWithoutRemoteLocksAndWithholdsAllMatches() {
+        String actor=key();UUID id=createCustomer(actor);customerCommand(id,key(),"0","ISSUE",15);
+        UUID customer=UUID.fromString(audit.incident(id,actor,false).path("resourceId").asText());Remote remote=mock(Remote.class);when(remote.serviceToken()).thenReturn("private-token");
+        when(remote.call(anyString(),anyString(),anyString(),any())).thenAnswer(call->{
+            try(var worker=Executors.newSingleThreadExecutor()){worker.submit(()->customerCommand(id,key(),"1","REVOKE",null)).get(5,TimeUnit.SECONDS);}
+            return Json.read("{\"items\":["+SupportCustomerAccessTest.source(customer)+"],\"hasMore\":false}");
+        });
+        assertThatThrownBy(()->new SupportCustomerAccess(grants,remote,"http://customer").search(new SupportCustomerAccess.Input("Private prefix"),actor,"c")).hasMessage("SUPPORT_ACCESS_UNAVAILABLE");
+        assertThat(history(id).toString()).doesNotContain("Private prefix","PRIVATE_NAME","private-token","DISCLOSED");
+        assertThat(db.queryForObject("select details->>'outcome' from audit_record where actor=? and event_type='support.customer.search' order by sequence desc limit 1",String.class,actor)).isEqualTo("SCOPE_CHANGED");
+    }
+    @Test void failedFinalSearchAuditCannotReleaseNamesOrRetainAPartialDisclosure() {
+        String actor=key();UUID id=createCustomer(actor);customerCommand(id,key(),"0","ISSUE",15);
+        UUID customer=UUID.fromString(audit.incident(id,actor,false).path("resourceId").asText());Remote remote=mock(Remote.class);when(remote.serviceToken()).thenReturn("private-token");
+        when(remote.call(anyString(),anyString(),anyString(),any())).thenReturn(Json.read("{\"items\":["+SupportCustomerAccessTest.source(customer)+"],\"hasMore\":false}"));
+        owner.execute("create function reject_customer_disclosure() returns trigger language plpgsql as $$ begin if NEW.event_type='support.customer.search' and NEW.details->>'outcome'='DISCLOSED' then raise exception 'INJECTED'; end if; return NEW; end $$");
+        owner.execute("create trigger reject_customer_disclosure before insert on audit_record for each row execute function reject_customer_disclosure()");
+        try {assertThatThrownBy(()->new SupportCustomerAccess(grants,remote,"http://customer").search(new SupportCustomerAccess.Input("Private prefix"),actor,"c")).isInstanceOf(DataAccessException.class);}
+        finally {owner.execute("drop trigger reject_customer_disclosure on audit_record");owner.execute("drop function reject_customer_disclosure()");}
+        assertThat(history(id).toString()).doesNotContain("SEARCH_CHECKED","PRIVATE_NAME");
+    }
+    @Test void discoveryRechecksTheWholeCohortAfterExpiryReplacementRevocationOrResolution() {
+        for(String action:List.of("EXPIRE","REPLACE","REVOKE","RESOLVE")) {
+            String actor=key();UUID first=createCustomer(actor),second=createCustomer(actor);customerCommand(first,key(),"0","ISSUE",15);customerCommand(second,key(),"0","ISSUE",15);
+            var admission=grants.admitCustomerSearch(actor,"c");assertThat(admission.grants()).hasSize(2);
+            if(action.equals("EXPIRE"))owner.update("update support_customer_grant set version=version+1,issued_at=clock_timestamp()-interval '1 hour',expires_at=clock_timestamp()-interval '30 minutes' where incident_id=?",second);
+            else if(action.equals("RESOLVE")){status(second,actor,0,"INVESTIGATING");status(second,actor,1,"RESOLVED");}
+            else customerCommand(second,key(),"1",action.equals("REPLACE")?"ISSUE":"REVOKE",action.equals("REPLACE")?15:null);
+            assertThat(grants.finishCustomerSearch(admission,"c","DISCLOSED",0)).isFalse();
+            assertThat(db.queryForObject("select details->>'matchCount' from audit_record where actor=? and event_type='support.customer.search' order by sequence desc limit 1",String.class,actor)).isEqualTo("0");
+        }
+    }
+    @Test void anOversizedAuthorizedSetIsDeniedWithoutReturningATruncatedCohort() {
+        String actor=key();for(int n=0;n<101;n++)customerCommand(createCustomer(actor),key(),"0","ISSUE",15);
+        assertThat(grants.admitCustomerSearch(actor,"c")).isNull();
+        assertThat(db.queryForObject("select details->>'outcome' from audit_record where actor=? and event_type='support.customer.search' order by sequence desc limit 1",String.class,actor)).isEqualTo("SCOPE_TOO_LARGE");
     }
 }

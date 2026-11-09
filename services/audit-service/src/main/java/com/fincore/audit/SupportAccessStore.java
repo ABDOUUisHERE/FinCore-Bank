@@ -3,6 +3,7 @@ package com.fincore.audit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fincore.support.*;
 import java.util.*;
+import java.time.Instant;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,7 +18,8 @@ public class SupportAccessStore {
     /** Fixed server policies; table, projection and fingerprint identifiers never come from a request. */
     public enum Resource {
         ACCOUNT("support_account_grant","accountId","ACCOUNT_STATUS_READ","SUPPORT_ACCOUNT_GRANT","support-grant","support.account.access"),
-        PAYMENT("support_payment_grant","paymentId","PAYMENT_STATUS_READ","SUPPORT_PAYMENT_GRANT","support-payment-grant","support.payment.access");
+        PAYMENT("support_payment_grant","paymentId","PAYMENT_STATUS_READ","SUPPORT_PAYMENT_GRANT","support-payment-grant","support.payment.access"),
+        CUSTOMER("support_customer_grant","customerId","CUSTOMER_PROFILE_READ","SUPPORT_CUSTOMER_GRANT","support-customer-grant","support.customer.access");
         final String table,idField,permission,fingerprint,identity,event;
         Resource(String table,String idField,String permission,String fingerprint,String identity,String event) {
             this.table=table;this.idField=idField;this.permission=permission;this.fingerprint=fingerprint;this.identity=identity;this.event=event;
@@ -120,6 +122,52 @@ public class SupportAccessStore {
         if(incident.path("status").asText().equals("RESOLVED"))return "INCIDENT_RESOLVED";
         if(!grant.path("state").asText().equals("ACTIVE"))return "GRANT_"+grant.path("state").asText();
         return null;
+    }
+    public record SearchAdmission(UUID attemptId,String actor,List<Admission> grants,Instant expiresAt) {
+        public SearchAdmission {grants=List.copyOf(grants);}
+    }
+    // Lock the entire cohort before the fact cursor: taking another incident lock after it can deadlock with commands.
+    @Transactional public SearchAdmission admitCustomerSearch(String actor,String correlation) {
+        var ids=db.query("""
+            select i.id from incident i join support_customer_grant g on g.incident_id=i.id
+            where i.created_by=? and i.resource_kind='CUSTOMER' and i.status<>'RESOLVED'
+              and g.revoked_at is null and g.expires_at>clock_timestamp() order by i.id limit 101
+            """,(rs,n)->rs.getObject(1,UUID.class),actor);
+        UUID attempt=UUID.randomUUID();
+        if(ids.isEmpty()||ids.size()>100) {searchFact(attempt,actor,correlation,ids.isEmpty()?"NO_ACTIVE_SCOPE":"SCOPE_TOO_LARGE",ids.size(),0);return null;}
+        var incidents=ids.stream().map(id->audit.own(id,actor,false,true)).toList();
+        audit.factLock();var admitted=new ArrayList<Admission>();Instant expiry=Instant.MAX;boolean valid=true;
+        for(var incident:incidents) {
+            UUID id=UUID.fromString(incident.path("incidentId").asText());var grant=view(id,Resource.CUSTOMER);
+            String denial=denial(incident,grant,actor,Resource.CUSTOMER);
+            fact(incident,grant,actor,correlation,attempt,denial==null?"SEARCH_ADMITTED":denial,Resource.CUSTOMER);
+            if(denial!=null){valid=false;continue;}
+            var until=Instant.parse(grant.path("expiresAt").asText());if(until.isBefore(expiry))expiry=until;
+            admitted.add(new Admission(id,UUID.fromString(incident.path("resourceId").asText()),actor,grant.path("version").asText(),attempt,Resource.CUSTOMER));
+        }
+        valid=valid&&beforeExpiry(expiry);
+        searchFact(attempt,actor,correlation,valid?"ADMITTED":"SCOPE_CHANGED",ids.size(),0);
+        return valid?new SearchAdmission(attempt,actor,admitted,expiry):null;
+    }
+    @Transactional public boolean finishCustomerSearch(SearchAdmission admission,String correlation,String outcome,int matches) {
+        var sorted=admission.grants().stream().sorted(Comparator.comparing(a->a.incidentId().toString())).toList();
+        var incidents=sorted.stream().map(a->audit.own(a.incidentId(),admission.actor(),false,true)).toList();
+        audit.factLock();boolean valid=true;
+        for(int n=0;n<sorted.size();n++) {
+            var a=sorted.get(n);var incident=incidents.get(n);var grant=view(a.incidentId(),Resource.CUSTOMER);
+            String denial=denial(incident,grant,admission.actor(),Resource.CUSTOMER);
+            if(denial==null&&(!a.grantVersion().equals(grant.path("version").asText())||!a.resourceId().toString().equals(incident.path("resourceId").asText())))denial="GRANT_CHANGED";
+            fact(incident,grant,admission.actor(),correlation,admission.attemptId(),denial==null?"SEARCH_CHECKED":denial,Resource.CUSTOMER);
+            valid&=denial==null;
+        }
+        // A check is not disclosure. Recheck the cohort deadline after retaining the individual checks.
+        valid=valid&&beforeExpiry(admission.expiresAt());
+        searchFact(admission.attemptId(),admission.actor(),correlation,valid?outcome:"SCOPE_CHANGED",sorted.size(),valid&&outcome.equals("DISCLOSED")?matches:0);
+        return valid;
+    }
+    private boolean beforeExpiry(Instant expires) {return Boolean.TRUE.equals(db.queryForObject("select clock_timestamp()<?::timestamptz",Boolean.class,expires.toString()));}
+    private void searchFact(UUID attempt,String actor,String correlation,String outcome,int scopes,int matches) {
+        audit.appendFact(UUID.randomUUID(),"support.customer.search",attempt,0,actor,correlation,Map.of("attemptId",attempt.toString(),"outcome",outcome,"scopeCount",scopes,"matchCount",matches));
     }
     private static void requireKind(JsonNode incident,Resource resource) {
         if(!incident.path("resourceKind").asText().equals(resource.name()))throw new ApiFailure(409,resource.name()+"_INCIDENT_REQUIRED");
