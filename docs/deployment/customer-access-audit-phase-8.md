@@ -16,3 +16,23 @@ Customer migration V4 adds a separate immutable table and unions its envelopes i
 Early servlet container/firewall/body-size rejection, asynchronous responses, transport disconnects and requests rejected at Gateway before reaching Customer are outside this finite registry. Existing rate/retention/capacity limits still apply; this lot adds no claim of indefinite Kafka retention or independent immutable backup.
 
 Acceptance requires signed HTTP success/denial/invalid-credential tests, withheld data on audit storage failure, restricted-role PostgreSQL immutability and migration tests, actual outbox delivery plus central replay/redaction, and hosted PKCE regression. Evidence is recorded only after execution.
+
+## Preserved installation upgrade
+
+Keep the existing `.env`, realm, credentials and volumes. Build both new Java images before invoking the migration runner; it carries its own SQL resources. The Customer owner must be stopped while its schema is upgraded. The new topic uses the existing Customer producer and Audit consumer prefix ACLs; no new identity or credential is required.
+
+```sh
+docker compose build customer-service audit-service
+docker compose stop customer-service audit-service
+docker compose exec -T -e "KAFKA_HEAP_OPTS=-Xms32m -Xmx128m" kafka /opt/kafka/bin/kafka-topics.sh --bootstrap-server kafka:9092 --command-config /etc/kafka/secrets/admin.properties --create --if-not-exists --topic fincore.customer.access.recorded.v1 --partitions 3 --replication-factor 1 --config retention.ms=604800000 --config max.message.bytes=131072
+docker compose run --rm --no-deps customer-migrations
+docker compose up -d --no-deps --wait --wait-timeout 300 customer-service audit-service
+node scripts/check-customer-audit.mjs
+npx playwright test tests/e2e/customer-search.spec.ts tests/e2e/inspection.spec.ts tests/e2e/support-customer.spec.ts
+```
+
+Fresh Compose installations create the topic through `kafka-init` automatically. The probe sends synthetic duplicate/conflicting/invalid metadata through the broker and checks the direct owner's retained anonymous denial, central digest/redaction and quarantine. It prints no raw event or credential. See [the versioned event contract](../../contracts/events/customer-access-recorded-v1.json).
+
+The optional `--exercise-storage-failure` probe briefly revokes INSERT on this one audit table from `customer_runtime`. Administrative reads return 503 during that interval. Its `finally` block restores the required INSERT privilege and verifies a retained request after recovery. CI runs it before browser traffic in its isolated installation. Profiles, financial rows and grants are not test fault targets.
+
+The runtime role can insert/select receipts but cannot update/delete/truncate them or disable their guards. Migration/database administration remains trusted; this is not an independently tamper-proof archive. Each new read request creates a new receipt, even if its correlation ID is reused. Only broker redelivery of the same event UUID/body is deduplicated. Historical domain envelope bytes and acknowledged delivery rows remain unchanged by V4.
