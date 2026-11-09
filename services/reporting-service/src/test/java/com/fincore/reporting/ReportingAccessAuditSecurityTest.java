@@ -31,7 +31,7 @@ class ReportingAccessAuditSecurityTest {
     void fixture(){var statement=(com.fasterxml.jackson.databind.node.ObjectNode)StatementExportsTest.statement(3);statement.put("statementId",id.toString());when(store.own(id,"current-reader")).thenReturn(statement);when(store.list(eq("current-reader"),any())).thenReturn(Map.of("items",List.of()));when(coordinator.create(any(),anyString(),eq("current-reader"),anyString())).thenReturn(statement);when(coordinator.reconcile()).thenReturn(Json.read("{\"reconciled\":true}"));when(coordinator.journal(id)).thenReturn(Json.read("{\"journalId\":\""+id+"\"}"));}
     @Test void everyPreparedReadAndCreateRequestRetainsOnlyCurrentSignedCallerAndTypedTarget()throws Exception{
         fixture();for(var read:reads()){
-            http.perform(get(read.path()).header("Authorization","Bearer "+token(read.role())).header("X-User-ID","FORGED_OWNER").header("X-Correlation-ID","signed-read")).andExpect(status().isOk()).andExpect(header().string("Cache-Control","no-store"));
+            http.perform(get(read.path()).header("Authorization","Bearer "+token(read.role())).header("X-User-ID","FORGED_OWNER").header("X-Correlation-ID","signed-read")).andExpect(status().isOk()).andExpect(header().stringValues("Cache-Control","no-store"));
             verify(readAudit).retain(new Target(read.action(),read.reference()),"GET",200,new Actor("current-reader"),"signed-read");
         }
         http.perform(post("/api/v1/statements").header("Authorization","Bearer "+token("CUSTOMER")).header("X-Correlation-ID","create-request").contentType("application/json").content("{\"accountId\":\""+id+"\",\"month\":\"2026-01\"}")).andExpect(status().isOk());

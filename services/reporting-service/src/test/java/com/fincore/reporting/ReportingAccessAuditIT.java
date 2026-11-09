@@ -72,7 +72,7 @@ class ReportingAccessAuditIT {
                 assertThat(unavailable.getResponse().getContentAsString()).contains("AUDIT_UNAVAILABLE").doesNotContain(id.toString(),"%PDF-","100.00");
             }finally{migrator().execute("grant insert on reporting_access_audit to reporting_runtime");}
             assertThat(count("reporting_access_audit")).isEqualTo(retained);
-            String correlation=UUID.randomUUID().toString();var exported=http.perform(get("/api/v1/statements/"+id+"/"+format).header("Authorization","Bearer "+bearer).header("X-User-ID","FORGED_OWNER").header("X-Correlation-ID",correlation)).andExpect(status().isOk()).andExpect(header().string("Content-Disposition","attachment; filename=\"fincore-"+id+"."+format+"\"")).andReturn();
+            String correlation=UUID.randomUUID().toString();var exported=http.perform(get("/api/v1/statements/"+id+"/"+format).header("Authorization","Bearer "+bearer).header("X-User-ID","FORGED_OWNER").header("X-Correlation-ID",correlation)).andExpect(status().isOk()).andExpect(header().stringValues("Cache-Control","no-store")).andExpect(header().string("Content-Disposition","attachment; filename=\"fincore-"+id+"."+format+"\"")).andReturn();
             assertThat(exported.getResponse().getContentAsByteArray()).hasSizeGreaterThan(500);
             var fact=Json.read(db.queryForObject("select envelope::text from fincore_event_source where envelope->>'correlationId'=?",String.class,correlation));
             assertThat(fact.path("payload")).isEqualTo(Json.read(Json.text(Map.of("statementId",id,"action",format.equals("csv")?"STATEMENT_EXPORT_CSV":"STATEMENT_EXPORT_PDF","httpMethod","GET","httpStatus",200,"outcome","RESPONSE_READY","actorSubject",actor,"actorProvenance","SIGNED_JWT"))));

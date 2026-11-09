@@ -18,5 +18,5 @@ public class ReportingController {
  @GetMapping("/api/v1/statements/{id}/pdf")public ResponseEntity<byte[]> pdf(@PathVariable UUID id,@AuthenticationPrincipal Jwt jwt){return download(id,"pdf","application/pdf",StatementExports.pdf(store.own(id,jwt.getSubject())));}
  @GetMapping("/api/v1/admin/reports/reconciliation")public Object reconcile(){return coordinator.reconcile();}
  @GetMapping("/api/v1/admin/ledger/journals/{id}")public Object journal(@PathVariable UUID id){return coordinator.journal(id);}
- private static ResponseEntity<byte[]> download(UUID id,String extension,String type,byte[] body){return ResponseEntity.ok().header("Cache-Control","no-store").header("X-Content-Type-Options","nosniff").header("Content-Disposition","attachment; filename=\"fincore-"+id+"."+extension+"\"").contentType(MediaType.parseMediaType(type)).body(body);}
+ private static ResponseEntity<byte[]> download(UUID id,String extension,String type,byte[] body){return ResponseEntity.ok().header("X-Content-Type-Options","nosniff").header("Content-Disposition","attachment; filename=\"fincore-"+id+"."+extension+"\"").contentType(MediaType.parseMediaType(type)).body(body);}
 }
