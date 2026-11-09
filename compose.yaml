@@ -500,6 +500,10 @@ services:
     image: fincore/reporting-service:local
     build: { context: ., dockerfile: services/reporting-service/Dockerfile }
     environment:
+      MESSAGING_ENABLED: 'true'
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      KAFKA_USER: reporting
+      KAFKA_PASSWORD: ${KAFKA_REPORTING_PASSWORD:?Run local bootstrap first}
       SERVER_PORT: '8080'
       REPORTING_DATABASE_URL: jdbc:postgresql://postgres:5432/reporting
       REPORTING_DB_PASSWORD: ${REPORTING_DB_PASSWORD:?Run local bootstrap first}
@@ -510,6 +514,7 @@ services:
       OIDC_ISSUER: http://localhost:8180/realms/fincore
       OIDC_JWKS: http://keycloak:8180/realms/fincore/protocol/openid-connect/certs
     depends_on:
+      kafka-init: { condition: service_completed_successfully }
       reporting-migrations: { condition: service_completed_successfully }
       business-identity: { condition: service_completed_successfully }
       account-service: { condition: service_healthy }
