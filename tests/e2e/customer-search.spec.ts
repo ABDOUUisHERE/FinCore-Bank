@@ -68,7 +68,9 @@ test("ADMIN finds a real profile by name without URL disclosure or profile mutat
     }
     const inspectionResponse=admin.page.waitForResponse(r=>r.url()==="http://localhost:8280/api/v1/admin/customers/"+profile.customerId && r.request().method()==="GET");
     await card.getByRole("button",{name:"Inspect customer",exact:true}).click();
-    const inspected=await inspectionResponse;expect(inspected.status()).toBe(200);const inspectCorrelation=inspected.headers()["x-correlation-id"];expect(inspectCorrelation).toBeTruthy();
+    const inspected=await inspectionResponse;expect(inspected.status()).toBe(200);const inspectCorrelation=inspected.headers()["x-correlation-id"];
+    expect(inspectCorrelation).toMatch(/^[A-Za-z0-9._-]{1,64}$/);
+    expect((await inspected.headersArray()).filter(h=>h.name.toLowerCase()==="x-correlation-id")).toHaveLength(1);
     await expect(admin.page.getByRole("region",{name:"Inspected customer",exact:true}).getByText(profile.customerId,{exact:true})).toBeVisible();
     await expect.poll(async()=>(await readFacts()).filter(f=>f.correlationId===inspectCorrelation).length,{timeout:90_000,intervals:[1000,2000]}).toBe(1);
     const inspectionAudit=(await readFacts()).find(f=>f.correlationId===inspectCorrelation)!;expect(inspectionAudit.actor).toBe(actor);
