@@ -54,6 +54,7 @@ public record AuditEvent(EventEnvelope envelope, JsonNode details, String actor,
     private static AuditEvent access(EventEnvelope event, String body) {
         var payload = event.payload();
         String domain=event.eventType().split("\\.")[0];
+        if (domain.equals("reporting") && !event.correlationId().matches("[A-Za-z0-9._-]{1,64}")) throw new Poison("INVALID_ACCESS_AUDIT");
         Set<String> actions=switch(domain) {
             case "customer" -> Set.of("CUSTOMER_SEARCH","CUSTOMER_INSPECT");
             case "account" -> Set.of("ACCOUNT_INSPECT");

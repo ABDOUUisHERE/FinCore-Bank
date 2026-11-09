@@ -48,7 +48,7 @@ class ReportingAccessAuditSecurityTest {
         for(var read:reads())for(String role:List.of("ADMIN","SUPPORT_AGENT","FRAUD_ANALYST",read.role().equals("CUSTOMER")?"FINANCE_OPERATOR":"CUSTOMER"))
             http.perform(get(read.path()).header("Authorization","Bearer "+token(role)).header("X-Correlation-ID","role-denial")).andExpect(status().isForbidden());
         for(var read:reads())verify(readAudit,times(4)).retain(new Target(read.action(),read.reference()),"GET",403,new Actor("current-reader"),"role-denial");
-        http.perform(post("/api/v1/statements/"+id+"/csv").header("Authorization","Bearer "+token("CUSTOMER")).header("X-Correlation-ID","wrong-method")).andExpect(status().isForbidden());
+        http.perform(post("/api/v1/statements/"+id+"/csv").header("Authorization","Bearer "+token("CUSTOMER")).header("X-Correlation-ID","wrong-method").contentType("application/json").content("{}")).andExpect(status().isForbidden());
         verify(readAudit).retain(new Target("STATEMENT_EXPORT_CSV",id),"POST",403,new Actor("current-reader"),"wrong-method");verifyNoInteractions(store,coordinator);
     }
     @Test void malformedReferencesBodiesAndCursorsDoNotBecomeAuditPayloads()throws Exception{

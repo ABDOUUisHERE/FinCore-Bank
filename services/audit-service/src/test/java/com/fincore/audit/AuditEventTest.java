@@ -88,6 +88,11 @@ class AuditEventTest {
                 assertThatThrownBy(()->AuditEvent.parse("fincore.reporting.access.recorded.v1",id.toString(),access(id,payload).replace("customer.access.recorded","reporting.access.recorded"))).isInstanceOf(AuditEvent.Poison.class);
             }
         }
+        for(String correlation:List.of("invalid:correlation","x".repeat(65))) {
+            var valid=accessPayload();valid.put("action","STATEMENT_LIST");
+            String body=access(id,valid).replace("customer.access.recorded","reporting.access.recorded").replace("access-test",correlation);
+            assertThatThrownBy(()->AuditEvent.parse("fincore.reporting.access.recorded.v1",id.toString(),body)).isInstanceOf(AuditEvent.Poison.class);
+        }
         var payload=accessPayload();payload.put("action","ACCOUNT_INSPECT");
         assertThatThrownBy(()->AuditEvent.parse("fincore.reporting.access.recorded.v1",id.toString(),access(id,payload).replace("customer.access.recorded","reporting.access.recorded"))).isInstanceOf(AuditEvent.Poison.class);
         assertThatThrownBy(()->AuditEvent.parse("fincore.reporting.created.v1",id.toString(),access(id,accessPayload()).replace("customer.access.recorded","reporting.created"))).isInstanceOf(AuditEvent.Poison.class);
