@@ -66,8 +66,14 @@ test("ADMIN finds a real profile by name without URL disclosure or profile mutat
       await admin.page.setViewportSize({width,height:1000}); expect(await admin.page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),"Customer search fits " + width).toBe(true);
       if (process.env.FINCORE_VISUAL_QA === "1" && width !== 320) { mkdirSync(".local/visual",{recursive:true}); await admin.page.screenshot({path:".local/visual/phase-8-customer-search-"+width+".png",fullPage:true,animations:"disabled"}); }
     }
+    const inspectionResponse=admin.page.waitForResponse(r=>r.url()==="http://localhost:8280/api/v1/admin/customers/"+profile.customerId && r.request().method()==="GET");
     await card.getByRole("button",{name:"Inspect customer",exact:true}).click();
+    const inspected=await inspectionResponse;expect(inspected.status()).toBe(200);const inspectCorrelation=inspected.headers()["x-correlation-id"];expect(inspectCorrelation).toBeTruthy();
     await expect(admin.page.getByRole("region",{name:"Inspected customer",exact:true}).getByText(profile.customerId,{exact:true})).toBeVisible();
+    await expect.poll(async()=>(await readFacts()).filter(f=>f.correlationId===inspectCorrelation).length,{timeout:90_000,intervals:[1000,2000]}).toBe(1);
+    const inspectionAudit=(await readFacts()).find(f=>f.correlationId===inspectCorrelation)!;expect(inspectionAudit.actor).toBe(actor);
+    expect(inspectionAudit.details).toEqual({action:"CUSTOMER_INSPECT",customerId:profile.customerId,httpMethod:"GET",httpStatus:200,outcome:"RESPONSE_READY",actorProvenance:"SIGNED_JWT"});
+    expect(JSON.stringify(inspectionAudit)).not.toContain(prefix);
     await expect(admin.page.getByLabel("Resource UUID",{exact:true})).toHaveValue(profile.customerId);
     await admin.page.getByLabel("Name prefix",{exact:true}).fill("Missing-"+crypto.randomUUID()); await expect(admin.page.getByRole("region",{name:"Customer matches",exact:true})).toHaveCount(0);
     await admin.page.getByRole("button",{name:"Search customers",exact:true}).click(); await expect(admin.page.getByText("No customers match this name prefix on this page.",{exact:true})).toBeVisible();
