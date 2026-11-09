@@ -1,0 +1,162 @@
+{
+  "checkedAt": "2026-11-09T10:17:31.215Z",
+  "phase": 8,
+  "lot": 6,
+  "projectComplete": false,
+  "source": "fac25b9eb641fca9d629fd893b82d27b3219701d",
+  "previousMain": "2055889dab72817f0fa7b889579b822c13d29e3e",
+  "feature": [
+    {
+      "id": 42596916413,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "fac25b9eb641fca9d629fd893b82d27b3219701d",
+      "head_branch": "feature/fincore-support-payment-access",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42596916413",
+      "created_at": "2026-11-09T09:54:14Z",
+      "updated_at": "2026-11-09T09:55:21Z",
+      "jobs": [
+        {
+          "id": 129091695886,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42596916413/job/129091695886"
+        }
+      ]
+    },
+    {
+      "id": 42596916605,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "fac25b9eb641fca9d629fd893b82d27b3219701d",
+      "head_branch": "feature/fincore-support-payment-access",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42596916605",
+      "created_at": "2026-11-09T09:54:14Z",
+      "updated_at": "2026-11-09T09:56:55Z",
+      "jobs": [
+        {
+          "id": 129091696366,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42596916605/job/129091696366"
+        }
+      ]
+    },
+    {
+      "id": 42596916411,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "fac25b9eb641fca9d629fd893b82d27b3219701d",
+      "head_branch": "feature/fincore-support-payment-access",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42596916411",
+      "created_at": "2026-11-09T09:54:14Z",
+      "updated_at": "2026-11-09T10:06:10Z",
+      "jobs": [
+        {
+          "id": 129091695752,
+          "name": "compose",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42596916411/job/129091695752"
+        }
+      ]
+    }
+  ],
+  "backend": {
+    "tests": 270,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 53,
+    "buildSuccess": true
+  },
+  "frontend": {
+    "tests": 55,
+    "files": 11,
+    "typecheck": true,
+    "lint": true,
+    "productionBuilds": 2,
+    "ciHighSeverityAuditGate": true
+  },
+  "native": {
+    "javaUniqueCases": 49,
+    "javaScope": "GatewaySecurityTest 10, PaymentSupportSecurityTest 2, PaymentRecoveryIT 11, SupportAccessSecurityTest 2, SupportAccountAccessTest 3, SupportPaymentAccessTest 5, SupportPaymentSecurityTest 2, SupportAccessDatabaseIT 14; repeated Gateway class deduplicated",
+    "postgresGrantCases": 14,
+    "frontendCases": 55,
+    "frontendHardwareBudget": "Ignored one-worker native configuration; repository defaults pass on GitHub",
+    "browserJourneys": 2,
+    "browserSpecs": [
+      "support-access.spec.ts: account",
+      "support-access.spec.ts: payment"
+    ],
+    "preservedUpgrade": {
+      "existingSecretsAndEnvUnchanged": true,
+      "credentialsUnchanged": true,
+      "datasetCountsUnchangedBeforeBrowser": true,
+      "legacyAccountGrantsUnchanged": true,
+      "existingReceiptsUnchanged": true,
+      "legacyGrantCount": 1,
+      "legacyReceiptCount": 19,
+      "auditMigrations": [
+        "1",
+        "2",
+        "3"
+      ]
+    },
+    "machineIdentity": {
+      "realClientCredentials": true,
+      "onlyNarrowAccountAndPaymentBusinessRoles": true,
+      "noStaffOrCustomerRealmRole": true,
+      "exactSixFieldPaymentProjection": true,
+      "paymentLookupListAdminDenied": true,
+      "existingPaymentOperatorDenied": true,
+      "existingAccountReadPreserved": true,
+      "ledgerAudienceDenied": true
+    },
+    "productionAudit": {
+      "info": 0,
+      "low": 0,
+      "moderate": 0,
+      "high": 0,
+      "critical": 0,
+      "total": 0
+    },
+    "runtimes": {
+      "checkedAt": "2026-11-09T10:13:46.671Z",
+      "running": 16,
+      "healthy": 16
+    },
+    "positiveVisualVerification": {
+      "hostedPKCE": true,
+      "actualPaymentObservation": true,
+      "positiveObservationWidths": [
+        1440,
+        390,
+        320
+      ],
+      "privateScreenshots": [
+        1440,
+        390
+      ],
+      "desktopAndMobileInspected": true
+    }
+  },
+  "integration": {
+    "browserJourneys": 13,
+    "freshCompose": true,
+    "independentAuthentication": true,
+    "ledgerSmoke": true,
+    "kafkaACLAndDLQReplay": true
+  },
+  "limitations": [
+    "Audit is trusted for dynamic per-object authorization; Payment separately checks signed narrow machine authority",
+    "A processing observation does not certify Ledger posting or prove browser receipt; revocation cannot withdraw delivered bytes",
+    "No support customer search, journal, amount or financial action",
+    "Customer support scope, full cross-service critical/read/security audit coverage, tracing and six dashboards remain later Phase 8 work"
+  ]
+}
