@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(value=PaymentController.class,properties="PAYMENT_CLIENT_SECRET=synthetic-test-secret")
 @Import({PaymentConfiguration.class,PaymentSecurityTest.Decoders.class})
 class PaymentSecurityTest {
+    @org.springframework.test.context.bean.override.mockito.MockitoBean com.fincore.support.AdministrativeReadAudit readAudit;
     @Autowired MockMvc http;
     @MockitoBean PaymentStore store;
     @MockitoBean PaymentCoordinator coordinator;

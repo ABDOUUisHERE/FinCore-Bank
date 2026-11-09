@@ -58,4 +58,25 @@ class AuditEventTest {
         for(String body:List.of(valid.replace("\"aggregateVersion\":1","\"aggregateVersion\":0"),valid.replace("\"aggregateId\":\""+id,"\"aggregateId\":\""+UUID.randomUUID())))
             assertThatThrownBy(()->AuditEvent.parse("fincore.customer.access.recorded.v1",id.toString(),body)).isInstanceOf(AuditEvent.Poison.class);
     }
+    @Test void accountAndPaymentAccessRetainCurrentStaffAndOnlyTheirOwnTypedReference() {
+        for(String domain:List.of("account","payment")) {
+            var id=UUID.randomUUID();var reference=UUID.randomUUID();var payload=accessPayload();payload.put("action",domain.toUpperCase(Locale.ROOT)+"_INSPECT");payload.put("httpMethod","GET");payload.put(domain+"Id",reference.toString());
+            payload.putAll(Map.of("ownerSubject","PRIVATE_PAYER","amount","PRIVATE_AMOUNT","instruction","PRIVATE_INSTRUCTION","reference","PRIVATE_REFERENCE","beforeVersion","PRIVATE_CURSOR"));
+            var body=access(id,payload).replace("customer.access.recorded",domain+".access.recorded");
+            var parsed=AuditEvent.parse("fincore."+domain+".access.recorded.v1",id.toString(),body);
+            assertThat(parsed.actor()).isEqualTo("signed-staff");
+            assertThat(parsed.details()).isEqualTo(Json.read(Json.text(Map.of(domain+"Id",reference,"action",domain.toUpperCase(Locale.ROOT)+"_INSPECT","httpMethod","GET","httpStatus",200,"outcome","RESPONSE_READY","actorProvenance","SIGNED_JWT"))));
+            assertThat(parsed.details().toString()).doesNotContain("PRIVATE_");
+        }
+    }
+    @Test void foreignActionsReferencesOrActorClaimsCannotMasqueradeAsOwnerReadReceipts() {
+        for(String domain:List.of("account","payment")) {
+            var id=UUID.randomUUID();var base=accessPayload();base.put("action",domain.toUpperCase(Locale.ROOT)+"_INSPECT");
+            String foreign=domain.equals("account")?"payment":"account";
+            for(var change:List.of(Map.<String,Object>of("action",foreign.toUpperCase(Locale.ROOT)+"_INSPECT"),Map.<String,Object>of(foreign+"Id",UUID.randomUUID().toString()),Map.<String,Object>of("actorProvenance","UNAVAILABLE"),Map.<String,Object>of("httpStatus","200"))) {
+                var payload=new HashMap<>(base);payload.putAll(change);String body=access(id,payload).replace("customer.access.recorded",domain+".access.recorded");
+                assertThatThrownBy(()->AuditEvent.parse("fincore."+domain+".access.recorded.v1",id.toString(),body)).isInstanceOf(AuditEvent.Poison.class);
+            }
+        }
+    }
 }

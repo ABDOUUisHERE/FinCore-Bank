@@ -31,7 +31,7 @@ public record AuditEvent(EventEnvelope envelope, JsonNode details, String actor,
             if (!event.topic().equals(topic) || !event.aggregateId().toString().equals(key)
                 || !Set.of("customer","account","ledger","payment","fraud","card").contains(event.eventType().split("\\.")[0]))
                 throw new Poison("EVENT_SOURCE_MISMATCH");
-            if (event.eventType().equals("customer.access.recorded")) return customerAccess(event, body);
+            if (Set.of("customer.access.recorded","account.access.recorded","payment.access.recorded").contains(event.eventType())) return access(event, body);
             var result = (com.fasterxml.jackson.databind.node.ObjectNode) Json.read("{}");
             for (String field : List.of("customerId","accountId","paymentId","journalId","cardId","caseId","alertId","assessmentId","reversalOf","refundJournalId")) {
                 if (event.payload().hasNonNull(field)) result.put(field, UUID.fromString(event.payload().path(field).asText()).toString());
@@ -51,9 +51,16 @@ public record AuditEvent(EventEnvelope envelope, JsonNode details, String actor,
         } catch (Poison error) { throw error; }
         catch (IllegalArgumentException | java.time.DateTimeException error) { throw new Poison("INVALID_EVENT_ENVELOPE"); }
     }
-    private static AuditEvent customerAccess(EventEnvelope event, String body) {
+    private static AuditEvent access(EventEnvelope event, String body) {
         var payload = event.payload();
-        String action = text(payload,"action",Set.of("CUSTOMER_SEARCH","CUSTOMER_INSPECT"));
+        String domain=event.eventType().split("\\.")[0];
+        Set<String> actions=switch(domain) {
+            case "customer" -> Set.of("CUSTOMER_SEARCH","CUSTOMER_INSPECT");
+            case "account" -> Set.of("ACCOUNT_INSPECT");
+            case "payment" -> Set.of("PAYMENT_INSPECT");
+            default -> throw new Poison("INVALID_ACCESS_AUDIT");
+        };
+        String action = text(payload,"action",actions);
         String method = text(payload,"httpMethod",Set.of("GET","POST","OTHER"));
         String provenance = text(payload,"actorProvenance",Set.of("SIGNED_JWT","UNAVAILABLE"));
         if (!event.aggregateId().equals(event.eventId()) || event.aggregateVersion()!=1
@@ -66,13 +73,17 @@ public record AuditEvent(EventEnvelope envelope, JsonNode details, String actor,
             case 401 -> "UNAUTHENTICATED"; case 403 -> "FORBIDDEN"; case 404 -> "NOT_FOUND";
             default -> status>=200 && status<300 ? "RESPONSE_READY" : "SERVER_ERROR";
         };
-        if (!outcome.equals(text(payload,"outcome",Set.of(outcome)))) throw new Poison("INVALID_ACCESS_AUDIT");
+        text(payload,"outcome",Set.of(outcome));
         var details = (com.fasterxml.jackson.databind.node.ObjectNode) Json.read("{}");
-        if (payload.hasNonNull("customerId")) {
-            if (!action.equals("CUSTOMER_INSPECT") || !payload.path("customerId").isTextual()) throw new Poison("INVALID_ACCESS_AUDIT");
-            String reference=payload.path("customerId").asText();
+        String field=domain+"Id";
+        // Customer v1 keeps its existing unknown-reference redaction policy.
+        if (!domain.equals("customer")) for(String referenceField:List.of("customerId","accountId","paymentId"))
+            if (!referenceField.equals(field) && payload.hasNonNull(referenceField)) throw new Poison("INVALID_ACCESS_AUDIT");
+        if (payload.hasNonNull(field)) {
+            if (action.equals("CUSTOMER_SEARCH") || !payload.path(field).isTextual()) throw new Poison("INVALID_ACCESS_AUDIT");
+            String reference=payload.path(field).asText();
             if (!reference.matches("(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) throw new Poison("INVALID_ACCESS_AUDIT");
-            details.put("customerId", UUID.fromString(reference).toString());
+            details.put(field, UUID.fromString(reference).toString());
         }
         String actor = null;
         if (provenance.equals("SIGNED_JWT")) {

@@ -20,6 +20,8 @@ spring:
             - id: customer-inspection
               uri: ${CUSTOMER_SERVICE_URL:http://localhost:8081}
               predicates: ["Path=/api/v1/admin/customers/*"]
+              metadata:
+                response-timeout: 10000
               filters:
                 - name: RequestSize
                   args:
@@ -27,6 +29,8 @@ spring:
             - id: payment-inspection
               uri: ${PAYMENT_SERVICE_URL:http://localhost:8084}
               predicates: ["Path=/api/v1/admin/transactions/*"]
+              metadata:
+                response-timeout: 10000
             - id: journal-inspection
               uri: ${REPORTING_SERVICE_URL:http://localhost:8089}
               predicates: ["Path=/api/v1/admin/ledger/journals/*"]

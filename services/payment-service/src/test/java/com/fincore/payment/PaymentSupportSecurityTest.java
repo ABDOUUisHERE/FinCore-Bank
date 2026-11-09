@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(PaymentSupportController.class)
 @Import({PaymentConfiguration.class,PaymentSecurityTest.Decoders.class})
 class PaymentSupportSecurityTest {
+    @org.springframework.test.context.bean.override.mockito.MockitoBean com.fincore.support.AdministrativeReadAudit readAudit;
     @Autowired MockMvc http;@MockitoBean PaymentStore store;@MockitoBean Remote remote;
     final UUID id=UUID.randomUUID();final String path="/internal/v1/payments/"+id+"/support-status";
     String machine(String audience,String client,String scope) {return SignedTokens.token(audience,"worker",client,List.of(),Map.of("payment-service",Map.of("roles",List.of(scope))));}
