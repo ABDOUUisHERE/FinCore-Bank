@@ -6,6 +6,8 @@ import { Badge, Empty, Failure, Loading } from "../banking/Common";
 import { clearIncidentAttempt, readIncidentAttempt, saveIncidentAttempt, type IncidentAttempt } from "./incidentAttempt";
 import { SupportAccountAccess, type Grant } from "./SupportAccountAccess";
 import { SupportPaymentAccess } from "./SupportPaymentAccess";
+import { SupportCustomerAccess } from "./SupportCustomerAccess";
+import { CustomerDiscovery } from "./CustomerDiscovery";
 import "../banking/banking.css";
 import "./operations.css";
 
@@ -45,6 +47,7 @@ function Incidents({ identity }: { identity: Identity }) {
   return <section className="bank-workspace operations-workspace" aria-label="Incident operations">
     <div className="section-heading"><h2>Incident operations</h2><button className="text-button" onClick={() => void cache.invalidateQueries({ queryKey: ["operations", subject] })}>Refresh incidents</button></div>
     <p>{identity.scope === "ALL_INCIDENTS" ? "You can manage all incidents." : "You can manage only incidents opened by your identity."} Resource references are reported by staff and do not confirm ownership or financial state.</p>
+    {session.roles.includes("SUPPORT_AGENT") && <CustomerDiscovery subject={subject} open={select} />}
     {attempt ? <section className="surface bank-panel" aria-label="Incident confirmation"><h3>{attempt.title}</h3><p>{attempt.description}</p>
       {attempt.submitted && <p role="status">A response is not confirmed. Retry the same request; its details and reference are retained across page reloads.</p>}
       <small className="bank-reference">Request reference: {attempt.key}</small><div className="bank-actions"><button className="button" disabled={send.isPending} onClick={() => send.mutate(attempt)}>{send.isPending ? "Submitting..." : attempt.submitted ? "Retry same incident request" : "Confirm incident request"}</button>
@@ -76,7 +79,8 @@ function IncidentDetail({ subject, id, draft, disabled }: { subject: string; id:
     {current.isPending ? <Loading /> : current.data && !current.error && <><dl className="bank-facts"><dt>Reference</dt><dd>{id}</dd><dt>Opened by</dt><dd>{current.data.createdBy}</dd><dt>Resource</dt><dd>{current.data.resourceKind} {current.data.resourceId}</dd><dt>Status</dt><dd><Badge status={current.data.status} /></dd><dt>Version</dt><dd>{current.data.version}</dd><dt>Reason</dt><dd>{current.data.reason}</dd><dt>Updated</dt><dd>{new Date(current.data.updatedAt).toLocaleString()}</dd></dl>
       <div className="bank-form"><Reason disabled={disabled} value={reason} change={setReason} /></div><div className="bank-actions">{current.data.status === "INVESTIGATING" ? <button className="button" disabled={disabled} onClick={() => change("RESOLVED")}>Review resolution</button> : <button className="button" disabled={disabled} onClick={() => change("INVESTIGATING")}>{current.data.status === "RESOLVED" ? "Review reopening" : "Review investigation"}</button>}</div>
       {current.data.resourceKind === "ACCOUNT" && <SupportAccountAccess subject={subject} incident={current.data} draft={draft} disabled={disabled} />}
-      {current.data.resourceKind === "PAYMENT" && <SupportPaymentAccess subject={subject} incident={current.data} draft={draft} disabled={disabled} />}</>}
+      {current.data.resourceKind === "PAYMENT" && <SupportPaymentAccess subject={subject} incident={current.data} draft={draft} disabled={disabled} />}
+      {current.data.resourceKind === "CUSTOMER" && <SupportCustomerAccess subject={subject} incident={current.data} draft={draft} disabled={disabled} />}</>}
     <h3>Immutable incident history</h3><Failure error={history.error} retry={() => void history.refetch()} />{history.isPending ? <Loading /> : <Facts items={history.data?.pages.flatMap(p => p.items) ?? []} />}
     {history.hasNextPage && <button className="button secondary" disabled={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>Load older incident history</button>}
   </section>;

@@ -59,10 +59,10 @@ it("keeps the incident reason selector accessible through investigation and reso
   await selected.findByText("resolved", { selector: ".bank-badge" });
   expect(mutations).toEqual([{ expectedVersion: 0, status: "INVESTIGATING", reason: "INVESTIGATION_UPDATE" }, { expectedVersion: 1, status: "RESOLVED", reason: "ISSUE_RESOLVED" }]);
 });
-it.each(["account", "payment"])("confirms a fixed-scope %s grant and replays its exact request after a lost response and remount", async kind => {
+it.each(["account", "payment", "customer"] as const)("confirms a fixed-scope %s grant and replays its exact request after a lost response and remount", async kind => {
   mocks.session.roles = ["ADMIN"];
   const scopedIncident = { ...incident, resourceKind: kind.toUpperCase() };
-  const scopedGrant = kind === "account" ? noGrant : { ...noGrant, accountId: undefined, paymentId: resource, permission: "PAYMENT_STATUS_READ" };
+  const scopedGrant = kind === "account" ? noGrant : kind === "payment" ? { ...noGrant, accountId: undefined, paymentId: resource, permission: "PAYMENT_STATUS_READ" } : { ...noGrant, accountId: undefined, customerId: resource, permission: "CUSTOMER_PROFILE_READ" };
   const submissions: { key: string; body: unknown }[] = [];
   const issued = { ...scopedGrant, version: "1", state: "ACTIVE" };
   vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string, options: RequestInit) => {
@@ -74,7 +74,7 @@ it.each(["account", "payment"])("confirms a fixed-scope %s grant and replays its
   }));
   const first = open(); await userEvent.click(await screen.findByRole("button", { name: "Open incident " + resource.slice(-8) }));
   await userEvent.click(await screen.findByRole("button", { name: "Review temporary access" })); expect(submissions).toHaveLength(0);
-  expect(screen.getByText(/Allow status consultation for 15 minutes/)).toHaveTextContent("Recipient: signed-support. " + (kind === "account" ? "Account" : "Payment") + ": " + resource);
+  expect(screen.getByText(new RegExp("Allow " + (kind === "customer" ? "profile" : "status") + " consultation for 15 minutes"))).toHaveTextContent("Recipient: signed-support. " + ({ account: "Account", payment: "Payment", customer: "Customer" }[kind]) + ": " + resource);
   await userEvent.click(screen.getByRole("button", { name: "Confirm incident request" })); await screen.findByRole("button", { name: "Retry same incident request" });
   expect(readIncidentAttempt("signed-admin")?.submitted).toBe(true); expect(readIncidentAttempt("signed-support")).toBeNull();
   first.unmount(); open(); await userEvent.click(await screen.findByRole("button", { name: "Retry same incident request" }));
