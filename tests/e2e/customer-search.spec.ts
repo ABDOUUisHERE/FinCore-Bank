@@ -35,6 +35,21 @@ test("ADMIN finds a real profile by name without URL disclosure or profile mutat
     expect((await search(admin,"ab")).status()).toBe(400);
     const literal = await search(admin,"%%%"); expect(literal.status()).toBe(200); expect((await literal.json()).items).toEqual([]);
 
+    const signedIdentity = await admin.page.request.get("http://localhost:8280/api/v1/admin/operations/me",{headers:{Authorization:"Bearer "+admin.token}});
+    expect(signedIdentity.status()).toBe(200);const actor=(await signedIdentity.json()).subject;
+    const auditCorrelation=crypto.randomUUID();
+    const auditedSearch=await admin.page.request.post(endpoint,{headers:{Authorization:"Bearer "+admin.token,"X-Correlation-ID":auditCorrelation,"X-User-ID":"FORGED_AUDIT_ACTOR"},data:{namePrefix:prefix}});
+    expect(auditedSearch.status()).toBe(200);
+    const readFacts=async()=>{
+      const response=await admin.page.request.get("http://localhost:8280/api/v1/admin/audit/records?eventType=customer.access.recorded",{headers:{Authorization:"Bearer "+admin.token}});
+      expect(response.status()).toBe(200);return (await response.json()).items as {actor:string;correlationId:string;details:Record<string,unknown>;sourceTopic:string}[];
+    };
+    await expect.poll(async()=>(await readFacts()).filter(f=>f.correlationId===auditCorrelation).length,{timeout:90_000,intervals:[1000,2000]}).toBe(1);
+    const audit=(await readFacts()).find(f=>f.correlationId===auditCorrelation)!;
+    expect(audit.actor).toBe(actor);expect(audit.sourceTopic).toBe("fincore.customer.access.recorded.v1");
+    expect(audit.details).toEqual({action:"CUSTOMER_SEARCH",httpMethod:"POST",httpStatus:200,outcome:"RESPONSE_READY",actorProvenance:"SIGNED_JWT"});
+    expect(JSON.stringify(audit)).not.toContain(prefix);expect(JSON.stringify(audit)).not.toContain("FORGED_AUDIT_ACTOR");
+
     await admin.page.getByRole("button",{ name: "Inspection", exact: true }).click();
     const requests: { url: string; method: string; body: string | null }[] = [];
     admin.page.on("request",r => { if (r.url().startsWith(endpoint)) requests.push({url:r.url(),method:r.method(),body:r.postData()}); });
@@ -61,6 +76,6 @@ test("ADMIN finds a real profile by name without URL disclosure or profile mutat
     await finance.page.getByRole("button",{name:"Inspection",exact:true}).click(); await expect(finance.page.getByLabel("Name prefix",{exact:true})).toHaveCount(0);
     await expect(support.page.getByRole("button",{name:"Inspection",exact:true})).toHaveCount(0);
     const after = await customer.page.request.get(profileUrl,{headers:{Authorization:"Bearer "+customer.token}}); expect(after.status()).toBe(200); expect(await after.json()).toEqual(profile);
-    console.info("Customer search: real profile, ADMIN-only POST, no name in URL, exact versions, literal wildcard, selection, unchanged profile and 1440/390/320px layouts confirmed.");
+    console.info("Customer search: real profile, ADMIN-only POST, durable redacted central read fact with signed actor, exact versions, literal wildcard, unchanged profile and 1440/390/320px layouts confirmed.");
   } finally { for (const identity of [customer,admin,support,finance]) await identity.context.close(); }
 });
