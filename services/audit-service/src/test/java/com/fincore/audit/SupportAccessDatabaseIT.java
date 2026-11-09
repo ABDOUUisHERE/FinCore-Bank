@@ -29,17 +29,29 @@ class SupportAccessDatabaseIT {
         db=new JdbcTemplate(new DriverManagerDataSource(PG.getJdbcUrl(),"audit_runtime",password));
         audit=new AuditStore(db);tx=new TransactionTemplate(new DataSourceTransactionManager(db.getDataSource()));
         UUID legacy=create("legacy-support");
+        Flyway.configure().dataSource(PG.getJdbcUrl(),"audit_migrator",password).target("2").load().migrate();
+        var v2=new SupportAccessStore(db,audit);String legacyKey=key();
+        var legacyCommand=new SupportAccessStore.Command("0","ISSUE",60,"CONTROL_REVIEW");
+        var legacyReceipt=tx.execute(s->v2.command(legacy,"admin",legacyKey,"test-correlation",legacyCommand));
+        String oldFingerprint=AuditEvent.hash(Json.text(Arrays.asList("SUPPORT_ACCOUNT_GRANT",legacy,"0","ISSUE",60,"CONTROL_REVIEW")));
+        assertThat(db.queryForObject("select fingerprint from incident_command where actor='admin' and key=?",String.class,legacyKey)).isEqualTo(oldFingerprint);
         Flyway.configure().dataSource(PG.getJdbcUrl(),"audit_migrator",password).load().migrate();
         assertThat(audit.incident(legacy,"legacy-support",false).path("status").asText()).isEqualTo("OPEN");
+        JsonNode replayed=tx.execute(s->v2.command(legacy,"admin",legacyKey,"test-correlation",legacyCommand));
+        assertThat(replayed).isEqualTo(legacyReceipt);
+        assertThat(v2.current(legacy,"legacy-support",false).path("expiresAt")).isEqualTo(legacyReceipt.path("expiresAt"));
         // Exercise the same transaction boundaries as Spring's proxied production store.
         grants=new SupportAccessStore(db,audit) {
             @Override public Admission admit(UUID id,String actor,String correlation){return tx.execute(s->super.admit(id,actor,correlation));}
+            @Override public Admission admit(UUID id,String actor,String correlation,Resource resource){return tx.execute(s->super.admit(id,actor,correlation,resource));}
             @Override public boolean finish(Admission a,String c,String outcome){return Boolean.TRUE.equals(tx.execute(s->super.finish(a,c,outcome)));}
         };
     }
     @AfterAll static void stop(){PG.stop();}
     static String key(){return UUID.randomUUID().toString();}
     static UUID create(String actor){return tx.execute(s->UUID.fromString(audit.create(actor,false,key(),"test-correlation",new AuditStore.Create("ACCOUNT",UUID.randomUUID(),"MEDIUM","CUSTOMER_REPORTED")).path("incidentId").asText()));}
+    static UUID createPayment(String actor){return tx.execute(s->UUID.fromString(audit.create(actor,false,key(),"test-correlation",new AuditStore.Create("PAYMENT",UUID.randomUUID(),"MEDIUM","CUSTOMER_REPORTED")).path("incidentId").asText()));}
+    static JsonNode paymentCommand(UUID id,String key,String version,String action,Integer minutes){return tx.execute(s->grants.command(id,"admin",key,"test-correlation",new SupportAccessStore.Command(version,action,minutes,"CONTROL_REVIEW"),SupportAccessStore.Resource.PAYMENT));}
     static JsonNode command(UUID id,String key,String version,String action,Integer minutes){return tx.execute(s->grants.command(id,"admin",key,"test-correlation",new SupportAccessStore.Command(version,action,minutes,"CONTROL_REVIEW")));}
     static JsonNode issue(UUID id){return command(id,key(),"0","ISSUE",15);}
     static void status(UUID id,String actor,long version,String status){tx.execute(s->audit.change(id,actor,false,key(),"test-correlation",new AuditStore.Change(version,status,"INVESTIGATION_UPDATE")));}
@@ -131,5 +143,65 @@ class SupportAccessDatabaseIT {
         try {assertThatThrownBy(()->new SupportAccountAccess(grants,remote,"http://account").inspect(id,"support","test-correlation")).isInstanceOf(DataAccessException.class);}
         finally {owner.execute("drop trigger reject_disclosure on audit_record");owner.execute("drop function reject_disclosure()");}
         assertThat(history(id).toString()).doesNotContain("DISCLOSED");
+    }
+    @Test void paymentAndAccountPoliciesNeverAuthorizeEachOthersResources() {
+        var account=create("support");var payment=createPayment("support");issue(account);
+        var result=paymentCommand(payment,key(),"0","ISSUE",15);
+        assertThat(result.path("permission").asText()).isEqualTo("PAYMENT_STATUS_READ");
+        assertThat(result.path("paymentId")).isEqualTo(audit.incident(payment,"support",false).path("resourceId"));
+        assertThat(result.has("accountId")).isFalse();
+        assertThat(grants.admit(payment,"support","c")).isNull();
+        assertThat(grants.admit(account,"support","c",SupportAccessStore.Resource.PAYMENT)).isNull();
+        assertThat(grants.admit(payment,"foreign","c",SupportAccessStore.Resource.PAYMENT)).isNull();
+        assertThatThrownBy(()->grants.current(payment,"foreign",false,SupportAccessStore.Resource.PAYMENT)).isInstanceOf(ApiFailure.class).hasMessage("INCIDENT_NOT_FOUND");
+        assertThatThrownBy(()->grants.current(account,"support",false,SupportAccessStore.Resource.PAYMENT)).isInstanceOf(ApiFailure.class).hasMessage("PAYMENT_INCIDENT_REQUIRED");
+        assertThatThrownBy(()->paymentCommand(account,key(),"1","REVOKE",null)).isInstanceOf(ApiFailure.class).hasMessage("PAYMENT_INCIDENT_REQUIRED");
+        var admission=grants.admit(payment,"support","c",SupportAccessStore.Resource.PAYMENT);
+        assertThat(grants.finish(new SupportAccessStore.Admission(payment,UUID.randomUUID(),"support",admission.grantVersion(),admission.attemptId(),SupportAccessStore.Resource.PAYMENT),"c","DISCLOSED")).isFalse();
+        assertThat(history(payment).get(0).path("details").path("outcome").asText()).isEqualTo("RESOURCE_MISMATCH");
+    }
+    @Test void paymentReceiptsShareActorGlobalKeysAndNeverReviveResolvedPermission() {
+        var account=create("support");var payment=createPayment("support");String shared=key();command(account,shared,"0","ISSUE",15);
+        assertThatThrownBy(()->paymentCommand(payment,shared,"0","ISSUE",15)).isInstanceOf(ApiFailure.class).hasMessage("IDEMPOTENCY_CONFLICT");
+        assertThat(grants.current(payment,"support",false,SupportAccessStore.Resource.PAYMENT).path("version").asText()).isEqualTo("0");
+        String issuedKey=key();var issued=paymentCommand(payment,issuedKey,"0","ISSUE",5);
+        status(payment,"support",0,"INVESTIGATING");status(payment,"support",1,"RESOLVED");
+        var revoked=grants.current(payment,"support",false,SupportAccessStore.Resource.PAYMENT);
+        assertThat(revoked.path("state").asText()).isEqualTo("REVOKED");assertThat(revoked.path("version").asText()).isEqualTo("2");
+        assertThat(revoked.path("reason").asText()).isEqualTo("INCIDENT_RESOLVED");
+        assertThat(paymentCommand(payment,issuedKey,"0","ISSUE",5)).isEqualTo(issued);
+        status(payment,"support",2,"INVESTIGATING");assertThat(grants.admit(payment,"support","c",SupportAccessStore.Resource.PAYMENT)).isNull();
+        paymentCommand(payment,key(),"2","ISSUE",15);assertThat(grants.admit(payment,"support","c",SupportAccessStore.Resource.PAYMENT)).isNotNull();
+    }
+    @Test void concurrentPaymentGrantCommandsHaveOneWinnerAndCannotRewriteIdentity() throws Exception {
+        UUID id=createPayment("support");
+        try(var workers=Executors.newFixedThreadPool(2)) {
+            var go=new CountDownLatch(1);List<Future<Boolean>> futures=new ArrayList<>();
+            for(int i=0;i<2;i++)futures.add(workers.submit(()->{go.await();try{paymentCommand(id,key(),"0","ISSUE",15);return true;}catch(ApiFailure conflict){assertThat(conflict.code).isEqualTo("GRANT_VERSION_CONFLICT");return false;}}));
+            go.countDown();int winners=0;for(var f:futures)if(f.get(20,TimeUnit.SECONDS))winners++;assertThat(winners).isEqualTo(1);
+        }
+        for(var connection:List.of(db,owner))for(String sql:List.of("delete from support_payment_grant","truncate support_payment_grant","update support_payment_grant set version=version+2","update support_payment_grant set incident_id='"+UUID.randomUUID()+"'"))
+            assertThatThrownBy(()->connection.execute(sql)).isInstanceOf(DataAccessException.class);
+    }
+    @Test void paymentDisclosureRechecksExpiryReplacementRevocationAndResolution() {
+        for(String action:List.of("EXPIRE","REPLACE","REVOKE","RESOLVE")) {
+            UUID id=createPayment("support");paymentCommand(id,key(),"0","ISSUE",15);status(id,"support",0,"INVESTIGATING");
+            var admission=grants.admit(id,"support","c",SupportAccessStore.Resource.PAYMENT);
+            if(action.equals("EXPIRE"))owner.update("update support_payment_grant set version=version+1,issued_at=clock_timestamp()-interval '1 hour',expires_at=clock_timestamp()-interval '30 minutes' where incident_id=?",id);
+            else if(action.equals("RESOLVE"))status(id,"support",1,"RESOLVED");
+            else paymentCommand(id,key(),"1",action.equals("REPLACE")?"ISSUE":"REVOKE",action.equals("REPLACE")?15:null);
+            assertThat(grants.finish(admission,"c","DISCLOSED")).isFalse();
+            assertThat(history(id).get(0).path("details").path("outcome").asText()).isNotEqualTo("DISCLOSED");
+        }
+    }
+    @Test void failedResolutionReceiptRollsBackPaymentGrantRevocationTogetherWithIncidentState() {
+        UUID id=createPayment("support");paymentCommand(id,key(),"0","ISSUE",15);status(id,"support",0,"INVESTIGATING");String command=key();
+        owner.execute("create function reject_payment_resolution() returns trigger language plpgsql as $$ begin if NEW.key='"+command+"' then raise exception 'INJECTED'; end if; return NEW; end $$");
+        owner.execute("create trigger reject_payment_resolution before insert on incident_command for each row execute function reject_payment_resolution()");
+        try {assertThatThrownBy(()->tx.execute(s->audit.change(id,"support",false,command,"c",new AuditStore.Change(1L,"RESOLVED","ISSUE_RESOLVED")))).isInstanceOf(DataAccessException.class);}
+        finally {owner.execute("drop trigger reject_payment_resolution on incident_command");owner.execute("drop function reject_payment_resolution()");}
+        assertThat(audit.incident(id,"support",false).path("status").asText()).isEqualTo("INVESTIGATING");
+        assertThat(grants.current(id,"support",false,SupportAccessStore.Resource.PAYMENT).path("state").asText()).isEqualTo("ACTIVE");
+        assertThat(grants.admit(id,"support","c",SupportAccessStore.Resource.PAYMENT)).isNotNull();
     }
 }

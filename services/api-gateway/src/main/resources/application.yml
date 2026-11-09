@@ -98,9 +98,9 @@ spring:
                 - name: RequestSize
                   args:
                     maxSize: 16KB
-            - id: support-account-observation
+            - id: support-observation
               uri: ${AUDIT_SERVICE_URL:http://localhost:8090}
-              predicates: ["Path=/api/v1/admin/incidents/*/account-status"]
+              predicates: ["Path=/api/v1/admin/incidents/*/account-status,/api/v1/admin/incidents/*/payment-status"]
               metadata:
                 response-timeout: 25000
               filters:

@@ -1,0 +1,102 @@
+openapi: 3.1.0
+info:
+  title: FinCore temporary support payment access
+  version: 1.0.0
+  description: >-
+    ADMIN issues or revokes PAYMENT_STATUS_READ for the immutable creator and
+    payment of an active PAYMENT incident. A current SUPPORT_AGENT recipient
+    consults explicitly. No search or financial action is permitted. All responses
+    use Cache-Control no-store. Commands share actor-global keys with incident and
+    account grant mutations. Replay returns the original receipt, not current permission.
+security: [{ bearer: [] }]
+paths:
+  /api/v1/admin/incidents/{id}/payment-access:
+    parameters: [{ $ref: '#/components/parameters/Incident' }]
+    get:
+      summary: Current permission for ADMIN or the SUPPORT_AGENT incident creator
+      responses:
+        '200':
+          description: Current permission, including NONE at version zero
+          content: { application/json: { schema: { $ref: '#/components/schemas/Grant' } } }
+        '404': { description: Incident absent or outside the recipient scope }
+        '409': { description: A PAYMENT incident is required }
+    put:
+      summary: ADMIN changes permission following explicit confirmation
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema: { type: string, pattern: '^[A-Za-z0-9._:-]{1,120}$' }
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: './support-account-access-v1.yaml#/components/schemas/Command' } } }
+      responses:
+        '200':
+          description: Original immutable receipt
+          content: { application/json: { schema: { $ref: '#/components/schemas/Receipt' } } }
+        '400': { description: Invalid body, duration, reason or version }
+        '403': { description: ADMIN required }
+        '409': { description: Key reuse, stale version, resolved or wrong-kind incident, or non-revocable grant }
+        '503': { description: No confirmed result; retry the same body and key }
+  /api/v1/admin/incidents/{id}/payment-status:
+    parameters: [{ $ref: '#/components/parameters/Incident' }]
+    post:
+      summary: SUPPORT_AGENT consults only the payment status authorized by the incident
+      description: >-
+        Admission and final disclosure each commit an audit decision. HTTP holds
+        no database lock. Database-clock expiry, revocation, replacement, resolution,
+        kind mismatch, foreign ownership or final audit failure withholds the observation.
+        Payment status is an independently observed processing state; it does not
+        certify a Ledger posting. No automatic browser retry or payload persistence.
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, additionalProperties: false } } }
+      responses:
+        '200':
+          description: Six redacted payment metadata fields; no financial side effect
+          content: { application/json: { schema: { $ref: '#/components/schemas/Observation' } } }
+        '403': { description: Current SUPPORT_AGENT, own incident and current grant required }
+        '503': { description: Source, identity or audit unavailable, or invalid source; no observation }
+components:
+  securitySchemes:
+    bearer: { type: http, scheme: bearer, bearerFormat: JWT }
+  parameters:
+    Incident:
+      in: path
+      name: id
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    Grant:
+      type: object
+      required: [incidentId, paymentId, recipient, permission, version, state, issuedBy, issuedAt, expiresAt, revokedAt, reason]
+      properties:
+        incidentId: { type: string, format: uuid }
+        paymentId: { type: string, format: uuid }
+        recipient: { type: string }
+        permission: { const: PAYMENT_STATUS_READ }
+        version: { type: string, pattern: '^(0|[1-9][0-9]{0,18})$' }
+        state: { enum: [NONE, ACTIVE, EXPIRED, REVOKED, RESOLVED] }
+        issuedBy: { type: [string, 'null'] }
+        issuedAt: { type: [string, 'null'], format: date-time }
+        expiresAt: { type: [string, 'null'], format: date-time }
+        revokedAt: { type: [string, 'null'], format: date-time }
+        reason: { type: [string, 'null'] }
+    Receipt:
+      allOf:
+        - { $ref: '#/components/schemas/Grant' }
+        - type: object
+          required: [auditRecordId]
+          properties:
+            auditRecordId: { type: string, format: uuid }
+    Observation:
+      type: object
+      additionalProperties: false
+      required: [paymentId, kind, status, version, createdAt, observedAt]
+      properties:
+        paymentId: { type: string, format: uuid }
+        kind: { enum: [TRANSFER, DEPOSIT, REVERSAL] }
+        status: { enum: [CREATED, VALIDATING, PENDING_RISK_REVIEW, PROCESSING, COMPLETED, FAILED, REJECTED, REVERSAL_PENDING, REVERSED] }
+        version: { type: string, pattern: '^(0|[1-9][0-9]{0,18})$' }
+        createdAt: { type: string, format: date-time }
+        observedAt: { type: string, format: date-time }
