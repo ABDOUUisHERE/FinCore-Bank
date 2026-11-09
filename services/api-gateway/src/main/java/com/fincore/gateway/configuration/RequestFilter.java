@@ -17,6 +17,11 @@ public class RequestFilter implements WebFilter {
         String incoming = exchange.getRequest().getHeaders().getFirst("X-Correlation-ID");
         String id = incoming != null && incoming.matches("[A-Za-z0-9._-]{1,64}") ? incoming : UUID.randomUUID().toString();
         exchange.getResponse().getHeaders().set("X-Correlation-ID", id);
+        // The proxy also copies the owner's response header. Keep one value at the final commit.
+        exchange.getResponse().beforeCommit(() -> {
+            exchange.getResponse().getHeaders().set("X-Correlation-ID", id);
+            return Mono.empty();
+        });
         if (exchange.getRequest().getPath().value().startsWith("/api/")) {
             long size = exchange.getRequest().getHeaders().getContentLength();
             if (size > 16_384) return ProblemResponses.write(exchange, 413);

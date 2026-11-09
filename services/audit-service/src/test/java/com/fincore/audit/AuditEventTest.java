@@ -27,4 +27,35 @@ class AuditEventTest {
         for(String body:List.of("{}",valid.replace("\"schemaVersion\":1","\"schemaVersion\":99"),valid.replace("\"aggregateVersion\":0","\"aggregateVersion\":0.5"),valid.replace("2026-11-02T10:00:00Z","not-a-timestamp"),event(UUID.randomUUID(),aggregate,Map.of("accountId","invalid"))))
             assertThatThrownBy(()->AuditEvent.parse("fincore.account.created.v1",aggregate.toString(),body)).isInstanceOf(AuditEvent.Poison.class).hasMessageNotContaining("not-a-timestamp");
     }
+    static String access(UUID id, Map<String,Object> payload) {
+        return Json.text(Map.of("eventId",id,"eventType","customer.access.recorded","schemaVersion",1,"aggregateId",id,"aggregateVersion",1,
+            "correlationId","access-test","occurredAt","2026-11-09T12:00:00Z","payload",payload));
+    }
+    static Map<String,Object> accessPayload() {
+        return new HashMap<>(Map.of("action","CUSTOMER_SEARCH","outcome","RESPONSE_READY","httpMethod","POST","httpStatus",200,
+            "actorProvenance","SIGNED_JWT","actorSubject","signed-staff"));
+    }
+    @Test void accessProjectionDropsAllFreeTextAndUnrelatedReferences() {
+        var id=UUID.randomUUID();var payload=accessPayload();payload.putAll(Map.of("namePrefix","PRIVATE_PREFIX","displayName","PRIVATE_NAME","token","PRIVATE_TOKEN",
+            "ownerSubject","FORGED_FALLBACK","paymentId",UUID.randomUUID().toString(),"rawPath","PRIVATE_PATH"));
+        var parsed=AuditEvent.parse("fincore.customer.access.recorded.v1",id.toString(),access(id,payload));
+        assertThat(parsed.actor()).isEqualTo("signed-staff");
+        assertThat(parsed.details()).isEqualTo(Json.read("{\"action\":\"CUSTOMER_SEARCH\",\"outcome\":\"RESPONSE_READY\",\"httpMethod\":\"POST\",\"httpStatus\":200,\"actorProvenance\":\"SIGNED_JWT\"}"));
+        var reference=UUID.randomUUID();payload.put("action","CUSTOMER_INSPECT");payload.put("customerId",reference.toString());
+        assertThat(AuditEvent.parse("fincore.customer.access.recorded.v1",id.toString(),access(id,payload)).details().path("customerId").asText()).isEqualTo(reference.toString());
+    }
+    @Test void unavailableIdentityDoesNotFallBackToProducerReportedOwner() {
+        var id=UUID.randomUUID();var payload=accessPayload();payload.put("actorProvenance","UNAVAILABLE");payload.remove("actorSubject");payload.put("ownerSubject","FORGED_ACTOR");payload.put("httpStatus",401);payload.put("outcome","UNAUTHENTICATED");
+        assertThat(AuditEvent.parse("fincore.customer.access.recorded.v1",id.toString(),access(id,payload)).actor()).isNull();
+    }
+    @Test void malformedAccessMetadataIsQuarantinedRatherThanCoercedOrTrusted() {
+        var id=UUID.randomUUID();
+        for(var entry:Map.<String,Object>of("action","ARBITRARY_ACTION","httpMethod","DELETE","httpStatus",200.5,"outcome","FORBIDDEN","actorProvenance","HEADER","actorSubject","email@example.invalid","customerId",UUID.randomUUID().toString()).entrySet()) {
+            var payload=accessPayload();payload.put(entry.getKey(),entry.getValue());
+            assertThatThrownBy(()->AuditEvent.parse("fincore.customer.access.recorded.v1",id.toString(),access(id,payload))).isInstanceOf(AuditEvent.Poison.class);
+        }
+        var valid=access(id,accessPayload());
+        for(String body:List.of(valid.replace("\"aggregateVersion\":1","\"aggregateVersion\":0"),valid.replace("\"aggregateId\":\""+id,"\"aggregateId\":\""+UUID.randomUUID())))
+            assertThatThrownBy(()->AuditEvent.parse("fincore.customer.access.recorded.v1",id.toString(),body)).isInstanceOf(AuditEvent.Poison.class);
+    }
 }

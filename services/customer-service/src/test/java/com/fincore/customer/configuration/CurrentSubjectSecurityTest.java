@@ -19,6 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({SecurityConfiguration.class, CorrelationFilter.class, CurrentSubjectSecurityTest.Decoders.class})
 class CurrentSubjectSecurityTest {
     @Autowired MockMvc http;
+    @org.springframework.test.context.bean.override.mockito.MockitoBean CustomerAccessAudit accessAudit;
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Decoders {
