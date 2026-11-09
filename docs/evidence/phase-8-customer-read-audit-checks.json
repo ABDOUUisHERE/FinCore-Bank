@@ -1,0 +1,111 @@
+{
+  "checkedAt": "2026-11-09T15:10:44.559Z",
+  "applicationSource": "e0d2a60ddf26e3571ca675849e59151b6458a7e8",
+  "baselineMain": "6ec3a90c34d97352ba6c103cdd00dc2a31fd5bbf",
+  "phase": 8,
+  "lot": 8,
+  "phaseComplete": false,
+  "featureChecks": [
+    {
+      "name": "Frontend quality",
+      "id": 42615122374,
+      "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42615122374",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 129152959500,
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "Backend quality",
+      "id": 42615122591,
+      "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42615122591",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 129152960790,
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "Foundation integration",
+      "id": 42615122445,
+      "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42615122445",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 129152959748,
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "backend": {
+    "tests": 303,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 60,
+    "buildSuccess": true
+  },
+  "frontend": {
+    "cases": 64,
+    "files": 13,
+    "typecheck": true,
+    "lint": true,
+    "builds": 2,
+    "auditSeverityGatePassed": true
+  },
+  "hostedBrowser": {
+    "cases": 14,
+    "passed": 14
+  },
+  "native": {
+    "tests": 53,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 14,
+    "countsAreUniqueAcrossSuccessfulClassResults": true,
+    "browserCases": 3,
+    "brokerDeliveryReplayQuarantineAndStorageRecovery": true,
+    "healthyRuntimeServices": 16,
+    "preservedUpgrade": {
+      "customerMigrations": [
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "credentialsAndEnvironmentUnchanged": true,
+      "profilesUnchanged": true,
+      "domainEnvelopesAndDeliveryReceiptsUnchanged": true,
+      "allThreeGrantFamiliesAndOriginalReceiptsUnchanged": true,
+      "originalReceiptCount": 60,
+      "countsUnchangedBeforeBrowser": {
+        "customer": 48,
+        "account": 88,
+        "payment": 150,
+        "ledger": 118,
+        "audit": 12
+      }
+    }
+  },
+  "initialFailures": {
+    "featureFoundationRun": 42612701260,
+    "reason": "Duplicated proxy/owner X-Correlation-ID values prevented matching the retained inspection receipt. Reproduced in the native browser and two focused Gateway tests; final-commit normalization fixed the original path.",
+    "nativeDatabaseStartup": "An existing DatabaseIsolationIT container startup exceeded its log readiness deadline during concurrent image compilation. Its later isolated five-case run passed.",
+    "nativeAssertion": "The first immutability assertion inspected the Spring wrapper message rather than the SQL cause. It now checks the permission SQLSTATE."
+  },
+  "mainIntegration": null,
+  "remaining": [
+    "Security/read audit outside the two Customer ADMIN routes",
+    "Other administrative and scoped-assistance behavior",
+    "Collected cross-service and Kafka traces",
+    "Six observed monitoring dashboards",
+    "Phases 9–11"
+  ]
+}
