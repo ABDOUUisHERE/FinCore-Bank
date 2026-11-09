@@ -54,6 +54,9 @@ class ReportingAccessAuditIT {
         when(remote.serviceToken()).thenReturn("technical");when(remote.exchange(anyString())).thenReturn("delegated");
         when(remote.call(eq("GET"),contains("/internal/v1/accounts/"),eq("technical"),isNull())).thenReturn(Json.read(Json.text(Map.of("ownerSubject",actor,"ledgerId",ledger))));
         when(remote.call(eq("GET"),contains("/statement?month="),eq("delegated"),isNull())).thenReturn(source);
+        String denial=UUID.randomUUID().toString();
+        http.perform(get("/api/v1/admin/reports/reconciliation").header("Authorization","Bearer "+token("signed-administrator","ADMIN")).header("X-Correlation-ID",denial)).andExpect(status().isForbidden());
+        assertThat(db.queryForObject("select count(*) from reporting_access_audit where correlation_id=? and action='RECONCILIATION_INSPECT' and http_status=403 and outcome='FORBIDDEN' and actor_subject='signed-administrator' and actor_provenance='SIGNED_JWT' and resource_id is null",Long.class,denial)).isEqualTo(1);
         String bearer=token(actor,"CUSTOMER"),body=Json.text(Map.of("accountId",account,"month","2026-01"));long before=count("statement_snapshot"),receipts=count("reporting_access_audit");
         try{
             migrator().execute("revoke insert on reporting_access_audit from reporting_runtime");
