@@ -74,4 +74,16 @@ class CustomerAccessAuditSecurityTest {
         new CustomerAccessAuditFilter(audit).doFilter(new MockHttpServletRequest("GET","/api/v1/customers/me"),new MockHttpServletResponse(),(req,res)->{});
         verifyNoInteractions(audit);
     }
+    @Test void decodedServletRouteAndContainerErrorsKeepTheirFiniteCategoryWithoutEarlyWrites() throws Exception {
+        var response=new MockHttpServletResponse();var request=new MockHttpServletRequest("POST","/api/v1/admin/customers/%73earch");request.setServletPath(path);
+        doAnswer(call->{assertThat(response.getContentAsByteArray()).isEmpty();return null;}).when(audit).retain(any(),anyString(),anyInt(),nullable(CustomerAccessAudit.Actor.class),anyString());
+        new CustomerAccessAuditFilter(audit).doFilter(request,response,(req,res)->((jakarta.servlet.http.HttpServletResponse)res).sendError(404,"PRIVATE_ERROR"));
+        assertThat(response.getStatus()).isEqualTo(404);assertThat(response.getContentAsString()).doesNotContain("PRIVATE_ERROR");
+        verify(audit).retain(eq(new CustomerAccessAudit.Target("CUSTOMER_SEARCH",null)),eq("POST"),eq(404),isNull(),anyString());
+        clearInvocations(audit);var failedResponse=new MockHttpServletResponse();
+        assertThatThrownBy(()->new CustomerAccessAuditFilter(audit).doFilter(new MockHttpServletRequest("GET",path),failedResponse,(req,res)->{res.getWriter().write("PRIVATE_PARTIAL_BODY");throw new jakarta.servlet.ServletException("PRIVATE_FAILURE");}))
+            .isInstanceOf(jakarta.servlet.ServletException.class);
+        assertThat(failedResponse.getContentAsByteArray()).isEmpty();
+        verify(audit).retain(eq(new CustomerAccessAudit.Target("CUSTOMER_SEARCH",null)),eq("GET"),eq(500),isNull(),anyString());
+    }
 }

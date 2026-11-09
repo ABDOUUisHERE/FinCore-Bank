@@ -31,8 +31,17 @@ class CustomerAccessAuditIT {
         new CustomerAccessAudit(jdbc).retain(new CustomerAccessAudit.Target("CUSTOMER_INSPECT",UUID.randomUUID()),"GET",403,new CustomerAccessAudit.Actor("signed-subject"),correlation);
         assertThat(jdbc.queryForObject("select outcome from customer_access_audit where correlation_id=?",String.class,correlation)).isEqualTo("FORBIDDEN");
         for(String sql:List.of("update customer_access_audit set outcome='SERVER_ERROR'","delete from customer_access_audit","truncate customer_access_audit","alter table customer_access_audit disable trigger all"))
-            assertThatThrownBy(()->jdbc.execute(sql)).isInstanceOf(org.springframework.dao.DataAccessException.class).hasMessageContaining("permission");
-        assertThatThrownBy(()->db("customer_migrator").update("delete from customer_access_audit where correlation_id=?",correlation)).hasMessageContaining("CUSTOMER_ACCESS_AUDIT_IMMUTABLE");
+            assertThatThrownBy(()->jdbc.execute(sql)).isInstanceOf(org.springframework.dao.DataAccessException.class).rootCause()
+                .isInstanceOfSatisfying(java.sql.SQLException.class,error->assertThat(error.getSQLState()).isEqualTo("42501"));
+        assertThatThrownBy(()->db("customer_migrator").update("delete from customer_access_audit where correlation_id=?",correlation)).rootCause().hasMessageContaining("CUSTOMER_ACCESS_AUDIT_IMMUTABLE");
+    }
+    @Test void databaseRejectsUnboundedMetadataWithoutCreatingAnOutboxSource() {
+        var jdbc=runtime();var audit=new CustomerAccessAudit(jdbc);long before=jdbc.queryForObject("select count(*) from customer_access_audit",Long.class);
+        for(var target:List.of(new CustomerAccessAudit.Target("PRIVATE_ACTION",null),new CustomerAccessAudit.Target("CUSTOMER_SEARCH",UUID.randomUUID())))
+            assertThatThrownBy(()->audit.retain(target,"POST",200,null,"safe-correlation")).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThatThrownBy(()->audit.retain(new CustomerAccessAudit.Target("CUSTOMER_SEARCH",null),"POST",200,new CustomerAccessAudit.Actor("person@example.invalid"),"safe-correlation")).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThatThrownBy(()->audit.retain(new CustomerAccessAudit.Target("CUSTOMER_SEARCH",null),"POST",200,null,"PRIVATE QUERY STRING")).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
+        assertThat(jdbc.queryForObject("select count(*) from customer_access_audit",Long.class)).isEqualTo(before);
     }
     @Test void typedReceiptProducesOneRedactedEnvelopeWithoutChangingProfiles() {
         var jdbc=runtime();String correlation=UUID.randomUUID().toString();

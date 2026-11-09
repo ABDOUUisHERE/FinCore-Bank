@@ -1,5 +1,7 @@
 /** Compose acceptance probe. Backend audit behavior lives in Java/Spring Boot. No credentials or raw events are printed. */
 import assert from "node:assert/strict";
+import console from "node:console";
+import process from "node:process";
 import { spawnSync } from "node:child_process";
 import { createHash, randomUUID } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";

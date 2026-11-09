@@ -19,10 +19,13 @@ public final class CustomerAccessAuditFilter extends OncePerRequestFilter {
     public CustomerAccessAuditFilter(CustomerAccessAudit audit) { this.audit = audit; }
     @Override protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        var target = CustomerAccessAudit.target(request.getRequestURI().substring(request.getContextPath().length()));
+        String path=request.getServletPath();
+        if (path.isEmpty()) path=request.getRequestURI().substring(request.getContextPath().length());
+        var target = CustomerAccessAudit.target(path);
         if (target == null) { chain.doFilter(request, response); return; }
         request.removeAttribute(ACTOR);
         var buffered = new BufferedResponse(response);
+        buffered.setHeader("Cache-Control", "no-store");
         Exception failure = null;
         try { chain.doFilter(request, buffered); }
         catch (ServletException | IOException | RuntimeException error) { failure = error; }
