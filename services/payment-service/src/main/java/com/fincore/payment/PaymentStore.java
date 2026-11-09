@@ -14,6 +14,14 @@ public class PaymentStore {
     private final JdbcTemplate jdbc;
     private static final RowMapper<JsonNode> ROW=(rs,n)->Json.read(rs.getString(1));
     public PaymentStore(JdbcTemplate jdbc){this.jdbc=jdbc;}
+    /** One payment observation for a scoped support broker; no financial or worker context. */
+    @Transactional(readOnly=true,isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
+    public JsonNode supportStatus(UUID id) {
+        jdbc.execute("set local statement_timeout='4s'");
+        var rows=jdbc.query("select jsonb_build_object('paymentId',id,'kind',kind,'status',status,'version',version::text,'createdAt',created_at,'observedAt',statement_timestamp())::text from payment where id=?",ROW,id);
+        if(rows.isEmpty())throw new ApiFailure(404,"PAYMENT_NOT_FOUND");
+        return rows.getFirst();
+    }
     /** One repeatable snapshot per page; no actor, free text, amounts or instruction/lease data. */
     @Transactional(readOnly=true,isolation=org.springframework.transaction.annotation.Isolation.REPEATABLE_READ)
     public JsonNode inspection(UUID id,Long beforeVersion){

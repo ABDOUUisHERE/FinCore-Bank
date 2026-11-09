@@ -73,6 +73,25 @@ class PaymentRecoveryIT {
         assertThatThrownBy(()->store.inspection(f.id(),0L)).isInstanceOf(ApiFailure.class).extracting("status").isEqualTo(400);
     }
     long operations(UUID id){return LAB.runtime("ledger").queryForObject("select count(*) from ledger.operation where issuer='fincore-payment' and business_reference=?",Long.class,id.toString());}
+    @Test void scopedSupportStatusHasOnlySixMetadataFieldsAndDoesNotChangePaymentOrMoney() {
+        var f=transfer("10.00");store.importInstruction(f.receipt());
+        LAB.owner("payment").update("update payment set status='VALIDATING',version=version+1 where id=?",f.id());
+        LAB.owner("payment").update("update payment set status='REJECTED',version=version+1 where id=?",f.id());
+        String before=store.get(f.id()).toString(),booked=balance(f.source());
+        int outbox=LAB.runtime("payment").queryForObject("select count(*) from payment_outbox where payment_id=?",Integer.class,f.id());
+        int history=store.history(f.id()).size();
+        var view=store.supportStatus(f.id());
+        Set<String> fields=new HashSet<>();view.fieldNames().forEachRemaining(fields::add);
+        assertThat(fields).containsExactlyInAnyOrder("paymentId","kind","status","version","createdAt","observedAt");
+        assertThat(view.path("paymentId").asText()).isEqualTo(f.id().toString());
+        assertThat(view.path("version").isTextual()).isTrue();assertThat(view.path("version").asText()).isEqualTo("2");
+        assertThat(view.path("status").asText()).isEqualTo("REJECTED");
+        java.time.Instant.parse(view.path("createdAt").asText());java.time.Instant.parse(view.path("observedAt").asText());
+        assertThat(store.get(f.id()).toString()).isEqualTo(before);assertThat(balance(f.source())).isEqualTo(booked);assertThat(operations(f.id())).isZero();
+        assertThat(store.history(f.id())).hasSize(history);
+        assertThat(LAB.runtime("payment").queryForObject("select count(*) from payment_outbox where payment_id=?",Integer.class,f.id())).isEqualTo(outbox);
+        assertThatThrownBy(()->store.supportStatus(UUID.randomUUID())).isInstanceOf(ApiFailure.class).hasMessage("PAYMENT_NOT_FOUND");
+    }
     @Test void recoversAuthorizationAcceptedBeforePaymentPersistence(){var f=transfer("10.00");assertThat(store.exists(f.id())).isFalse();discover.set(true);worker.cycle();assertThat(store.get(f.id()).path("status").asText()).isEqualTo("COMPLETED");assertThat(operations(f.id())).isEqualTo(1);assertThat(balance(f.source())).isEqualTo("90.00");}
     @Test void lostResponseAfterLedgerCommitNeverDuplicatesMoney(){
         var f=transfer("10.00");store.importInstruction(f.receipt());loseResponse.set(true);worker.cycle();

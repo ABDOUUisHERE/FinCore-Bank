@@ -19,6 +19,12 @@ public class PaymentConfiguration {
         return http.csrf(c->c.disable()).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(a->a.requestMatchers("/actuator/health","/actuator/health/**").permitAll()
                 .requestMatchers(org.springframework.http.HttpMethod.GET,"/api/v1/admin/transactions/*").hasRole("ADMIN")
+                .requestMatchers(org.springframework.http.HttpMethod.GET,"/internal/v1/payments/*/support-status").access((auth,context)-> {
+                    var authentication=auth.get();boolean allowed=authentication instanceof org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken token
+                        && "fincore-audit".equals(token.getToken().getClaimAsString("azp"))
+                        && authentication.getAuthorities().stream().anyMatch(v->v.getAuthority().equals("payment.support.read"));
+                    return new org.springframework.security.authorization.AuthorizationDecision(allowed);
+                })
                 .requestMatchers(org.springframework.http.HttpMethod.POST,"/internal/v1/payments/funding").hasAuthority("payment.fund")
                 .requestMatchers(org.springframework.http.HttpMethod.POST,"/internal/v1/payments/*/reversal").hasAuthority("payment.reverse")
                 .requestMatchers(org.springframework.http.HttpMethod.POST,"/internal/v1/payments/*/decision").hasAuthority("payment.review")
