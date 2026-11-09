@@ -76,7 +76,8 @@ public record AuditEvent(EventEnvelope envelope, JsonNode details, String actor,
         text(payload,"outcome",Set.of(outcome));
         var details = (com.fasterxml.jackson.databind.node.ObjectNode) Json.read("{}");
         String field=domain+"Id";
-        for(String referenceField:List.of("customerId","accountId","paymentId"))
+        // Customer v1 keeps its existing unknown-reference redaction policy.
+        if (!domain.equals("customer")) for(String referenceField:List.of("customerId","accountId","paymentId"))
             if (!referenceField.equals(field) && payload.hasNonNull(referenceField)) throw new Poison("INVALID_ACCESS_AUDIT");
         if (payload.hasNonNull(field)) {
             if (action.equals("CUSTOMER_SEARCH") || !payload.path(field).isTextual()) throw new Poison("INVALID_ACCESS_AUDIT");

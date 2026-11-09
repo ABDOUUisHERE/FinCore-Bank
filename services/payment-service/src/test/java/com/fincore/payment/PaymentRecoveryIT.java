@@ -16,8 +16,10 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 @SpringBootTest(properties={"PAYMENT_CLIENT_SECRET=synthetic-test-secret","PAYMENT_WORKER_ENABLED=false"})
-@org.springframework.context.annotation.Import(PaymentRecoveryIT.IsolatedRiskPort.class)
+@org.springframework.context.annotation.Import({PaymentRecoveryIT.IsolatedRiskPort.class,PaymentSecurityTest.Decoders.class})
+@org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 class PaymentRecoveryIT {
+    @Autowired org.springframework.test.web.servlet.MockMvc http;
     @org.springframework.boot.test.context.TestConfiguration(proxyBeanMethods=false) static class IsolatedRiskPort {
         @org.springframework.context.annotation.Bean @org.springframework.context.annotation.Primary RiskPolicy isolatedRisk(){return new RiskPolicy.Local();}
     }
@@ -55,6 +57,34 @@ class PaymentRecoveryIT {
         return new Fixture(id,source,destination,receipt);
     }
     String balance(UUID id){return LAB.runtime("ledger").queryForObject("select booked::text from ledger.balance where account_id=?",String.class,id);}
+    @Test void realSignedInspectionCommitsItsReceiptAfterTheReadOnlyPageAndWithholdsOnAuditFailure() throws Exception {
+        var fixture=transfer("10.01");store.importInstruction(fixture.receipt());store.cancel(fixture.id(),ACTOR,0);
+        var jdbc=LAB.runtime("payment");String before=jdbc.queryForObject("select jsonb_build_object('payment',(select to_jsonb(p) from payment p where id=?),'history',(select jsonb_agg(to_jsonb(h) order by version) from payment_status_history h where payment_id=?),'outbox',(select jsonb_agg(to_jsonb(o) order by aggregate_version) from payment_outbox o where payment_id=?))::text",String.class,fixture.id(),fixture.id(),fixture.id());
+        String money=balance(fixture.source()),bearer="Bearer "+SignedTokens.token("fincore-api","current-administrator","fincore-admin",List.of("ADMIN"),Map.of());
+        String path="/api/v1/admin/transactions/"+fixture.id(),correlation=UUID.randomUUID().toString();
+        http.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(path+"?beforeVersion=7").header("Authorization",bearer).header("X-User-ID","FORGED_PAYER").header("X-Correlation-ID",correlation))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+        assertThat(jdbc.queryForObject("select actor_subject from payment_access_audit where correlation_id=?",String.class,correlation)).isEqualTo("current-administrator");
+        var source=jdbc.queryForObject("select envelope::text from fincore_event_source where envelope->>'correlationId'=?",String.class,correlation);
+        assertThat(source).contains("PAYMENT_INSPECT","RESPONSE_READY").doesNotContain("FORGED_PAYER",ACTOR,"beforeVersion","10.01","instruction");
+        http.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(path+"?beforeVersion=0").header("Authorization",bearer).header("X-Correlation-ID","invalid-page"))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isBadRequest());
+        assertThat(jdbc.queryForObject("select outcome from payment_access_audit where correlation_id='invalid-page'",String.class)).isEqualTo("INVALID_REQUEST");
+        String unavailable=UUID.randomUUID().toString();
+        try {
+            LAB.owner("payment").execute("revoke insert on payment_access_audit from payment_runtime");
+            var result=http.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(path).header("Authorization",bearer).header("X-Correlation-ID",unavailable))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isServiceUnavailable())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.code").value("AUDIT_UNAVAILABLE")).andReturn();
+            assertThat(result.getResponse().getContentAsString()).doesNotContain(fixture.id().toString(),ACTOR);
+            assertThat(jdbc.queryForObject("select count(*) from payment_access_audit where correlation_id=?",Long.class,unavailable)).isZero();
+        } finally { LAB.owner("payment").execute("grant insert on payment_access_audit to payment_runtime"); }
+        http.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get(path).header("Authorization",bearer).header("X-Correlation-ID",unavailable))
+            .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
+        assertThat(jdbc.queryForObject("select count(*) from payment_access_audit where correlation_id=?",Long.class,unavailable)).isEqualTo(1);
+        assertThat(jdbc.queryForObject("select jsonb_build_object('payment',(select to_jsonb(p) from payment p where id=?),'history',(select jsonb_agg(to_jsonb(h) order by version) from payment_status_history h where payment_id=?),'outbox',(select jsonb_agg(to_jsonb(o) order by aggregate_version) from payment_outbox o where payment_id=?))::text",String.class,fixture.id(),fixture.id(),fixture.id())).isEqualTo(before);
+        assertThat(balance(fixture.source())).isEqualTo(money);
+    }
     void readyRetry(UUID id){LAB.owner("payment").update("update payment set lease_until=clock_timestamp()-interval '1 second',next_attempt=clock_timestamp() where id=?",id);}
     @Test void operationalInspectionRedactsAndPaginatesRealVersionedHistoryWithoutFinancialEffects(){
         var f=transfer("10.00");store.importInstruction(f.receipt());
