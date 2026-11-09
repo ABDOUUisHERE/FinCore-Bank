@@ -1,7 +1,7 @@
 # FinCore domain glossary
 
 ## Support access grant
-An administrator's temporary permission for the creator of an active incident to inspect the status of that incident's account or payment. Resolution, revocation or expiry ends the permission; reopening an incident does not restore it.
+An administrator's temporary permission for the creator of an active incident to inspect its account or payment status, or its limited customer profile. Resolution, revocation or expiry ends the permission; reopening an incident does not restore it.
 
 _Avoid_: assignment, ownership, permanent access.
 
@@ -9,4 +9,7 @@ _Avoid_: assignment, ownership, permanent access.
 The staff member who created the incident and may use its support access grant. A recipient cannot choose a different resource or delegate the permission.
 
 ## Disclosure decision
-The final authorization decision immediately before an account or payment status observation is released to support. Admission to an investigation does not guarantee disclosure if its permission ends during the investigation.
+The final authorization decision immediately before an authorized observation or discovery result is released to support. Admission to an investigation does not guarantee disclosure if its permission ends during the investigation.
+
+## Authorized customer set
+The customers referenced by an agent's active customer incidents with current support access grants. A search within this set cannot discover customers outside it.
