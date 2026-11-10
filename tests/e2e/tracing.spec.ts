@@ -31,7 +31,8 @@ function centralHash(eventId: string) { expect(eventId).toMatch(/^[0-9a-f-]{36}$
 const hash = (body: string) => createHash("sha256").update(body).digest("hex");
 async function graph(trace: string): Promise<Span[]> {
   expect(trace).toMatch(/^[0-9a-f]{32}$/);
-  const r = await fetch("http://localhost:16686/api/v3/traces/" + trace, { signal: AbortSignal.timeout(5000) }); if (r.status === 404) return []; expect(r.status).toBe(200);
+  // Inspect stored OTLP data before Jaeger's UI clock-skew adjuster adds synthetic warning attributes.
+  const r = await fetch("http://localhost:16686/api/v3/traces/" + trace + "?rawTraces=true", { signal: AbortSignal.timeout(5000) }); if (r.status === 404) return []; expect(r.status).toBe(200);
   const chunks = (await r.text()).trim().split(/\n/).filter(Boolean).map(line => JSON.parse(line) as { result: { resourceSpans: Resource[] } });
   return chunks.flatMap(c => c.result.resourceSpans.flatMap(resource => {
     const service = resource.resource.attributes.find(a => a.key === "service.name")?.value.stringValue ?? "missing";
