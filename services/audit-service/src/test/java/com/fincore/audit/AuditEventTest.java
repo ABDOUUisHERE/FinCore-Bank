@@ -69,6 +69,34 @@ class AuditEventTest {
             assertThat(parsed.details().toString()).doesNotContain("PRIVATE_");
         }
     }
+    @Test void reportingActionsBindOnlyTheirOwnReferenceAndRedactStatementContents() {
+        for(String action:List.of("STATEMENT_CREATE_REQUEST","STATEMENT_LIST","STATEMENT_INSPECT","STATEMENT_EXPORT_CSV","STATEMENT_EXPORT_PDF","RECONCILIATION_INSPECT","JOURNAL_INSPECT")) {
+            var id=UUID.randomUUID();var payload=accessPayload();payload.put("action",action);payload.put("httpMethod",action.equals("STATEMENT_CREATE_REQUEST")?"POST":"GET");
+            payload.putAll(Map.of("snapshot","PRIVATE_BYTES","contentHash","PRIVATE_HASH","month","PRIVATE_MONTH","opening","PRIVATE_BALANCE","reference","PRIVATE_REFERENCE","rawPath","PRIVATE_URL"));
+            String field=action.equals("JOURNAL_INSPECT")?"journalId":Set.of("STATEMENT_INSPECT","STATEMENT_EXPORT_CSV","STATEMENT_EXPORT_PDF").contains(action)?"statementId":null;
+            var reference=UUID.randomUUID();if(field!=null)payload.put(field,reference.toString());
+            var parsed=AuditEvent.parse("fincore.reporting.access.recorded.v1",id.toString(),access(id,payload).replace("customer.access.recorded","reporting.access.recorded"));
+            assertThat(parsed.actor()).isEqualTo("signed-staff");assertThat(parsed.details().path("action").asText()).isEqualTo(action);assertThat(parsed.details().toString()).doesNotContain("PRIVATE_");
+            assertThat(parsed.details().size()).isEqualTo(field==null?5:6);if(field!=null)assertThat(parsed.details().path(field).asText()).isEqualTo(reference.toString());
+        }
+    }
+    @Test void reportingCannotForgeForeignActionsOrReferencesOrArbitraryDomainFacts() {
+        var id=UUID.randomUUID();
+        for(String action:List.of("STATEMENT_CREATE_REQUEST","STATEMENT_LIST","RECONCILIATION_INSPECT","JOURNAL_INSPECT","STATEMENT_EXPORT_PDF")) {
+            for(String field:List.of("accountId","paymentId",action.equals("JOURNAL_INSPECT")?"statementId":"journalId")) {
+                var payload=accessPayload();payload.put("action",action);payload.put(field,UUID.randomUUID().toString());
+                assertThatThrownBy(()->AuditEvent.parse("fincore.reporting.access.recorded.v1",id.toString(),access(id,payload).replace("customer.access.recorded","reporting.access.recorded"))).isInstanceOf(AuditEvent.Poison.class);
+            }
+        }
+        for(String correlation:List.of("invalid:correlation","x".repeat(65))) {
+            var valid=accessPayload();valid.put("action","STATEMENT_LIST");
+            String body=access(id,valid).replace("customer.access.recorded","reporting.access.recorded").replace("access-test",correlation);
+            assertThatThrownBy(()->AuditEvent.parse("fincore.reporting.access.recorded.v1",id.toString(),body)).isInstanceOf(AuditEvent.Poison.class);
+        }
+        var payload=accessPayload();payload.put("action","ACCOUNT_INSPECT");
+        assertThatThrownBy(()->AuditEvent.parse("fincore.reporting.access.recorded.v1",id.toString(),access(id,payload).replace("customer.access.recorded","reporting.access.recorded"))).isInstanceOf(AuditEvent.Poison.class);
+        assertThatThrownBy(()->AuditEvent.parse("fincore.reporting.created.v1",id.toString(),access(id,accessPayload()).replace("customer.access.recorded","reporting.created"))).isInstanceOf(AuditEvent.Poison.class);
+    }
     @Test void foreignActionsReferencesOrActorClaimsCannotMasqueradeAsOwnerReadReceipts() {
         for(String domain:List.of("account","payment")) {
             var id=UUID.randomUUID();var base=accessPayload();base.put("action",domain.toUpperCase(Locale.ROOT)+"_INSPECT");

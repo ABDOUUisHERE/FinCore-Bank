@@ -1,0 +1,212 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Reporting access receipt v1",
+  "description": "Reporting producer contract for fincore.reporting.access.recorded.v1. Ingestion independently checks self event/aggregate identity and status/outcome consistency. RESPONSE_READY asserts preparation, not delivery or new snapshot creation. Signed actor provenance remains the Reporting producer assertion.",
+  "allOf": [
+    {
+      "$ref": "domain-event-v1.json"
+    },
+    {
+      "properties": {
+        "eventType": {
+          "const": "reporting.access.recorded"
+        },
+        "aggregateVersion": {
+          "const": 1
+        },
+        "correlationId": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]{1,64}$"
+        },
+        "payload": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "action",
+            "outcome",
+            "httpMethod",
+            "httpStatus",
+            "actorProvenance"
+          ],
+          "properties": {
+            "action": {
+              "enum": [
+                "STATEMENT_CREATE_REQUEST",
+                "STATEMENT_LIST",
+                "STATEMENT_INSPECT",
+                "STATEMENT_EXPORT_CSV",
+                "STATEMENT_EXPORT_PDF",
+                "RECONCILIATION_INSPECT",
+                "JOURNAL_INSPECT"
+              ]
+            },
+            "outcome": {
+              "enum": [
+                "RESPONSE_READY",
+                "INVALID_REQUEST",
+                "UNAUTHENTICATED",
+                "FORBIDDEN",
+                "NOT_FOUND",
+                "SERVER_ERROR"
+              ]
+            },
+            "httpMethod": {
+              "enum": [
+                "GET",
+                "POST",
+                "OTHER"
+              ]
+            },
+            "httpStatus": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 599
+            },
+            "actorProvenance": {
+              "enum": [
+                "SIGNED_JWT",
+                "UNAVAILABLE"
+              ]
+            },
+            "actorSubject": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9:_-]{1,200}$"
+            },
+            "statementId": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "journalId": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          "allOf": [
+            {
+              "if": {
+                "properties": {
+                  "actorProvenance": {
+                    "const": "SIGNED_JWT"
+                  }
+                }
+              },
+              "then": {
+                "required": [
+                  "actorSubject"
+                ]
+              },
+              "else": {
+                "not": {
+                  "required": [
+                    "actorSubject"
+                  ]
+                }
+              }
+            }
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "action": {
+                    "enum": [
+                      "STATEMENT_CREATE_REQUEST",
+                      "STATEMENT_LIST",
+                      "RECONCILIATION_INSPECT"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "statementId"
+                      ]
+                    },
+                    {
+                      "required": [
+                        "journalId"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "action": {
+                    "enum": [
+                      "STATEMENT_INSPECT",
+                      "STATEMENT_EXPORT_CSV",
+                      "STATEMENT_EXPORT_PDF"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "journalId"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "payload": {
+                "properties": {
+                  "action": {
+                    "enum": [
+                      "JOURNAL_INSPECT"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "not": {
+                  "anyOf": [
+                    {
+                      "required": [
+                        "statementId"
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -29,9 +29,9 @@ public record AuditEvent(EventEnvelope envelope, JsonNode details, String actor,
                 || !event.occurredAt().isBefore(java.time.Instant.parse("2100-01-01T00:00:00Z")))
                 throw new Poison("INVALID_EVENT_ENVELOPE");
             if (!event.topic().equals(topic) || !event.aggregateId().toString().equals(key)
-                || !Set.of("customer","account","ledger","payment","fraud","card").contains(event.eventType().split("\\.")[0]))
+                || (!Set.of("customer","account","ledger","payment","fraud","card").contains(event.eventType().split("\\.")[0]) && !event.eventType().equals("reporting.access.recorded")))
                 throw new Poison("EVENT_SOURCE_MISMATCH");
-            if (Set.of("customer.access.recorded","account.access.recorded","payment.access.recorded").contains(event.eventType())) return access(event, body);
+            if (Set.of("customer.access.recorded","account.access.recorded","payment.access.recorded","reporting.access.recorded").contains(event.eventType())) return access(event, body);
             var result = (com.fasterxml.jackson.databind.node.ObjectNode) Json.read("{}");
             for (String field : List.of("customerId","accountId","paymentId","journalId","cardId","caseId","alertId","assessmentId","reversalOf","refundJournalId")) {
                 if (event.payload().hasNonNull(field)) result.put(field, UUID.fromString(event.payload().path(field).asText()).toString());
@@ -54,10 +54,12 @@ public record AuditEvent(EventEnvelope envelope, JsonNode details, String actor,
     private static AuditEvent access(EventEnvelope event, String body) {
         var payload = event.payload();
         String domain=event.eventType().split("\\.")[0];
+        if (domain.equals("reporting") && !event.correlationId().matches("[A-Za-z0-9._-]{1,64}")) throw new Poison("INVALID_ACCESS_AUDIT");
         Set<String> actions=switch(domain) {
             case "customer" -> Set.of("CUSTOMER_SEARCH","CUSTOMER_INSPECT");
             case "account" -> Set.of("ACCOUNT_INSPECT");
             case "payment" -> Set.of("PAYMENT_INSPECT");
+            case "reporting" -> Set.of("STATEMENT_CREATE_REQUEST","STATEMENT_LIST","STATEMENT_INSPECT","STATEMENT_EXPORT_CSV","STATEMENT_EXPORT_PDF","RECONCILIATION_INSPECT","JOURNAL_INSPECT");
             default -> throw new Poison("INVALID_ACCESS_AUDIT");
         };
         String action = text(payload,"action",actions);
@@ -75,11 +77,16 @@ public record AuditEvent(EventEnvelope envelope, JsonNode details, String actor,
         };
         text(payload,"outcome",Set.of(outcome));
         var details = (com.fasterxml.jackson.databind.node.ObjectNode) Json.read("{}");
-        String field=domain+"Id";
-        // Customer v1 keeps its existing unknown-reference redaction policy.
-        if (!domain.equals("customer")) for(String referenceField:List.of("customerId","accountId","paymentId"))
-            if (!referenceField.equals(field) && payload.hasNonNull(referenceField)) throw new Poison("INVALID_ACCESS_AUDIT");
-        if (payload.hasNonNull(field)) {
+        String field=domain.equals("reporting") ? switch(action) {
+            case "STATEMENT_CREATE_REQUEST","STATEMENT_LIST","RECONCILIATION_INSPECT" -> null;
+            case "JOURNAL_INSPECT" -> "journalId";
+            default -> "statementId";
+        } : domain+"Id";
+        // Preserve the accepted Customer unknown-reference redaction policy.
+        var references=domain.equals("reporting") ? List.of("customerId","accountId","paymentId","statementId","journalId","cardId","caseId","alertId","assessmentId","reversalOf","refundJournalId") : List.of("customerId","accountId","paymentId");
+        if (!domain.equals("customer")) for(String other:references)
+            if (!other.equals(field) && payload.hasNonNull(other)) throw new Poison("INVALID_ACCESS_AUDIT");
+        if (field!=null && payload.hasNonNull(field)) {
             if (action.equals("CUSTOMER_SEARCH") || !payload.path(field).isTextual()) throw new Poison("INVALID_ACCESS_AUDIT");
             String reference=payload.path(field).asText();
             if (!reference.matches("(?i)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")) throw new Poison("INVALID_ACCESS_AUDIT");

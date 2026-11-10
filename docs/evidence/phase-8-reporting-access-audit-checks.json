@@ -1,0 +1,193 @@
+{
+  "checkedAt": "2026-11-10T09:42:34.141Z",
+  "applicationSource": "fe0a7b4003fb24a6a30412177ac9044f493bf0cf",
+  "baselineMain": "0e9a2c5d9a6c4c42b33979df59b51bb577503ef1",
+  "phase": 8,
+  "lot": 10,
+  "phaseComplete": false,
+  "featureChecks": [
+    {
+      "name": "Backend quality",
+      "id": 42666972299,
+      "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42666972299",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 129333131062,
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "Frontend quality",
+      "id": 42666972272,
+      "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42666972272",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 129333130654,
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "name": "Foundation integration",
+      "id": 42666972955,
+      "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42666972955",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 129333133317,
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
+  "backend": {
+    "tests": 342,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 66,
+    "buildSuccess": true
+  },
+  "frontend": {
+    "cases": 64,
+    "files": 13,
+    "typecheck": true,
+    "lint": true,
+    "builds": 2,
+    "auditSeverityGatePassed": true
+  },
+  "hostedBrowser": {
+    "cases": 14,
+    "passed": 14
+  },
+  "native": {
+    "tests": 53,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 10,
+    "buildSuccess": true,
+    "countsAreUnique": true,
+    "focusedAfterHeaderCorrection": {
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "classes": 2,
+      "buildSuccess": true,
+      "subsetOfThe53Cases": true
+    },
+    "focusedDirectOwnerDenial": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "classes": 1,
+      "buildSuccess": true,
+      "subsetOfThe53Cases": true
+    },
+    "browserCases": 3,
+    "browserCountsAreUniqueAcrossSuccessfulJourneys": true,
+    "owners": [
+      "customer",
+      "account",
+      "payment",
+      "reporting"
+    ],
+    "brokerDeliveryReplayQuarantineAndStorageRecovery": true,
+    "producerIsolationAndAuditNonProducer": true,
+    "healthyRuntimeServices": 16,
+    "preservedUpgrade": {
+      "migrations": {
+        "customer": [
+          "1",
+          "2",
+          "3",
+          "4"
+        ],
+        "account": [
+          "1",
+          "2",
+          "3"
+        ],
+        "payment": [
+          "1",
+          "2",
+          "3",
+          "4",
+          "5"
+        ],
+        "reporting": [
+          "1",
+          "2"
+        ]
+      },
+      "unchangedBusinessTables": {
+        "customer": [
+          "customer_profile",
+          "customer_outbox",
+          "customer_access_audit"
+        ],
+        "account": [
+          "account",
+          "account_outbox",
+          "account_access_audit"
+        ],
+        "payment": [
+          "payment",
+          "payment_status_history",
+          "payment_outbox",
+          "payment_access_audit"
+        ],
+        "reporting": [
+          "statement_snapshot"
+        ],
+        "ledger": [
+          "ledger.journal"
+        ],
+        "audit": [
+          "incident"
+        ]
+      },
+      "existingEnvironmentValuesPreserved": true,
+      "onlyNewEnvironmentKey": "KAFKA_REPORTING_PASSWORD",
+      "credentialAndRealmBytesUnchanged": true,
+      "businessRowsUnchanged": true,
+      "oldDomainEnvelopesAndDeliveriesUnchanged": true,
+      "existingThreeOwnerReadReceiptsUnchanged": true,
+      "allThreeGrantFamiliesAndOriginalReceiptsUnchanged": true,
+      "originalReceiptCount": 88,
+      "countsUnchangedBeforeBrowser": {
+        "customer": 48,
+        "account": 95,
+        "payment": 155,
+        "reporting": 3,
+        "ledger": 122,
+        "audit": 16
+      },
+      "reportingReceiptBackfill": 0
+    }
+  },
+  "initialLocalFailures": {
+    "initialFeatureFoundationRun": 42658853292,
+    "secondFeatureFoundationRun": 42662601746,
+    "ownerBoundaryCorrection": "The second integration passed exports but expected an owner receipt for an ADMIN finance denial already rejected at Gateway. A minimal real PKCE probe reproduced Gateway 403 with zero owner receipts, while finance 200 retained/delivered one. The incorrect owner-receipt claim was removed; the original Gateway 403 assertion remains, and real signed owner HTTP/PostgreSQL now proves its separate retained 403.",
+    "nativeBrowser": "The initial preserved-installation card run timed out waiting for an analyst control before Reporting. A real isolated hosted PKCE lookup with the same analyst confirmed its role, API success and case presence. The focused card rerun retains its original action deadline and financial assertions; no persistent cause was confirmed.",
+    "headerCorrection": "The initial feature integration passed all storage/broker probes and 13 browser journeys but duplicated no-store on exports. A direct signed MVC test reproduced the two values; removing the redundant controller header retains the filter-owned cache policy, with strict HTTP/real PostgreSQL and original browser assertions unchanged.",
+    "nativePublication": "An initial native synthetic console-producer call exited 1 after the owner receipt had already arrived centrally. The identical-body isolated replay passed. No persistent cause was established; the complete native probe was rerun without concurrent native Maven work.",
+    "testCompilation": "The first shared-library test compilation lacked its test-scoped Spring/JUnit/Mockito dependency; the dependency was added before the successful complete targeted invocation.",
+    "testRequestFraming": "A bodyless POST fixture was rejected by the existing early 411 framing guard. A correctly framed JSON request reproduces the intended 403 method denial without weakening the assertion."
+  },
+  "mainIntegration": null,
+  "remaining": [
+    "Critical actions and security events outside the finite retained registries",
+    "Gateway/early servlet and identity-provider retention",
+    "Remaining administration and scoped assistance",
+    "Collected cross-service HTTP and asynchronous Kafka traces",
+    "Six observed monitoring dashboards",
+    "Phases 9–11"
+  ]
+}

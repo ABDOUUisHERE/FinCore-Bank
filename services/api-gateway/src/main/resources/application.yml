@@ -50,7 +50,7 @@ spring:
               uri: ${REPORTING_SERVICE_URL:http://localhost:8089}
               predicates: ["Path=/api/v1/statements,/api/v1/statements/**,/api/v1/admin/reports/reconciliation"]
               metadata:
-                response-timeout: 20000
+                response-timeout: 40000
               filters:
                 - name: RequestSize
                   args:
