@@ -1,6 +1,6 @@
 # Phase 8 requirement coverage and remaining acceptance
 
-Checkpoint: November 9, 2026 UTC. Application source `fe0a7b4003fb24a6a30412177ac9044f493bf0cf`; main integration is recorded separately after its independent checks. Phase 8 is incomplete. The [Reporting access audit report](phase-8-reporting-access-audit.md) separates feature and main validation; previous lot reports retain their own measurements.
+Checkpoint: November 10, 2026 UTC. Application source `fe0a7b4003fb24a6a30412177ac9044f493bf0cf`; integrated as `7f0998cd5e154ecb3784779cdb64129484ef7aa2` with all independent main checks passing. Phase 8 is incomplete. The [Reporting access audit report](phase-8-reporting-access-audit.md) separates feature and main validation; previous lot reports retain their own measurements.
 
 The baseline is the supplied [specification](../fincore/specification.md), especially user roles, Observability and Phase 8. Earlier phase reports remain the evidence for earlier functionality.
 

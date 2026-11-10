@@ -181,7 +181,86 @@
     "testCompilation": "The first shared-library test compilation lacked its test-scoped Spring/JUnit/Mockito dependency; the dependency was added before the successful complete targeted invocation.",
     "testRequestFraming": "A bodyless POST fixture was rejected by the existing early 411 framing guard. A correctly framed JSON request reproduces the intended 403 method denial without weakening the assertion."
   },
-  "mainIntegration": null,
+  "mainIntegration": {
+    "checkedAt": "2026-11-10T09:54:52.904Z",
+    "merge": "7f0998cd5e154ecb3784779cdb64129484ef7aa2",
+    "checks": [
+      {
+        "name": "Frontend quality",
+        "id": 42793120344,
+        "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42793120344",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "id": 129751352424,
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "name": "Foundation integration",
+        "id": 42793120235,
+        "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42793120235",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "id": 129751347292,
+            "conclusion": "success"
+          }
+        ]
+      },
+      {
+        "name": "Backend quality",
+        "id": 42793120295,
+        "url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42793120295",
+        "conclusion": "success",
+        "jobs": [
+          {
+            "id": 129751352289,
+            "conclusion": "success"
+          }
+        ]
+      }
+    ],
+    "backend": {
+      "tests": 342,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "classes": 66,
+      "buildSuccess": true
+    },
+    "frontendCases": 64,
+    "browserCases": 14,
+    "allFourOwnerStorageRecoveryAndProducerIsolationChecks": true,
+    "finalNativeHealthyServices": 16,
+    "postUpgradeConfigurationAndCredentialsStillUnchanged": true,
+    "githubAtMerge": {
+      "checkedAt": "2026-11-10T09:44:10.418093+00:00",
+      "head": "7f0998cd5e154ecb3784779cdb64129484ef7aa2",
+      "authorLogin": "ABDOUUisHERE",
+      "authorDate": "2026-11-10T09:43:29Z",
+      "defaultBranch": "main",
+      "fork": false,
+      "commitsSincePreviousMain": 15,
+      "publicRepository": true,
+      "requestedUTCDate": "2026-11-10",
+      "commitAuthorDatesUTC": {
+        "2026-11-09": 13,
+        "2026-11-10": 2
+      },
+      "allComparedCommitAuthorDatesTodayUTC": false,
+      "githubAttributedCommits": 15,
+      "allComparedCommitsAttributed": true,
+      "observedToday": {
+        "totalCommitContributions": 2,
+        "contributionCalendar": {
+          "totalContributions": 2
+        }
+      }
+    },
+    "applicationTreeIdenticalToAcceptedFeature": true
+  },
   "remaining": [
     "Critical actions and security events outside the finite retained registries",
     "Gateway/early servlet and identity-provider retention",
