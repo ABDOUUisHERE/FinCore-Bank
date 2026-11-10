@@ -1,5 +1,13 @@
 name: fincore
 services:
+  jaeger:
+    image: jaegertracing/jaeger:2.23.0
+    environment:
+      OTEL_TRACES_EXPORTER: none
+    command: [--config, /etc/jaeger/fincore.yaml]
+    volumes: ["./infrastructure/observability/jaeger.yaml:/etc/jaeger/fincore.yaml:ro"]
+    ports: ["127.0.0.1:16686:16686"]
+    networks: [backend]
   postgres:
     image: postgres:17.11-alpine
     environment:
@@ -141,6 +149,7 @@ services:
     image: fincore/ledger-service:local
     build: { context: ., dockerfile: services/ledger-service/Dockerfile }
     environment:
+      TRACING_ENABLED: 'true'
       MESSAGING_ENABLED: 'true'
       SPRING_TASK_SCHEDULING_POOL_SIZE: '4'
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -500,6 +509,7 @@ services:
     image: fincore/reporting-service:local
     build: { context: ., dockerfile: services/reporting-service/Dockerfile }
     environment:
+      TRACING_ENABLED: 'true'
       MESSAGING_ENABLED: 'true'
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       KAFKA_USER: reporting
@@ -729,6 +739,7 @@ services:
     image: fincore/audit-service:local
     build: { context: ., dockerfile: services/audit-service/Dockerfile }
     environment:
+      TRACING_ENABLED: 'true'
       SERVER_PORT: '8080'
       AUDIT_DATABASE_URL: jdbc:postgresql://postgres:5432/audit
       AUDIT_DB_PASSWORD: ${AUDIT_DB_PASSWORD:?Run local bootstrap first}
@@ -758,6 +769,7 @@ services:
     image: fincore/api-gateway:local
     build: { context: ., dockerfile: services/api-gateway/Dockerfile }
     environment:
+      TRACING_ENABLED: 'true'
       SERVER_PORT: "8080"
       CUSTOMER_SERVICE_URL: http://customer-service:8080
       ACCOUNT_SERVICE_URL: http://account-service:8080

@@ -10,4 +10,4 @@ Only Gateway, Reporting, Ledger and Audit enable collection in this lot. Other o
 
 Acceptance requires malformed/duplicate context isolation, delayed/retried publication with identical body bytes, central consume parentage, real stored graph assertions, collector outage/recovery and redaction checks. A trace header or dependency declaration alone is not proof of collection. The six required dashboards and remaining security/audit coverage retain their separate gates.
 
-Implementation references: [OpenTelemetry SDK](https://opentelemetry.io/docs/languages/java/sdk/), [Zipkin v2 API](https://zipkin.io/zipkin-api/), [Zipkin 3.6.1 release](https://github.com/openzipkin/zipkin/releases/tag/3.6.1).
+The specified Jaeger backend receives OTLP/HTTP spans and provides the local stored-graph query API. Implementation references: [OpenTelemetry SDK](https://opentelemetry.io/docs/languages/java/sdk/), [Jaeger configuration](https://www.jaegertracing.io/docs/2.dev/deployment/configuration/).
