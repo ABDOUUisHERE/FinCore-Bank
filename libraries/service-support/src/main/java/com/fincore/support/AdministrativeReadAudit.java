@@ -51,15 +51,24 @@ public class AdministrativeReadAudit {
     private final JdbcTemplate db;
     private final TransactionTemplate receipt;
     private final Owner owner;
+    private final java.util.function.Consumer<UUID> rememberOrigin;
     public AdministrativeReadAudit(JdbcTemplate db,PlatformTransactionManager transactions,Owner owner) {
+        this(db,transactions,owner,id->{});
+    }
+    public AdministrativeReadAudit(JdbcTemplate db,PlatformTransactionManager transactions,Owner owner,java.util.function.Consumer<UUID> rememberOrigin) {
+        this.rememberOrigin=rememberOrigin;
         this.db=db;this.owner=owner;receipt=new TransactionTemplate(transactions);
         receipt.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         receipt.setTimeout(3);
     }
     public void retain(Target target,String method,int status,Actor actor,String correlation) {
-        receipt.executeWithoutResult(ignored->db.update("insert into "+owner.table+"(id,action,"+owner.referenceColumn+",http_method,http_status,outcome,actor_subject,actor_provenance,correlation_id) values(?,?,?,?,?,?,?,?,?)",
-            UUID.randomUUID(),target.action(),target.resourceId(),method.equals("GET") || method.equals("POST") ? method : "OTHER",
-            status,outcome(status),actor==null?null:actor.subject(),actor==null?"UNAVAILABLE":"SIGNED_JWT",correlation));
+        receipt.executeWithoutResult(ignored->{
+            var id=UUID.randomUUID();
+            db.update("insert into "+owner.table+"(id,action,"+owner.referenceColumn+",http_method,http_status,outcome,actor_subject,actor_provenance,correlation_id) values(?,?,?,?,?,?,?,?,?)",
+                id,target.action(),target.resourceId(),method.equals("GET") || method.equals("POST") ? method : "OTHER",
+                status,outcome(status),actor==null?null:actor.subject(),actor==null?"UNAVAILABLE":"SIGNED_JWT",correlation);
+            rememberOrigin.accept(id);
+        });
     }
     private static String outcome(int status) {
         return switch(status) {
