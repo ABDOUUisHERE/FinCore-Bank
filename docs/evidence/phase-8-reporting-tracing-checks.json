@@ -158,7 +158,112 @@
     "correction": "Query stored OTLP data using rawTraces=true, preserving the original strict field/value checks and unadjusted timestamps.",
     "productionCodeChangedForCorrection": false
   },
-  "mainIntegration": null,
+  "mainIntegration": {
+    "checkedAt": "2026-11-10T11:32:03.977Z",
+    "merge": "c10f4c7e8fd838a7feead57202d3a54b42f23ae2",
+    "checks": [
+      {
+        "id": 42806524947,
+        "name": "Frontend quality",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "c10f4c7e8fd838a7feead57202d3a54b42f23ae2",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42806524947",
+        "created_at": "2026-11-10T11:19:28Z",
+        "updated_at": "2026-11-10T11:21:03Z",
+        "jobs": [
+          {
+            "id": 129796959003,
+            "name": "verify",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42806524947/job/129796959003"
+          }
+        ]
+      },
+      {
+        "id": 42806525042,
+        "name": "Backend quality",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "c10f4c7e8fd838a7feead57202d3a54b42f23ae2",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42806525042",
+        "created_at": "2026-11-10T11:19:28Z",
+        "updated_at": "2026-11-10T11:22:41Z",
+        "jobs": [
+          {
+            "id": 129796959558,
+            "name": "verify",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42806525042/job/129796959558"
+          }
+        ]
+      },
+      {
+        "id": 42806525204,
+        "name": "Foundation integration",
+        "status": "completed",
+        "conclusion": "success",
+        "head_sha": "c10f4c7e8fd838a7feead57202d3a54b42f23ae2",
+        "head_branch": "main",
+        "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42806525204",
+        "created_at": "2026-11-10T11:19:28Z",
+        "updated_at": "2026-11-10T11:31:37Z",
+        "jobs": [
+          {
+            "id": 129796964642,
+            "name": "compose",
+            "status": "completed",
+            "conclusion": "success",
+            "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42806525204/job/129796964642"
+          }
+        ]
+      }
+    ],
+    "backend": {
+      "tests": 354,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "classes": 70,
+      "buildSuccess": true
+    },
+    "frontendCases": 64,
+    "browserCases": 15,
+    "allFourOwnerStorageRecoveryAndIsolationChecks": true,
+    "collectedGraphCollectorOutageAndDependencyRecoveryPassed": true,
+    "runningServices": 17,
+    "healthyServices": 16,
+    "jaegerQueryReady": true,
+    "environmentRealmAndCredentialsStillUnchanged": true,
+    "applicationTreeIdenticalToAcceptedFeature": true,
+    "githubAtMerge": {
+      "checkedAt": "2026-11-10T11:19:52.201987+00:00",
+      "head": "c10f4c7e8fd838a7feead57202d3a54b42f23ae2",
+      "authorLogin": "ABDOUUisHERE",
+      "authorDate": "2026-11-10T11:19:17Z",
+      "defaultBranch": "main",
+      "fork": false,
+      "commitsSincePreviousMain": 9,
+      "publicRepository": true,
+      "requestedUTCDate": "2026-11-10",
+      "commitAuthorDatesUTC": {
+        "2026-11-10": 9
+      },
+      "allComparedCommitAuthorDatesTodayUTC": true,
+      "githubAttributedCommits": 9,
+      "allComparedCommitsAttributed": true,
+      "observedToday": {
+        "totalCommitContributions": 12,
+        "contributionCalendar": {
+          "totalContributions": 12
+        }
+      }
+    }
+  },
   "remaining": [
     "Loki or equivalent collected-log backend",
     "Extend collected tracing beyond the four-module Reporting pilot",

@@ -1,6 +1,6 @@
 # Phase 8 lot 11 — collected Reporting traces
 
-Accepted application source `1f65edb1a7012da8e2294b30204307af37eb1670`. Phase 8 remains incomplete. Main integration is recorded separately after its independent checks. [Machine-readable checks](../evidence/phase-8-reporting-tracing-checks.json) and the [collected native graph](../evidence/phase-8-reporting-trace-graph.json) retain technical IDs and closed metadata only.
+Accepted application source `1f65edb1a7012da8e2294b30204307af37eb1670`. Phase 8 remains incomplete. Integrated as `c10f4c7e8fd838a7feead57202d3a54b42f23ae2` with all independent main checks passing. [Machine-readable checks](../evidence/phase-8-reporting-tracing-checks.json) and the [collected native graph](../evidence/phase-8-reporting-trace-graph.json) retain technical IDs and closed metadata only.
 
 Gateway and the servlet modules create bounded server spans; Reporting forwards client context to Ledger. A new nullable Reporting delivery-origin column captures the current request context in the same independent receipt transaction. Scheduled publication restores that ended context, adds a fresh producer attempt in a Kafka header and leaves the immutable body/key unchanged. Audit consumes under the actual producer attempt. Context is diagnostic, never actor identity or authorization. Legacy deliveries receive no fabricated origin; other owners do not opt into trace-origin delivery SQL.
 
@@ -37,3 +37,13 @@ A [feature integration](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/run
 Only Gateway, Reporting, Ledger and Audit collect in this pilot. The SDK uses a bounded asynchronous queue and short export timeout; collector loss may drop spans and is not audit loss/recovery acceptance. The local Jaeger memory store resets on restart and is not production retention. A valid caller-supplied trace context is still untrusted diagnostic context. No tokens, subjects, names, URLs, queries, financial contents or exception messages are exported. Failed local origin persistence rolls back the receipt and follows its existing withheld-response policy; collector export is outside that transaction.
 
 Remaining security/action audit and identity-provider retention, scoped administration, additional collected flows, Loki or equivalent log collection and all six observed dashboards remain Phase 8 work. Kubernetes/deployment, performance and release remain later phases. See the [progress inventory](phase-8-progress.md).
+
+## Independent main integration
+
+Merged and pushed as [c10f4c7](https://github.com/ABDOUUisHERE/FinCore-Bank/commit/c10f4c7e8fd838a7feead57202d3a54b42f23ae2). Main independently passes 354 Java cases / 70 classes, 64 frontend cases / 13 files and 15 hosted PKCE journeys, including the actual stored trace graph, collector outage and Ledger failure/recovery. The four owner storage/replay/redaction/producer isolation checks, Ledger smoke and Kafka ACL/DLQ/replay also pass. Final native state remains 17 running containers, 16 Docker healthchecks healthy and Jaeger query ready; original environment, realm and credential bytes remain unchanged.
+
+- [Frontend quality on main](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42806524947) — success.
+- [Backend quality on main](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42806525042) — success.
+- [Foundation integration on main](https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42806525204) — success.
+
+GitHub attributes all 9 commits since the previous main to ABDOUUisHERE on the public non-fork default branch. Author dates (UTC): 2026-11-10: 9. At 2026-11-10T11:19:52.201987+00:00, the observed 2026-11-10 contribution calendar reports 12. The final documentation proof follows that observation and changes no runtime source.
