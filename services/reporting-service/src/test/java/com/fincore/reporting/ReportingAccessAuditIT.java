@@ -28,7 +28,7 @@ import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(properties={"REPORTING_CLIENT_SECRET=synthetic-test-secret","fincore.messaging.enabled=false"})
+@SpringBootTest(properties={"REPORTING_CLIENT_SECRET=synthetic-test-secret","fincore.messaging.enabled=false","fincore.tracing.outbox-enabled=true"})
 @AutoConfigureMockMvc
 @Import(ReportingSecurityTest.Decoders.class)
 class ReportingAccessAuditIT {
@@ -106,5 +106,60 @@ class ReportingAccessAuditIT {
         long before=count("reporting_access_audit");
         for(var target:List.of(new AdministrativeReadAudit.Target("ACCOUNT_INSPECT",UUID.randomUUID()),new AdministrativeReadAudit.Target("STATEMENT_CREATE_REQUEST",UUID.randomUUID()),new AdministrativeReadAudit.Target("RECONCILIATION_INSPECT",UUID.randomUUID())))assertThatThrownBy(()->audit.retain(target,"GET",200,null,"invalid-metadata")).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
         assertThatThrownBy(()->audit.retain(new AdministrativeReadAudit.Target("STATEMENT_LIST",null),"GET",200,new AdministrativeReadAudit.Actor("email@example.invalid"),"invalid-metadata")).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);assertThat(count("reporting_access_audit")).isEqualTo(before);
+    }
+    @Test void endedRequestOriginSurvivesLostAckRetriesWithoutChangingTheImmutableEnvelope() {
+        var exporter=io.opentelemetry.sdk.testing.exporter.InMemorySpanExporter.create();
+        try(var provider=io.opentelemetry.sdk.trace.SdkTracerProvider.builder().addSpanProcessor(io.opentelemetry.sdk.trace.export.SimpleSpanProcessor.create(exporter)).build()) {
+            var backlogProducer=new MockProducer<String,String>(true,new StringSerializer(),new StringSerializer());
+            var backlog=new OutboxPublisher(db,new TransactionTemplate(transactions),backlogProducer,new SimpleMeterRegistry(),()->{});while(backlog.publishOne()){}
+            var tracing=new com.fincore.observability.Tracing(provider.get("reporting-origin-test"));String origin,trace;String correlation=UUID.randomUUID().toString();
+            try(var request=tracing.server(null,"GET");var scope=request.makeCurrent()) {
+                origin=request.parent();trace=request.traceId();audit.retain(new AdministrativeReadAudit.Target("RECONCILIATION_INSPECT",null),"GET",200,new AdministrativeReadAudit.Actor("finance"),correlation);
+            }
+            UUID id=db.queryForObject("select id from reporting_access_audit where correlation_id=?",UUID.class,correlation);
+            assertThat(db.queryForObject("select traceparent from event_delivery where event_id=?",String.class,id)).isEqualTo(origin);
+            String body=db.queryForObject("select envelope::text from fincore_event_source where event_id=?",String.class,id);
+            assertThat(body).doesNotContain("traceparent",trace);
+            assertThatThrownBy(()->db.update("update event_delivery set traceparent=null where event_id=?",id)).hasMessageContaining("TRACE_ORIGIN_IMMUTABLE");
+            assertThatThrownBy(()->db.update("update event_delivery set event_id=? where event_id=?",UUID.randomUUID(),id)).hasMessageContaining("TRACE_ORIGIN_IMMUTABLE");
+            var producer=new MockProducer<String,String>(true,new StringSerializer(),new StringSerializer());
+            var tx=new TransactionTemplate(transactions);
+            var lostAck=new OutboxPublisher(db,tx,producer,new SimpleMeterRegistry(),()->{throw new IllegalStateException("PRIVATE_ACK_FAILURE");},tracing,true);
+            assertThat(lostAck.publishOne()).isTrue();assertThat(producer.history()).hasSize(1);
+            db.update("update event_delivery set next_attempt=clock_timestamp() where event_id=?",id);
+            var retry=new OutboxPublisher(db,tx,producer,new SimpleMeterRegistry(),()->{},tracing,true);assertThat(retry.publishOne()).isTrue();
+            var records=producer.history();assertThat(records).hasSize(2).allSatisfy(r->assertThat(r.value()).isEqualTo(body));
+            String first=new String(records.getFirst().headers().lastHeader("traceparent").value(),java.nio.charset.StandardCharsets.US_ASCII);
+            String second=new String(records.getLast().headers().lastHeader("traceparent").value(),java.nio.charset.StandardCharsets.US_ASCII);
+            assertThat(first).isNotEqualTo(second);assertThat(first).startsWith("00-"+trace);assertThat(second).startsWith("00-"+trace);
+            assertThat(db.queryForObject("select traceparent from event_delivery where event_id=?",String.class,id)).isEqualTo(origin);
+            assertThat(db.queryForObject("select sent_at is not null from event_delivery where event_id=?",Boolean.class,id)).isTrue();
+            assertThat(exporter.getFinishedSpanItems().stream().filter(s->s.getKind()==io.opentelemetry.api.trace.SpanKind.PRODUCER).toList()).hasSize(2).allSatisfy(s->assertThat(s.getParentSpanId()).isEqualTo(origin.substring(36,52)));
+        }
+    }
+    @Test void originMetadataFailureRollsBackTheReceiptRatherThanLeavingPartialCausality() {
+        try(var provider=io.opentelemetry.sdk.trace.SdkTracerProvider.builder().build()) {
+            var tracing=new com.fincore.observability.Tracing(provider.get("rollback-test"));long before=count("reporting_access_audit");
+            try(var request=tracing.server(null,"GET");var scope=request.makeCurrent()) {
+                try {
+                    migrator().execute("revoke insert on event_delivery from reporting_runtime");
+                    assertThatThrownBy(()->audit.retain(new AdministrativeReadAudit.Target("STATEMENT_LIST",null),"GET",200,null,"origin-rollback")).isInstanceOf(org.springframework.dao.DataAccessException.class);
+                } finally { migrator().execute("grant insert on event_delivery to reporting_runtime"); }
+            }
+            assertThat(count("reporting_access_audit")).isEqualTo(before);assertThat(db.queryForObject("select count(*) from reporting_access_audit where correlation_id='origin-rollback'",Long.class)).isZero();
+        }
+    }
+    @Test void v2ToV3PreservesOriginalSourceAndDeliveryRowsWithoutInventingHistoricalOrigins() {
+        var admin=new JdbcTemplate(new DriverManagerDataSource(PG.getJdbcUrl(),PG.getUsername(),PG.getPassword()));admin.execute("create database reporting_trace_upgrade owner reporting_migrator");String url=PG.getJdbcUrl().replace("/test","/reporting_trace_upgrade");
+        Flyway.configure().dataSource(url,"reporting_migrator",PASSWORD).target("2").load().migrate();var jdbc=new JdbcTemplate(new DriverManagerDataSource(url,"reporting_runtime",PASSWORD));
+        var oldAudit=new AdministrativeReadAudit(jdbc,new DataSourceTransactionManager(jdbc.getDataSource()),AdministrativeReadAudit.Owner.REPORTING);
+        oldAudit.retain(new AdministrativeReadAudit.Target("STATEMENT_LIST",null),"GET",200,null,"old-source");
+        UUID id=jdbc.queryForObject("select event_id from fincore_event_source",UUID.class);jdbc.update("insert into event_delivery(event_id,attempts,last_code) values(?,2,'PUBLISH_RETRY')",id);
+        String original=jdbc.queryForObject("select envelope::text from fincore_event_source",String.class),delivery=jdbc.queryForObject("select to_jsonb(d)::text from event_delivery d",String.class);
+        Flyway.configure().dataSource(url,"reporting_migrator",PASSWORD).load().migrate();
+        assertThat(jdbc.queryForObject("select envelope::text from fincore_event_source",String.class)).isEqualTo(original);
+        assertThat(jdbc.queryForObject("select (to_jsonb(d)-'traceparent')::text from event_delivery d",String.class)).isEqualTo(delivery);
+        assertThat(jdbc.queryForObject("select traceparent from event_delivery",String.class)).isNull();
+        assertThatThrownBy(()->jdbc.update("insert into event_delivery(event_id,traceparent) values(?,?)",UUID.randomUUID(),"00-"+"0".repeat(32)+"-"+"b".repeat(16)+"-01")).isInstanceOf(org.springframework.dao.DataIntegrityViolationException.class);
     }
 }

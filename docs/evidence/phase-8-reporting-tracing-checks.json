@@ -1,0 +1,182 @@
+{
+  "checkedAt": "2026-11-10T11:18:37.680Z",
+  "applicationSource": "1f65edb1a7012da8e2294b30204307af37eb1670",
+  "baselineMain": "d9c2d75618c7fa72c0d18173b31c5804e6069d73",
+  "phase": 8,
+  "lot": 11,
+  "phaseComplete": false,
+  "featureChecks": [
+    {
+      "id": 42804264413,
+      "name": "Frontend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "1f65edb1a7012da8e2294b30204307af37eb1670",
+      "head_branch": "feature/fincore-reporting-traces",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42804264413",
+      "created_at": "2026-11-10T11:03:18Z",
+      "updated_at": "2026-11-10T11:04:56Z",
+      "jobs": [
+        {
+          "id": 129789295521,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42804264413/job/129789295521"
+        }
+      ]
+    },
+    {
+      "id": 42804263989,
+      "name": "Backend quality",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "1f65edb1a7012da8e2294b30204307af37eb1670",
+      "head_branch": "feature/fincore-reporting-traces",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42804263989",
+      "created_at": "2026-11-10T11:03:17Z",
+      "updated_at": "2026-11-10T11:06:15Z",
+      "jobs": [
+        {
+          "id": 129789293249,
+          "name": "verify",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42804263989/job/129789293249"
+        }
+      ]
+    },
+    {
+      "id": 42804264223,
+      "name": "Foundation integration",
+      "status": "completed",
+      "conclusion": "success",
+      "head_sha": "1f65edb1a7012da8e2294b30204307af37eb1670",
+      "head_branch": "feature/fincore-reporting-traces",
+      "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42804264223",
+      "created_at": "2026-11-10T11:03:17Z",
+      "updated_at": "2026-11-10T11:16:10Z",
+      "jobs": [
+        {
+          "id": 129789298346,
+          "name": "compose",
+          "status": "completed",
+          "conclusion": "success",
+          "html_url": "https://github.com/ABDOUUisHERE/FinCore-Bank/actions/runs/42804264223/job/129789298346"
+        }
+      ]
+    }
+  ],
+  "backend": {
+    "tests": 354,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 70,
+    "buildSuccess": true
+  },
+  "frontend": {
+    "cases": 64,
+    "files": 13,
+    "typecheck": true,
+    "lint": true,
+    "builds": 2,
+    "severityGatePassed": true
+  },
+  "hostedBrowser": {
+    "cases": 15,
+    "passed": 15
+  },
+  "native": {
+    "unit": {
+      "tests": 9,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "classes": 4,
+      "buildSuccess": true
+    },
+    "postgres": {
+      "tests": 29,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "classes": 7,
+      "buildSuccess": true
+    },
+    "uniqueJavaCases": 33,
+    "uniqueJavaClasses": 9,
+    "uniqueClasses": {
+      "com.fincore.observability.TracingTest": 3,
+      "com.fincore.support.ServletTracingTest": 2,
+      "com.fincore.gateway.configuration.TraceFilterTest": 2,
+      "com.fincore.audit.AuditTraceTest": 2,
+      "com.fincore.support.AdministrativeReadAuditFilterTest": 6,
+      "com.fincore.reporting.ReportingAccessAuditSecurityTest": 6,
+      "com.fincore.reporting.StatementExportsTest": 3,
+      "com.fincore.reporting.ReportingAccessAuditIT": 8,
+      "com.fincore.reporting.ReportingDatabaseIT": 1
+    },
+    "sharedCasesAcrossInvocations": 5,
+    "browserCases": 1,
+    "allFourOwnerStorageReplayAndIsolationChecks": true,
+    "runningServices": 17,
+    "healthyApplicationAndInfrastructureServices": 16,
+    "jaegerQueryReady": true,
+    "preservedUpgrade": {
+      "checkedAt": "2026-11-10T10:28:57.633Z",
+      "reportingVersions": [
+        1,
+        2,
+        3
+      ],
+      "originalBusinessAndGrantRowsUnchanged": true,
+      "allFourOwnerSourceEnvelopesAndOriginalDeliveryFieldsUnchanged": true,
+      "configurationRealmAndCredentialBytesUnchanged": true,
+      "historicalOriginsBackfilled": 0
+    }
+  },
+  "collectedGraph": {
+    "path": "phase-8-reporting-trace-graph.json",
+    "trace": "3471a6a62bd6cbed254f0c92340afdfe",
+    "spans": 6,
+    "allFourServicesPresent": true,
+    "exactParentRelationships": true,
+    "publicationStartsAfterOwnerRequestEnded": true,
+    "originalEnvelopeHashPreserved": true
+  },
+  "faults": {
+    "collectorOutageHttpAndCentralRetentionPassed": true,
+    "ledgerFailureAndRecoveryCollected": true,
+    "ambiguousContextStartsNewRoot": true,
+    "allTestPrivilegesAndContainersRestored": true
+  },
+  "initialNativeFailure": {
+    "symptom": "Strict collected-span attribute check rejected @jaeger@warnings.",
+    "cause": "Jaeger query UI enrichment adds synthetic clock-skew warnings for asynchronous spans. The SDK emitted only its closed attributes.",
+    "minimalRepro": "The same stored trace query failed its attribute check with the default response and passed with rawTraces=true.",
+    "correction": "Query stored OTLP data using rawTraces=true, preserving the original strict field/value checks and unadjusted timestamps.",
+    "productionCodeChangedForCorrection": false
+  },
+  "mainIntegration": null,
+  "remaining": [
+    "Loki or equivalent collected-log backend",
+    "Extend collected tracing beyond the four-module Reporting pilot",
+    "Six observed monitoring dashboards",
+    "Remaining critical action/security and identity-provider retention",
+    "Remaining scoped administration and assistance",
+    "Phases 9–11"
+  ],
+  "initialFeatureFailure": {
+    "applicationSource": "51a6bda0572d2d44f54e72cf94225a9e0c98d57c",
+    "foundationRun": 42800876122,
+    "job": 129777988493,
+    "hostedCasesPassed": 14,
+    "hostedCasesFailed": 1,
+    "symptom": "The first Ledger-error span after collector restart was not collected within the unchanged 45-second assertion.",
+    "observedCause": "Reporter, Gateway and Audit exporter logs still show one-second export timeouts after the Jaeger query API had become ready. A query response did not prove application export recovery, and best-effort failed batches are not replayed by querying an old ID.",
+    "correction": "Observe a fresh complete four-module application graph and central digest before starting the Ledger fault; retain the 45-second bound and require the specific Ledger client ERROR plus the actual owner SERVER_ERROR receipt.",
+    "productionCodeChanged": false,
+    "missingBatchRecoveryPromised": false
+  }
+}

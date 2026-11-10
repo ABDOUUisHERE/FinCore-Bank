@@ -38,11 +38,20 @@ public class AuditMessaging {
         factory.setCommonErrorHandler(handler);
         return factory;
     }
-    @Bean AuditListener auditListener(AuditStore store) { return new AuditListener(store); }
+    @Bean AuditListener auditListener(AuditStore store,com.fincore.observability.Tracing tracing) { return new AuditListener(store,tracing); }
     public static class AuditListener {
         private final AuditStore store;
-        AuditListener(AuditStore store) { this.store=store; }
+        private final com.fincore.observability.Tracing tracing;
+        AuditListener(AuditStore store) { this(store,com.fincore.observability.Tracing.disabled()); }
+        AuditListener(AuditStore store,com.fincore.observability.Tracing tracing) { this.store=store;this.tracing=tracing; }
         @KafkaListener(topicPattern="fincore\\.(customer|account|ledger|payment|fraud|card|reporting)\\..*\\.v1",groupId="fincore-audit-v1",containerFactory="auditKafkaFactory")
-        public void accept(ConsumerRecord<String,String> record) { store.accept(record.topic(),record.key(),record.value(),record.partition(),record.offset()); }
+        public void accept(ConsumerRecord<String,String> record) {
+            var headers=record.headers().headers("traceparent").iterator();String parent=null;
+            if(headers.hasNext()) { var value=headers.next().value();if(!headers.hasNext() && value!=null && value.length==55)parent=new String(value,java.nio.charset.StandardCharsets.US_ASCII); }
+            try(var operation=tracing.consume(parent);var scope=operation.makeCurrent()) {
+                try { store.accept(record.topic(),record.key(),record.value(),record.partition(),record.offset()); }
+                catch(RuntimeException error) { operation.failed();throw error; }
+            }
+        }
     }
 }

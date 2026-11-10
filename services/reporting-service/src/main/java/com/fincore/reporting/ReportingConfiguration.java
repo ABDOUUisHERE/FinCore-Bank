@@ -14,7 +14,12 @@ import org.springframework.security.web.SecurityFilterChain;
 @Import({SupportConfiguration.class,com.fincore.messaging.OutboxConfiguration.class})
 public class ReportingConfiguration {
     @Bean JwtDecoder jwtDecoder(@Value("${fincore.security.jwk-set-uri}")String jwks,@Value("${fincore.security.issuer}")String issuer){return ServiceSecurity.decoder(jwks,issuer,Set.of("fincore-api","reporting-service"));}
-    @Bean AdministrativeReadAudit readAudit(org.springframework.jdbc.core.JdbcTemplate db,org.springframework.transaction.PlatformTransactionManager transactions){return new AdministrativeReadAudit(db,transactions,AdministrativeReadAudit.Owner.REPORTING);}
+    @Bean AdministrativeReadAudit readAudit(org.springframework.jdbc.core.JdbcTemplate db,org.springframework.transaction.PlatformTransactionManager transactions,@Value("${fincore.tracing.outbox-enabled:false}")boolean captureOrigin){
+        return new AdministrativeReadAudit(db,transactions,AdministrativeReadAudit.Owner.REPORTING,id->{
+            var parent=com.fincore.observability.Tracing.currentParent();
+            if(captureOrigin && parent!=null)db.update("insert into event_delivery(event_id,traceparent) values(?,?)",id,parent);
+        });
+    }
     @Bean SecurityFilterChain security(HttpSecurity http,AdministrativeReadAudit readAudit)throws Exception{
         var converter=new JwtAuthenticationConverter();converter.setJwtGrantedAuthoritiesConverter(jwt->ServiceSecurity.authorities(jwt,"reporting-service"));
         return http.csrf(c->c.disable()).sessionManagement(s->s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -28,5 +33,5 @@ public class ReportingConfiguration {
             .oauth2ResourceServer(o->o.jwt(j->j.jwtAuthenticationConverter(converter)).authenticationEntryPoint((q,r,e)->WebSupport.denied(q,r,401)))
             .exceptionHandling(e->e.authenticationEntryPoint((q,r,x)->WebSupport.denied(q,r,401)).accessDeniedHandler((q,r,x)->WebSupport.denied(q,r,403))).build();
     }
-    @Bean Remote remote(@Value("${TOKEN_ENDPOINT:http://localhost:8180/realms/fincore/protocol/openid-connect/token}")String endpoint,@Value("${REPORTING_CLIENT_SECRET}")String secret){return new Remote(endpoint,"fincore-reporting",secret);}
+    @Bean Remote remote(@Value("${TOKEN_ENDPOINT:http://localhost:8180/realms/fincore/protocol/openid-connect/token}")String endpoint,@Value("${REPORTING_CLIENT_SECRET}")String secret,com.fincore.observability.Tracing tracing){return new Remote(endpoint,"fincore-reporting",secret,tracing);}
 }

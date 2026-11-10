@@ -9,10 +9,11 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 @Configuration
+@Import(com.fincore.observability.TracingConfiguration.class)
 @EnableScheduling
 @ConditionalOnProperty(name="fincore.messaging.enabled",havingValue="true")
 public class OutboxConfiguration {
-    @Bean(destroyMethod="close") OutboxPublisher outboxPublisher(JdbcTemplate jdbc,PlatformTransactionManager tx,Environment env,MeterRegistry metrics){
-        return new OutboxPublisher(jdbc,new TransactionTemplate(tx),new KafkaProducer<>(KafkaSettings.producer(env)),metrics,()->{});
+    @Bean(destroyMethod="close") OutboxPublisher outboxPublisher(JdbcTemplate jdbc,PlatformTransactionManager tx,Environment env,MeterRegistry metrics,com.fincore.observability.Tracing tracing){
+        return new OutboxPublisher(jdbc,new TransactionTemplate(tx),new KafkaProducer<>(KafkaSettings.producer(env)),metrics,()->{},tracing,env.getProperty("fincore.tracing.outbox-enabled",Boolean.class,false));
     }
 }

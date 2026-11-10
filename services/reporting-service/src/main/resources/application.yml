@@ -21,6 +21,8 @@ server:
   port: ${SERVER_PORT:8089}
   max-http-request-header-size: 16KB
 fincore:
+  tracing:
+    outbox-enabled: ${TRACING_ENABLED:false}
   messaging:
     enabled: ${MESSAGING_ENABLED:false}
   security:

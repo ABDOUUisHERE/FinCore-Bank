@@ -1,0 +1,85 @@
+{
+  "checkedAt": "2026-11-10T11:01:11.896Z",
+  "applicationSource": "1f65edb1a7012da8e2294b30204307af37eb1670",
+  "trace": "3471a6a62bd6cbed254f0c92340afdfe",
+  "spans": [
+    {
+      "service": "ledger-service",
+      "operation": "http.server",
+      "kind": 2,
+      "traceId": "3471a6a62bd6cbed254f0c92340afdfe",
+      "spanId": "f04a07738fcbaed8",
+      "parentSpanId": "7921f6133bae7d73",
+      "startTimeUnixNano": "1794308457643560453",
+      "endTimeUnixNano": "1794308457821747126",
+      "attributes": {
+        "http.response.status_code": "200",
+        "http.request.method": "GET"
+      }
+    },
+    {
+      "service": "api-gateway",
+      "operation": "http.server",
+      "kind": 2,
+      "traceId": "3471a6a62bd6cbed254f0c92340afdfe",
+      "spanId": "39fffc1781b36770",
+      "startTimeUnixNano": "1794308456937409438",
+      "endTimeUnixNano": "1794308458317748270",
+      "attributes": {
+        "http.response.status_code": "200",
+        "http.request.method": "GET"
+      }
+    },
+    {
+      "service": "reporting-service",
+      "operation": "http.client",
+      "kind": 3,
+      "traceId": "3471a6a62bd6cbed254f0c92340afdfe",
+      "spanId": "7921f6133bae7d73",
+      "parentSpanId": "aa08b62047b1b4b7",
+      "startTimeUnixNano": "1794308457610596485",
+      "endTimeUnixNano": "1794308457865087365",
+      "attributes": {
+        "fincore.dependency": "LEDGER",
+        "http.request.method": "GET",
+        "http.response.status_code": "200"
+      }
+    },
+    {
+      "service": "reporting-service",
+      "operation": "http.server",
+      "kind": 2,
+      "traceId": "3471a6a62bd6cbed254f0c92340afdfe",
+      "spanId": "aa08b62047b1b4b7",
+      "parentSpanId": "39fffc1781b36770",
+      "startTimeUnixNano": "1794308457060512509",
+      "endTimeUnixNano": "1794308458241434755",
+      "attributes": {
+        "http.request.method": "GET",
+        "http.response.status_code": "200"
+      }
+    },
+    {
+      "service": "reporting-service",
+      "operation": "reporting.access.publish",
+      "kind": 4,
+      "traceId": "3471a6a62bd6cbed254f0c92340afdfe",
+      "spanId": "50f8a65e2de90630",
+      "parentSpanId": "aa08b62047b1b4b7",
+      "startTimeUnixNano": "1794308465466753457",
+      "endTimeUnixNano": "1794308466054925745",
+      "attributes": {}
+    },
+    {
+      "service": "audit-service",
+      "operation": "audit.receive",
+      "kind": 5,
+      "traceId": "3471a6a62bd6cbed254f0c92340afdfe",
+      "spanId": "8fe95e7433ba0fdd",
+      "parentSpanId": "50f8a65e2de90630",
+      "startTimeUnixNano": "1794308466170165994",
+      "endTimeUnixNano": "1794308466691336044",
+      "attributes": {}
+    }
+  ]
+}

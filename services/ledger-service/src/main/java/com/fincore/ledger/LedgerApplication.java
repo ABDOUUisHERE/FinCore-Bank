@@ -4,7 +4,7 @@ import org.flywaydb.core.Flyway;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-@org.springframework.context.annotation.Import(com.fincore.messaging.OutboxConfiguration.class)
+@org.springframework.context.annotation.Import({com.fincore.messaging.OutboxConfiguration.class,com.fincore.support.ServletTracingConfiguration.class})
 @SpringBootApplication
 public class LedgerApplication {
     public static void main(String[] args) {

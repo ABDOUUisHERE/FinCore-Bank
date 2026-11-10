@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.jackson.Jackson2ObjectMapperBuilde
 import org.springframework.context.annotation.*;
 
 @Configuration
-@Import(WebSupport.class)
+@Import({WebSupport.class,ServletTracingConfiguration.class})
 public class SupportConfiguration {
     @Bean Jackson2ObjectMapperBuilderCustomizer strictText(){return builder->builder.postConfigurer(mapper->{
         var config=mapper.coercionConfigFor(LogicalType.Textual);
