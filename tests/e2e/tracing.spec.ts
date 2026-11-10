@@ -95,8 +95,20 @@ test("collected Reporting traces preserve delayed outbox parentage and survive c
   start("jaeger"); await collectorReady();
   console.info("PASS: collector outage leaves the HTTP response and durable central receipt working; collector restarted.");
 
+  // Query readiness does not prove that the application exporters have reconnected.
+  // A best-effort batch lost during restart cannot be made observable by polling its old ID.
+  await expect(async () => {
+    const candidate = await call();
+    await expect.poll(async () => complete(await graph(candidate.trace)), { timeout: 5000, intervals: [250, 500, 1000] }).toBe(true);
+    const received = await graph(candidate.trace); privacy(received, privateStrings);
+    const retainedCandidate = receipt(candidate.correlation)!; expect(retainedCandidate).not.toBeNull();
+    await expect.poll(() => centralHash(retainedCandidate.eventId), { timeout: 5000 }).toBe(hash(retainedCandidate.body));
+  }).toPass({ timeout: 90_000, intervals: [1000, 2000] });
+  console.info("PASS: actual stored graph confirms all application exporters recovered after collector restart.");
+
   stop("ledger-service"); const failed = await call(503);
-  await expect.poll(async () => (await graph(failed.trace)).filter(s => s.service === "reporting-service" && s.name === "http.client").some(s => s.status?.code === 2), { timeout: 45_000 }).toBe(true);
+  const failedReceipt = receipt(failed.correlation)!; expect(failedReceipt).not.toBeNull(); expect(failedReceipt.outcome).toBe("SERVER_ERROR"); expect(failedReceipt.origin).toContain(failed.trace);
+  await expect.poll(async () => (await graph(failed.trace)).filter(s => s.service === "reporting-service" && s.name === "http.client").map(s => ({ dependency: s.attributes?.find(a => a.key === "fincore.dependency")?.value.stringValue, status: s.status?.code })), { timeout: 45_000 }).toContainEqual({ dependency: "LEDGER", status: 2 });
   privacy(await graph(failed.trace), privateStrings); expect(receipt(failed.correlation)!.outcome).toBe("SERVER_ERROR");
   start("ledger-service"); await ledgerReady();
   const untrusted = "00-" + "a".repeat(32) + "-" + "b".repeat(16) + "-01";
